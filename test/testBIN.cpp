@@ -1,0 +1,158 @@
+/******************************************************************************
+Shaga library is released under the New BSD license (see LICENSE.txt):
+
+Copyright (c) 2012-2017, SAGE team s.r.o., Samuel Kupka
+
+All rights reserved.
+*******************************************************************************/
+#include <shaga.h>
+#include <gtest/gtest.h>
+
+using namespace shaga;
+
+TEST (BIN, big_endian_from)
+{
+	BIN::endian_detect ();
+
+	uint64_t val = 0;
+	for (size_t i = 0; i < 8; i++) {
+		val |= (('A' + i) << (i * 8));
+	}
+
+	EXPECT_TRUE (BIN::be_from_uint8 (val & 0xff) == "A");
+	EXPECT_TRUE (BIN::be_from_uint16 (val & 0xff'ff) == "BA");
+	EXPECT_TRUE (BIN::be_from_uint24 (val & 0xff'ff'ff) == "CBA");
+	EXPECT_TRUE (BIN::be_from_uint32 (val & 0xff'ff'ff'ff) == "DCBA");
+	EXPECT_TRUE (BIN::be_from_uint64 (val) == "HGFEDCBA");
+}
+
+TEST (BIN, big_endian_to)
+{
+	BIN::endian_detect ();
+
+	uint64_t val = 0;
+
+	uint64_t testval = 0;
+	for (size_t i = 0; i < 8; i++) {
+		testval |= (('A' + i) << (i * 8));
+	}
+
+	val |= BIN::be_to_uint8 ("A");
+	EXPECT_TRUE (val == (testval & 0xff));
+
+	val |= BIN::be_to_uint16 ("BA");
+	EXPECT_TRUE (val == (testval & 0xff'ff));
+
+	val |= BIN::be_to_uint24 ("CBA");
+	EXPECT_TRUE (val == (testval & 0xff'ff'ff));
+
+	val |= BIN::be_to_uint32 ("DCBA");
+	EXPECT_TRUE (val == (testval & 0xff'ff'ff'ff));
+
+	val |= BIN::be_to_uint64 ("HGFEDCBA");
+	EXPECT_TRUE (val == testval);
+}
+
+TEST (BIN, little_endian_from)
+{
+	BIN::endian_detect ();
+
+	uint64_t val = 0;
+	for (size_t i = 0; i < 8; i++) {
+		val |= (('A' + i) << (i * 8));
+	}
+
+	EXPECT_TRUE (BIN::from_uint8 (val & 0xff) == "A");
+	EXPECT_TRUE (BIN::from_uint16 (val & 0xff'ff) == "AB");
+	EXPECT_TRUE (BIN::from_uint24 (val & 0xff'ff'ff) == "ABC");
+	EXPECT_TRUE (BIN::from_uint32 (val & 0xff'ff'ff'ff) == "ABCD");
+	EXPECT_TRUE (BIN::from_uint64 (val) == "ABCDEFGH");
+}
+
+TEST (BIN, little_endian_to)
+{
+	BIN::endian_detect ();
+
+	uint64_t val = 0;
+
+	uint64_t testval = 0;
+	for (size_t i = 0; i < 8; i++) {
+		testval |= (('A' + i) << (i * 8));
+	}
+
+	val |= BIN::to_uint8 ("A");
+	EXPECT_TRUE (val == (testval & 0xff));
+
+	val |= BIN::to_uint16 ("AB");
+	EXPECT_TRUE (val == (testval & 0xff'ff));
+
+	val |= BIN::to_uint24 ("ABC");
+	EXPECT_TRUE (val == (testval & 0xff'ff'ff));
+
+	val |= BIN::to_uint32 ("ABCD");
+	EXPECT_TRUE (val == (testval & 0xff'ff'ff'ff));
+
+	val |= BIN::to_uint64 ("ABCDEFGH");
+	EXPECT_TRUE (val == testval);
+}
+
+TEST (BIN, size)
+{
+	for (size_t i = 1; i < 29; i++) {
+		const size_t cnt = (1 << i) - 1;
+		const std::string str = BIN::from_size (cnt);
+
+		size_t offset = 0;
+		const size_t output = BIN::to_size (str, offset);
+
+		EXPECT_TRUE (str.size () == offset);
+		EXPECT_TRUE (cnt == output);
+	}
+}
+
+//TEST (BIN, special_chars)
+//{
+//	const uint8_t stx = 0x45;
+//	const uint8_t etx = 0x4A;
+//	const uint8_t ntx = 0x10;
+//
+//
+//    std::string chars (3, 0);
+//    chars.at (0) = ntx;
+//    chars.at (1) = stx;
+//    chars.at (2) = etx;
+//
+//    std::string input (2048, 0);
+//    for (size_t i = 0; i < input.size (); ++i) {
+//    	input.at (i) = i & 0xff;
+//    }
+//
+//    EXPECT_FALSE (input.find_first_of (ntx) == std::string::npos);
+//    EXPECT_FALSE (input.find_first_of (stx) == std::string::npos);
+//    EXPECT_FALSE (input.find_first_of (etx) == std::string::npos);
+//
+//    const std::string escaped = BIN::escape_special_chars (input, chars);
+//
+//    EXPECT_FALSE (escaped.find_first_of (ntx) == std::string::npos);
+//    EXPECT_TRUE (escaped.find_first_of (stx) == std::string::npos);
+//    EXPECT_TRUE (escaped.find_first_of (etx) == std::string::npos);
+//
+//    const std::string unescaped = BIN::unescape_special_chars (escaped, ntx);
+//    EXPECT_TRUE (input == unescaped);
+//
+//    uint8_t *str_unescaped = reinterpret_cast<uint8_t *> (malloc (escaped.size ()));
+//	ASSERT_FALSE (str_unescaped == nullptr);
+//
+//    const size_t sze_unescaped = BIN::unescape_special_chars_preallocated (reinterpret_cast<const uint8_t *> (escaped.data ()), escaped.size (), str_unescaped, ntx);
+//    EXPECT_TRUE (sze_unescaped == input.size ());
+//	EXPECT_TRUE (memcmp (str_unescaped, input.data (), input.size ()) == 0);
+//    free (str_unescaped);
+//
+//    uint8_t *str_escaped = reinterpret_cast<uint8_t *> (strdup (escaped.c_str ()));
+//	ASSERT_FALSE (str_escaped == nullptr);
+//
+////	const size_t sze_unescaped2 = BIN::unescape_special_chars_inline (str_escaped, escaped.size (), ntx);
+//    //EXPECT_TRUE (sze_unescaped2 == input.size ());
+//	//EXPECT_TRUE (memcmp (str_escaped, input.data (), input.size ()) == 0);
+//    free (str_escaped);
+//}

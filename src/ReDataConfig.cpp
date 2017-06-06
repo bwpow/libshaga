@@ -1,0 +1,312 @@
+/******************************************************************************
+Shaga library is released under the New BSD license (see LICENSE.md):
+
+Copyright (c) 2012-2017, SAGE team s.r.o., Samuel Kupka
+
+All rights reserved.
+*******************************************************************************/
+#include "shaga/common.h"
+
+namespace shaga {
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	template <typename T>
+	static T opts_get (const uint8_t &opts, const uint8_t shift, const uint8_t bits, T maxval)
+	{
+		(void) maxval;
+		return static_cast<T>((opts >> shift) & ((1 << bits) - 1));
+	}
+
+	template <typename T>
+	static void opts_set (uint8_t &opts, const int shift, const T val)
+	{
+		opts |= static_cast<uint8_t>(val) << shift;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Public class methods  ///////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	ReDataConfig::ReDataConfig ()
+	{
+		reset ();
+	}
+
+	ReDataConfig::ReDataConfig (const ReDataConfig &conf)
+	{
+		_used_coding = conf._used_coding;
+		_used_crypto = conf._used_crypto;
+		_used_digest = conf._used_digest;
+
+		_cache_digest = conf._cache_digest;
+	}
+
+	ReDataConfig::ReDataConfig (ReDataConfig &&conf)
+	{
+		_used_coding = std::move (conf._used_coding);
+		_used_crypto = std::move (conf._used_crypto);
+		_used_digest = std::move (conf._used_digest);
+
+		_cache_digest = std::move (conf._cache_digest);
+	}
+
+	ReDataConfig& ReDataConfig::operator= (const ReDataConfig &conf)
+	{
+		_used_coding = conf._used_coding;
+		_used_crypto = conf._used_crypto;
+		_used_digest = conf._used_digest;
+
+		_cache_digest = conf._cache_digest;
+
+		return *this;
+	}
+
+	ReDataConfig& ReDataConfig::operator= (ReDataConfig &&conf)
+	{
+		_used_coding = std::move (conf._used_coding);
+		_used_crypto = std::move (conf._used_crypto);
+		_used_digest = std::move (conf._used_digest);
+
+		_cache_digest = std::move (conf._cache_digest);
+
+		return *this;
+	}
+
+	void ReDataConfig::reset (void)
+	{
+		_used_coding = CODING::BINARY;
+		_used_crypto = CRYPTO::NONE;
+		_used_digest = DIGEST::CRC32;
+#ifdef SHAGA_FULL
+		_cache_digest.digest = _used_digest;
+#endif // SHAGA_FULL
+	}
+
+	void ReDataConfig::decode (const std::string &msg, size_t &offset)
+	{
+		size_t mv = offset;
+		try {
+			uint8_t opts;
+			const uint8_t b_high = msg.at (mv); mv++;
+			if ((b_high & 0x80) == 0x80) {
+				opts = b_high;
+			}
+			else {
+				const uint8_t b_low = msg.at (mv); mv++;
+				opts = BIN::byte_from_hex (b_high, b_low);
+			}
+
+			if ((opts & 0x80) != 0x80) {
+				cThrow ("Malformed data");
+			}
+
+			if ((opts & 0x80) != 0x80) {
+				cThrow ("Malformed data");
+			}
+
+			if ((opts & 0x60) == 0x60) {
+				cThrow ("Extended header is not supported yet");
+			}
+
+			set_digest (opts_get (opts, 0, 3, DIGEST::_MAX));
+			set_coding (opts_get (opts, 3, 2, CODING::_MAX));
+			set_crypto (opts_get (opts, 5, 2, CRYPTO::_MAX));
+		}
+		catch (const std::exception &e) {
+			cThrow ("Unable to decode message: %s", e.what());
+		}
+		catch (...) {
+			throw;
+		}
+		offset = mv;
+	}
+
+	void ReDataConfig::decode (const std::string &msg)
+	{
+		size_t offset = 0;
+		decode (msg, offset);
+	}
+
+	void ReDataConfig::encode (std::string &msg) const
+	{
+		uint8_t opts = 0x80;
+
+		opts_set (opts, 0, _used_digest);
+		opts_set (opts, 3, _used_coding);
+		opts_set (opts, 5, _used_crypto);
+
+		if (_used_coding == CODING::BINARY) {
+			msg.push_back (opts);
+		}
+		else {
+			msg.push_back (BIN::hex_from_byte (opts, true));
+			msg.push_back (BIN::hex_from_byte (opts, false));
+		}
+	}
+
+	std::string ReDataConfig::encode (void) const
+	{
+		std::string out;
+		encode (out);
+		return out;
+	}
+
+	ReDataConfig& ReDataConfig::set_digest (const ReDataConfig::DIGEST v)
+	{
+		if (v < DIGEST::_MAX) {
+			_used_digest = v;
+		}
+		else {
+			cThrow ("Unknown digest value");
+		}
+
+		return *this;
+	}
+
+	ReDataConfig& ReDataConfig::set_digest (const std::string &str)
+	{
+		const auto res = DIGEST_MAP.find (str);
+		if (res == DIGEST_MAP.end ()) {
+			std::string vals;
+			for (const auto &v : DIGEST_MAP) {
+				if (vals.empty () == false) {
+					vals.append (" ");
+				}
+				vals.append (v.first);
+			}
+			cThrow ("Unknown digest. Possible values: %s", vals.c_str ());
+		}
+
+		_used_digest = res->second;
+
+		return *this;
+	}
+
+	ReDataConfig& ReDataConfig::set_crypto (const ReDataConfig::CRYPTO v)
+	{
+		if (v < CRYPTO::_MAX) {
+			_used_crypto = v;
+		}
+		else {
+			cThrow ("Unknown crypto value");
+		}
+
+		return *this;
+	}
+
+	ReDataConfig& ReDataConfig::set_crypto (const std::string &str)
+	{
+		const auto res = CRYPTO_MAP.find (str);
+		if (res == CRYPTO_MAP.end ()) {
+			std::string vals;
+			for (const auto &v : CRYPTO_MAP) {
+				if (vals.empty () == false) {
+					vals.append (" ");
+				}
+				vals.append (v.first);
+			}
+			cThrow ("Unknown crypto. Possible values: %s", vals.c_str ());
+		}
+
+		_used_crypto = res->second;
+
+		return *this;
+	}
+
+	ReDataConfig& ReDataConfig::set_coding (const ReDataConfig::CODING v)
+	{
+		if (v < CODING::_MAX) {
+			_used_coding = v;
+		}
+		else {
+			cThrow ("Unknown coding value");
+		}
+
+		return *this;
+	}
+
+	ReDataConfig& ReDataConfig::set_coding (const std::string &str)
+	{
+		const auto res = CODING_MAP.find (str);
+		if (res == CODING_MAP.end ()) {
+			std::string vals;
+			for (const auto &v : CODING_MAP) {
+				if (vals.empty () == false) {
+					vals.append (" ");
+				}
+				vals.append (v.first);
+			}
+			cThrow ("Unknown coding. Possible values: %s", vals.c_str ());
+		}
+
+		_used_coding = res->second;
+
+		return *this;
+	}
+
+	ReDataConfig::DIGEST ReDataConfig::get_digest (void) const
+	{
+		return _used_digest;
+	}
+
+	ReDataConfig::CRYPTO ReDataConfig::get_crypto (void) const
+	{
+		return _used_crypto;
+	}
+
+	ReDataConfig::CODING ReDataConfig::get_coding (void) const
+	{
+		return _used_coding;
+	}
+
+	std::string ReDataConfig::get_digest_text (void) const
+	{
+		switch (_used_digest) {
+			case DIGEST::CRC32: return "CRC32";
+			case DIGEST::SHA1: return "SHA-1";
+			case DIGEST::SHA256: return "SHA-256";
+			case DIGEST::SHA512: return "SHA-512";
+
+			case DIGEST::HMAC_RIPEMD160: return "HMAC-RIPEMD-160";
+			case DIGEST::HMAC_SHA1: return "HMAC-SHA-1";
+			case DIGEST::HMAC_SHA256: return "HMAC-SHA-256";
+			case DIGEST::HMAC_SHA512: return "HMAC-SHA-512";
+
+			case DIGEST::_MAX: break;
+		}
+		cThrow ("Unknown digest value");
+	}
+
+	std::string ReDataConfig::get_crypto_text (void) const
+	{
+		switch (_used_crypto) {
+			case CRYPTO::NONE: return "Plaintext";
+			case CRYPTO::AES128: return "AES-128";
+			case CRYPTO::AES256: return "AES-256";
+
+			case CRYPTO::_MAX: break;
+		}
+		cThrow ("Unknown crypto value");
+	}
+
+	std::string ReDataConfig::get_coding_text (void) const
+	{
+		switch (_used_coding) {
+			case CODING::BINARY: return "Binary";
+			case CODING::BASE64: return "Base64";
+			case CODING::BASE64_ALT: return "Base64 (alt table)";
+			case CODING::HEX: return "Hexadecimal";
+
+			case CODING::_MAX: break;
+		}
+		cThrow ("Unknown coding value");
+	}
+
+}

@@ -1,0 +1,87 @@
+SRCDIR = src
+TESTSRCDIR = test
+
+LIBSOURCES = $(wildcard $(SRCDIR)/*.cpp)
+TESTSOURCES = $(wildcard $(TESTSRCDIR)/*.cpp)
+
+RELEASEDIR = $(OBJDIR)/release
+RELEASELIB = $(LIBDIR)/libshaga.a
+RELEASEOBJS = $(addprefix $(RELEASEDIR)/, $(LIBSOURCES:.cpp=.o))
+RELEASEFLAGS = -s -O2 -Iinclude -include shaga.h
+
+LITEDIR = $(OBJDIR)/lite
+LITELIB = $(LIBDIR)/libshagalite.a
+LITEOBJS = $(addprefix $(LITEDIR)/, $(LIBSOURCES:.cpp=.o))
+LITEFLAGS = -s -O2 -Iinclude -include shagalite.h
+
+DEBUGDIR = $(OBJDIR)/debug
+DEBUGLIB = $(LIBDIR)/libshaga_debug.a
+DEBUGOBJS = $(addprefix $(DEBUGDIR)/, $(LIBSOURCES:.cpp=.o))
+DEBUGFLAGS = -g -O2 -Iinclude -include shaga.h
+
+TESTDIR = $(OBJDIR)/test
+TESTBIN = $(BINDIR)/test.$(BINEXT)
+TESTOBJS = $(addprefix $(TESTDIR)/, $(TESTSOURCES:.cpp=.o))
+TESTFLAGS = -g -O2 -Iinclude
+TESTLIBS = -lgtest
+
+.PHONY: all lib prep clean distclean remake debug release lite test install
+
+all: release lite debug test
+
+lib: release lite
+
+prep:
+	$(MKDIR) $(RELEASEDIR)/$(SRCDIR)
+	$(MKDIR) $(LITEDIR)/$(SRCDIR)
+	$(MKDIR) $(DEBUGDIR)/$(SRCDIR)
+	$(MKDIR) $(TESTDIR)/$(TESTSRCDIR)
+	$(MKDIR) $(LIBDIR)
+	$(MKDIR) $(BINDIR)
+
+clean:
+	$(RM) -f $(RELEASELIB) $(RELEASEOBJS) $(LITELIB) $(LITEOBJS) $(DEBUGLIB) $(DEBUGOBJS) $(TESTBIN) $(TESTOBJS)
+
+distclean: clean
+	$(RM) -rf $(LIBDIR)/
+	$(RM) -rf $(OBJDIR)/
+	$(RM) -rf $(BINDIR)/
+
+remake: clean all
+
+debug: prep $(DEBUGLIB)
+
+$(DEBUGLIB): $(DEBUGOBJS)
+	$(AR) rcsD $@ $^
+
+$(DEBUGDIR)/%.o:%.cpp
+	$(GPP) $(DEBUGFLAGS) $(CPPFLAGS) -c $< -o $@
+
+release: prep $(RELEASELIB)
+
+$(RELEASELIB): $(RELEASEOBJS)
+	$(AR) rcsD $@ $^
+
+$(RELEASEDIR)/%.o:%.cpp
+	$(GPP) $(RELEASEFLAGS) $(CPPFLAGS) -c $< -o $@
+
+lite: prep $(LITELIB)
+
+$(LITELIB): $(LITEOBJS)
+	$(AR) rcsD $@ $^
+
+$(LITEDIR)/%.o:%.cpp
+	$(GPP) $(LITEFLAGS) $(CPPFLAGS) -c $< -o $@
+
+test: debug $(TESTBIN)
+
+$(TESTBIN): $(TESTOBJS) $(DEBUGLIB)
+	$(GPP) $(TESTFLAGS) $(LDFLAGS) $^ $(TESTLIBS) $(LIBS) -o $@
+
+$(TESTDIR)/%.o:%.cpp
+	$(GPP) $(TESTFLAGS) $(CPPFLAGS) -c $< -o $@
+
+install: release lite
+	$(CP) -av ./include/* $(DESTINCLUDE)
+	$(CP) -v $(RELEASELIB) $(DESTLIB)
+	$(CP) -v $(LITELIB) $(DESTLIB)
