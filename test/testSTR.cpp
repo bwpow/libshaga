@@ -74,7 +74,19 @@ TEST (STR, has_isuffix)
 
 TEST (STR, sprintf)
 {
-	EXPECT_TRUE (STR::sprintf ("%d %X %g %c", 100, 0x100, 100.100d, 'x') == "100 100 100.1 x");
+	std::string str;
+
+	str = STR::sprintf ("%d %X %g %c", 100, 0x100, 100.100d, 'x');
+	EXPECT_TRUE (str == "100 100 100.1 x") << str;
+
+	str = STR::sprintf ("1234567");
+	EXPECT_TRUE (str == "1234567") << str;
+
+	str = STR::sprintf ("12345678");
+	EXPECT_TRUE (str == "12345678") << str;
+
+	str = STR::sprintf ("123456789");
+	EXPECT_TRUE (str == "123456789") << str;
 }
 
 TEST (STR, bool)

@@ -105,8 +105,15 @@ namespace shaga {
 			COMMON_LIST get_values (const std::string &key) const;
 			COMMON_LIST get_values (const uint16_t key) const;
 
+			/* Callback returning true will continue to the next entry, false will end */
+			void modify_values (const std::string &key, std::function<bool(std::string&)> callback);
+			void modify_values (const uint16_t key, std::function<bool(std::string&)> callback);
+
 			std::string get_value (const std::string &key) const;
 			std::string get_value (const uint16_t key) const;
+
+			void modify_value (const std::string &key, std::function<void(std::string&)> callback);
+			void modify_value (const uint16_t key, std::function<void(std::string&)> callback);
 
 			COMMON_LIST get_keys (void) const;
 

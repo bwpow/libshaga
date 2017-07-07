@@ -10,6 +10,78 @@ All rights reserved.
 
 using namespace shaga;
 
+TEST (ChunkMeta, modify_value)
+{
+	ChunkMeta meta;
+	meta.add_value ("ABC", "abc");
+	meta.add_value ("XYZ", "abc");
+	meta.add_value ("ABC", "def");
+	meta.add_value ("XYZ", "def");
+
+	auto func = [](std::string &str) -> void {
+		if (str == "abc") {
+			str = "def";
+		}
+		else if (str == "def") {
+			str = "abc";
+		}
+		else {
+			cThrow ("Error");
+		}
+	};
+
+	auto func_true = [&](std::string &str) -> bool {
+		func (str);
+		return true;
+	};
+
+	auto func_false = [&](std::string &str) -> bool {
+		func (str);
+		return false;
+	};
+
+	auto test = [&](const std::string &key) -> std::string {
+		auto res = meta.get_values (key);
+		EXPECT_TRUE (res.size () == 2);
+		EXPECT_TRUE (res.front () == res.back ());
+
+		return res.front ();
+	};
+
+	auto test_diff = [&](const std::string &key) -> void {
+		auto res = meta.get_values (key);
+		EXPECT_TRUE (res.size () == 2);
+		EXPECT_FALSE (res.front () == res.back ());
+	};
+
+	/* Modify only one entry pre key */
+	EXPECT_NO_THROW (meta.modify_value ("ABC", func));
+	EXPECT_NO_THROW (meta.modify_value (ChunkMeta::key_to_bin ("XYZ"), func));
+
+	const std::string result_abc = test ("ABC");
+	const std::string result_xyz = test ("XYZ");
+
+	/* Now modify all entries for key */
+	EXPECT_NO_THROW (meta.modify_values ("ABC", func_true));
+	EXPECT_NO_THROW (meta.modify_values (ChunkMeta::key_to_bin ("XYZ"), func_true));
+
+	/* All entries should be swapped again */
+	const std::string result_abc2 = test ("ABC");
+	const std::string result_xyz2 = test ("XYZ");
+
+	/* It has to be different than in first try */
+	EXPECT_FALSE (result_abc == result_abc2);
+	EXPECT_FALSE (result_xyz == result_xyz2);
+
+	/* Now modify only one entry for key */
+	EXPECT_NO_THROW (meta.modify_values ("ABC", func_false));
+	EXPECT_NO_THROW (meta.modify_values (ChunkMeta::key_to_bin ("XYZ"), func_false));
+
+	/* Now the results should be different */
+	test_diff ("ABC");
+	test_diff ("XYZ");
+}
+
 TEST (ChunkMeta, merge)
 {
 	ChunkMeta meta[3];

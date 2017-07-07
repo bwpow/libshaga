@@ -31,9 +31,10 @@ namespace shaga {
 		if (l < static_cast<int> (str.size ())) {
 			str.resize (l);
 		}
-		else if (l > static_cast<int> (str.size ())) {
+		else {
+			str.resize (l + 1);
+			::vsnprintf (&str[0], str.size (), fmt, ap);
 			str.resize (l);
-			::vsnprintf (&str[0], l, fmt, ap);
 		}
 	}
 

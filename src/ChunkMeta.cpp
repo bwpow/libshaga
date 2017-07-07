@@ -284,6 +284,31 @@ namespace shaga {
 		return v;
 	}
 
+	void ChunkMeta::modify_values (const std::string &key, std::function<bool(std::string&)> callback)
+	{
+		modify_values (key_to_bin (key), callback);
+	}
+
+	void ChunkMeta::modify_values (const uint16_t key, std::function<bool(std::string&)> callback)
+	{
+		std::pair <ChunkMetaData::iterator, ChunkMetaData::iterator> p = _data.equal_range (key);
+
+		if (p.first == p.second) {
+			/* No entries, add a new one */
+			std::string str;
+			callback (str);
+			_data.insert (std::make_pair (key, std::move (str)));
+		}
+		else {
+			for (ChunkMetaData::iterator iter = p.first; iter != p.second; ++iter) {
+				if (callback (iter->second) == false) {
+					/* If the callback return false, don't continue */
+					break;
+				}
+			}
+		}
+	}
+
 	std::string ChunkMeta::get_value (const std::string &key) const
 	{
 		return get_value (key_to_bin (key));
@@ -298,6 +323,24 @@ namespace shaga {
 		}
 
 		return s;
+	}
+
+	void ChunkMeta::modify_value (const std::string &key, std::function<void(std::string&)> callback)
+	{
+		modify_value (key_to_bin (key), callback);
+	}
+
+	void ChunkMeta::modify_value (const uint16_t key, std::function<void(std::string&)> callback)
+	{
+		ChunkMetaData::iterator iter = _data.find (key);
+		if (iter != _data.end ()) {
+			callback (iter->second);
+		}
+		else {
+			std::string str;
+			callback (str);
+			_data.insert (std::make_pair (key, std::move (str)));
+		}
 	}
 
 	COMMON_LIST ChunkMeta::get_keys (void) const
