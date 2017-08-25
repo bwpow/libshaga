@@ -1,9 +1,7 @@
 obj/
 lib/
 bin/
-win32-obj/
-win32-lib/
-win32-bin/
+win32*/
 *.cbp
 *.layout
 *.depend

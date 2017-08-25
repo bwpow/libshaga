@@ -90,6 +90,7 @@ namespace shaga {
 	void Chunk::_reset (void)
 	{
 		_construct ();
+		_multicast = false;
 		_hwid_source = 0;
 		_type = 0;
 		_payload.resize (0);
@@ -103,7 +104,7 @@ namespace shaga {
 
 	void Chunk::_construct (void)
 	{
-		_counter = _chunk_global_counter.fetch_add (1);
+		_counter = _chunk_global_counter.fetch_add (1, std::memory_order_relaxed);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -129,6 +130,13 @@ namespace shaga {
 		_prio = uint8_to_priority ((val & key_prio_mask) >> key_prio_shift);
 		_trust = uint8_to_trustlevel ((val & key_trust_mask) >> key_trust_shift);
 		_ttl = ((val & key_ttl_mask) >> key_ttl_shift);
+
+		if (val & key_multicast_mask) {
+			_multicast = true;
+		}
+		else {
+			_multicast = false;
+		}
 
 		if (val & key_is_tracert_mask) {
 			_type = key_type_tracert;
@@ -187,6 +195,16 @@ namespace shaga {
 		_reset ();
 		_hwid_source = hwid_source;
 		_type = type;
+	}
+
+	void Chunk::set_multicast (const bool enabled)
+	{
+		_multicast = enabled;
+	}
+
+	bool Chunk::get_multicast (void) const
+	{
+		return _multicast;
 	}
 
 	HWID Chunk::get_source_hwid (void) const
@@ -388,8 +406,11 @@ namespace shaga {
 
 		val |= (static_cast<uint32_t>(_prio) << key_prio_shift) & key_prio_mask;
 		val |= (static_cast<uint32_t>(_trust) << key_trust_shift) & key_trust_mask;
-
 		val |= (static_cast<uint32_t>(_ttl) << key_ttl_shift) & key_ttl_mask;
+
+		if (true == _multicast) {
+			val |= key_multicast_mask;
+		}
 
 		bool has_payload = false;
 		if (_payload.empty () == false) {

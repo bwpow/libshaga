@@ -95,7 +95,12 @@ namespace shaga {
 			static const uint32_t key_has_payload_mask {0b0000'1000'0000'0000'0000'0000'0000'0000};
 			static const uint32_t key_has_dest_mask    {0b0001'0000'0000'0000'0000'0000'0000'0000};
 
-			static const uint32_t key_reserved_mask    {0b0110'0000'0000'0000'0000'0000'0000'0000};
+			/* Sometimes is desired to use multicast/unicast for specific chunks based on source HWID */
+			/* This can be used by lower level (VLANs, multicast groups) to filter out unwanted traffic */
+			/* Broadcast is default mode (multicast disabled) */
+			static const uint32_t key_multicast_mask   {0b0010'0000'0000'0000'0000'0000'0000'0000};
+
+			static const uint32_t key_reserved_mask    {0b0100'0000'0000'0000'0000'0000'0000'0000};
 
 			static const uint32_t key_highbit_mask     {0b1000'0000'0000'0000'0000'0000'0000'0000};
 
@@ -111,13 +116,14 @@ namespace shaga {
 			static std::string bin_to_key (const uint32_t bkey);
 
 		private:
-			HWID _hwid_source;
-			uint32_t _type;
+			bool _multicast {false};
+			HWID _hwid_source {0};
+			uint32_t _type {0};
 			std::string _payload;
-			Priority _prio;
-			TrustLevel _trust;
-			uint_fast64_t _counter;
-			uint_fast8_t _ttl;
+			Priority _prio {Priority::pMANDATORY};
+			TrustLevel _trust {TrustLevel::INTERNAL};
+			uint_fast64_t _counter {0};
+			uint_fast8_t _ttl {max_ttl};
 			HWIDMASK _hwid_dest;
 			std::list<TRACERT_HOP> _tracert_hops;
 
@@ -196,6 +202,9 @@ namespace shaga {
 			{
 				_construct (rest...);
 			}
+
+			void set_multicast (const bool enabled);
+			bool get_multicast (void) const;
 
 			HWID get_source_hwid (void) const;
 			bool is_for_me (const HWID hwid) const;
