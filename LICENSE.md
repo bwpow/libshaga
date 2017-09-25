@@ -50,7 +50,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ------------------------------------------------------------------------
-File "src/ReDataConfigDigest.cpp" contains code under following license:
+File "src/CRC.cpp" contains code under following license:
 ------------------------------------------------------------------------
 CRC32 implementation - Copyright (C) 1986 Gary S. Brown.  You may use this
 program, or code or tables extracted from it, as desired without restriction.

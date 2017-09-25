@@ -33,23 +33,77 @@ namespace shaga {
 
 	namespace CRC
 	{
+		/* CRC-64 */
 		uint64_t crc64 (const char *buf, const size_t len, const uint64_t startval = 0);
-		uint64_t crc64 (const std::string &plain, const uint64_t startval = 0);
+		uint64_t crc64 (const uint8_t *buf, const size_t len, const uint64_t startval = 0);
+
+		template<typename T>
+		uint64_t crc64 (const T &plain, const uint64_t startval = 0)
+		{
+			return crc64 (plain.data (), plain.size (), startval);
+		}
+
 		size_t crc64_check (const std::string &plain, const uint64_t startval = 0);
 		void crc64_add (std::string &plain, const uint64_t startval = 0);
 
-		uint32_t crc32 (const char *buf, const size_t len, const uint32_t startval = UINT32_MAX);
-		uint32_t crc32 (const std::string &plain, const uint32_t startval = UINT32_MAX);
-		size_t crc32_check (const std::string &plain, const uint32_t startval = UINT32_MAX);
-		void crc32_add (std::string &plain, const uint32_t startval = UINT32_MAX);
+		/* CRC-32 zlib compatible */
+		uint32_t crc32 (const char *buf, const size_t len, const uint32_t startval = 0);
+		uint32_t crc32 (const uint8_t *buf, const size_t len, const uint32_t startval = 0);
 
+		template<typename T>
+		uint32_t crc32 (const T &plain, const uint32_t startval = 0)
+		{
+			return crc32 (plain.data (), plain.size (), startval);
+		}
+
+		size_t crc32_check (const std::string &plain, const uint32_t startval = 0);
+		void crc32_add (std::string &plain, const uint32_t startval = 0);
+
+		/* CRC-32 Atmel CRCCU CCITT802.3 compatible */
+		uint32_t crc32_atmel (const char *buf, const size_t len, const uint32_t startval = UINT32_MAX);
+		uint32_t crc32_atmel (const uint8_t *buf, const size_t len, const uint32_t startval = UINT32_MAX);
+
+		template<typename T>
+		uint32_t crc32_atmel (const T &plain, const uint32_t startval = UINT32_MAX)
+		{
+			return crc32_atmel (plain.data (), plain.size (), startval);
+		}
+
+		size_t crc32_atmel_check (const std::string &plain, const uint32_t startval = UINT32_MAX);
+		void crc32_atmel_add (std::string &plain, const uint32_t startval = UINT32_MAX);
+
+		/* CRC-8 */
 		uint8_t crc8 (const char *buf, const size_t len, const uint8_t startval = 0);
-		uint8_t crc8 (const std::string &plain, const uint8_t startval = 0);
+		uint8_t crc8 (const uint8_t *buf, const size_t len, const uint8_t startval = 0);
+
+		template<typename T>
+		uint8_t crc8 (const T &plain, const uint8_t startval = 0)
+		{
+			return crc8 (plain.data (), plain.size (), startval);
+		}
+
 		size_t crc8_check (const std::string &plain, const uint8_t startval = 0);
 		void crc8_add (std::string &plain, const uint8_t startval = 0);
 
-		std::string sha256 (const std::string &plain);
-		std::string sha512 (const std::string &plain);
+		/* SHA-256 */
+		std::string sha256 (const char *buf, const size_t len);
+		std::string sha256 (const uint8_t *buf, const size_t len);
+
+		template<class T>
+		std::string sha256 (const T &plain)
+		{
+			return sha256 (plain.data (), plain.size ());
+		}
+
+		/* SHA-512 */
+		std::string sha512 (const char *buf, const size_t len);
+		std::string sha512 (const uint8_t *buf, const size_t len);
+
+		template<class T>
+		std::string sha512 (const T &plain)
+		{
+			return sha512 (plain.data (), plain.size ());
+		}
 	};
 };
 

@@ -61,7 +61,7 @@ namespace shaga {
 	static inline std::string _calc_crc32 (const std::string &plain, ReDataConfig::DigestCache &cache)
 	{
 		(void) cache;
-		uint_fast32_t val = 0xFFFFFFFF;
+		uint_fast32_t val = UINT32_MAX;
 
 		#define UPDC32(octet,crc) crc=(_crc32_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
 		for (std::string::const_iterator iter = plain.begin (); iter != plain.end (); ++iter) {
@@ -69,7 +69,7 @@ namespace shaga {
 		}
 		#undef UPDC32
 
-		return BIN::from_uint32 (~val);
+		return BIN::from_uint32 (val ^ UINT32_MAX);
 	}
 
 	static inline std::string _calc_sha1 (const std::string &plain, ReDataConfig::DigestCache &cache)

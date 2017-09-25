@@ -13,8 +13,8 @@ using namespace shaga;
 TEST (DiSig, genkey)
 {
 	std::string name;
-	const std::string hsh_ok = CRC::sha256 ("test string");
-	const std::string hsh_other = CRC::sha256 ("different test string");
+	const std::string hsh_ok = CRC::sha256 (std::string ("test string"));
+	const std::string hsh_other = CRC::sha256 (std::string ("different test string"));
 	const std::string hsh_bad = "abcd";
 
 	DiSig disig ("seed string");
