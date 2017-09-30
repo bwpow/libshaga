@@ -90,7 +90,7 @@ namespace shaga {
 	void Chunk::_reset (void)
 	{
 		_construct ();
-		_multicast = false;
+		_channel = true;
 		_hwid_source = 0;
 		_type = 0;
 		_payload.resize (0);
@@ -131,11 +131,11 @@ namespace shaga {
 		_trust = uint8_to_trustlevel ((val & key_trust_mask) >> key_trust_shift);
 		_ttl = ((val & key_ttl_mask) >> key_ttl_shift);
 
-		if (val & key_multicast_mask) {
-			_multicast = true;
+		if (val & key_channel_mask) {
+			_channel = true;
 		}
 		else {
-			_multicast = false;
+			_channel = false;
 		}
 
 		if (val & key_is_tracert_mask) {
@@ -197,14 +197,14 @@ namespace shaga {
 		_type = type;
 	}
 
-	void Chunk::set_multicast (const bool enabled)
+	void Chunk::set_channel (const bool enabled)
 	{
-		_multicast = enabled;
+		_channel = enabled;
 	}
 
-	bool Chunk::get_multicast (void) const
+	bool Chunk::get_channel (void) const
 	{
-		return _multicast;
+		return _channel;
 	}
 
 	HWID Chunk::get_source_hwid (void) const
@@ -408,8 +408,8 @@ namespace shaga {
 		val |= (static_cast<uint32_t>(_trust) << key_trust_shift) & key_trust_mask;
 		val |= (static_cast<uint32_t>(_ttl) << key_ttl_shift) & key_ttl_mask;
 
-		if (true == _multicast) {
-			val |= key_multicast_mask;
+		if (true == _channel) {
+			val |= key_channel_mask;
 		}
 
 		bool has_payload = false;

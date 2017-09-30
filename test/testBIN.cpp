@@ -10,6 +10,109 @@ All rights reserved.
 
 using namespace shaga;
 
+TEST (BIN, count_trailing_zeros)
+{
+	EXPECT_EQ (BIN::count_trailing_zeros (static_cast<uint8_t> (UINT8_MAX)), 0);
+	EXPECT_EQ (BIN::count_trailing_zeros (static_cast<uint16_t> (UINT16_MAX)), 0);
+	EXPECT_EQ (BIN::count_trailing_zeros (static_cast<uint32_t> (UINT32_MAX)), 0);
+	EXPECT_EQ (BIN::count_trailing_zeros (static_cast<uint64_t> (UINT64_MAX)), 0);
+
+	EXPECT_EQ (BIN::count_trailing_zeros (static_cast<uint8_t> (0)), 8);
+	EXPECT_EQ (BIN::count_trailing_zeros (static_cast<uint16_t> (0)), 16);
+	EXPECT_EQ (BIN::count_trailing_zeros (static_cast<uint32_t> (0)), 32);
+	EXPECT_EQ (BIN::count_trailing_zeros (static_cast<uint64_t> (0)), 64);
+
+	for (size_t i = 0; i < 32; ++i) {
+		EXPECT_EQ (BIN::count_trailing_zeros (static_cast<uint32_t> (1) << i), i);
+	}
+}
+
+TEST (BIN, count_zeros)
+{
+	EXPECT_EQ (BIN::count_zeros (static_cast<uint8_t> (UINT8_MAX)), 0);
+	EXPECT_EQ (BIN::count_zeros (static_cast<uint16_t> (UINT16_MAX)), 0);
+	EXPECT_EQ (BIN::count_zeros (static_cast<uint32_t> (UINT32_MAX)), 0);
+	EXPECT_EQ (BIN::count_zeros (static_cast<uint64_t> (UINT64_MAX)), 0);
+
+	EXPECT_EQ (BIN::count_zeros (static_cast<uint8_t> (0)), 8);
+	EXPECT_EQ (BIN::count_zeros (static_cast<uint16_t> (0)), 16);
+	EXPECT_EQ (BIN::count_zeros (static_cast<uint32_t> (0)), 32);
+	EXPECT_EQ (BIN::count_zeros (static_cast<uint64_t> (0)), 64);
+
+	for (size_t i = 0; i <= UINT16_MAX ; ++i) {
+		size_t cnt = 0;
+		for (size_t j = 0; j < 16; ++j) {
+			if ((i & (1 << j)) == 0) {
+				++cnt;
+			}
+		}
+		EXPECT_EQ (BIN::count_zeros (static_cast<uint16_t> (i)), cnt);
+	}
+}
+
+TEST (BIN, count_trailing_ones)
+{
+	EXPECT_EQ (BIN::count_trailing_ones (static_cast<uint8_t> (UINT8_MAX)), 8);
+	EXPECT_EQ (BIN::count_trailing_ones (static_cast<uint16_t> (UINT16_MAX)), 16);
+	EXPECT_EQ (BIN::count_trailing_ones (static_cast<uint32_t> (UINT32_MAX)), 32);
+	EXPECT_EQ (BIN::count_trailing_ones (static_cast<uint64_t> (UINT64_MAX)), 64);
+
+	EXPECT_EQ (BIN::count_trailing_ones (static_cast<uint8_t> (0)), 0);
+	EXPECT_EQ (BIN::count_trailing_ones (static_cast<uint16_t> (0)), 0);
+	EXPECT_EQ (BIN::count_trailing_ones (static_cast<uint32_t> (0)), 0);
+	EXPECT_EQ (BIN::count_trailing_ones (static_cast<uint64_t> (0)), 0);
+
+	for (size_t i = 0; i < 2; ++i) {
+		EXPECT_EQ (BIN::count_trailing_ones ((static_cast<uint32_t> (0b10) << i) - 1), i + 1);
+	}
+}
+
+TEST (BIN, count_ones)
+{
+	EXPECT_EQ (BIN::count_ones (static_cast<uint8_t> (UINT8_MAX)), 8);
+	EXPECT_EQ (BIN::count_ones (static_cast<uint16_t> (UINT16_MAX)), 16);
+	EXPECT_EQ (BIN::count_ones (static_cast<uint32_t> (UINT32_MAX)), 32);
+	EXPECT_EQ (BIN::count_ones (static_cast<uint64_t> (UINT64_MAX)), 64);
+
+	EXPECT_EQ (BIN::count_ones (static_cast<uint8_t> (0)), 0);
+	EXPECT_EQ (BIN::count_ones (static_cast<uint16_t> (0)), 0);
+	EXPECT_EQ (BIN::count_ones (static_cast<uint32_t> (0)), 0);
+	EXPECT_EQ (BIN::count_ones (static_cast<uint64_t> (0)), 0);
+
+	for (size_t i = 0; i <= UINT16_MAX ; ++i) {
+		size_t cnt = 0;
+		for (size_t j = 0; j < 16; ++j) {
+			if ((i & (1 << j)) != 0) {
+				++cnt;
+			}
+		}
+		EXPECT_EQ (BIN::count_ones (static_cast<uint16_t> (i)), cnt);
+	}
+}
+
+TEST (BIN, check_bit_coverage)
+{
+	EXPECT_TRUE (BIN::check_bit_coverage (UINT8_MAX, UINT8_MAX));
+	EXPECT_TRUE (BIN::check_bit_coverage (UINT8_MAX, UINT8_MAX ^ 0b101, 0b100, 0b001));
+	EXPECT_FALSE (BIN::check_bit_coverage (UINT8_MAX, UINT8_MAX ^ 0b101, 0b100));
+	EXPECT_FALSE (BIN::check_bit_coverage (UINT8_MAX, UINT8_MAX ^ 0b101, 0b100, 0b011));
+
+	EXPECT_TRUE (BIN::check_bit_coverage (UINT16_MAX, UINT16_MAX));
+	EXPECT_TRUE (BIN::check_bit_coverage (UINT16_MAX, UINT16_MAX ^ 0b101, 0b100, 0b001));
+	EXPECT_FALSE (BIN::check_bit_coverage (UINT16_MAX, UINT16_MAX ^ 0b101, 0b100));
+	EXPECT_FALSE (BIN::check_bit_coverage (UINT16_MAX, UINT16_MAX ^ 0b101, 0b100, 0b011));
+
+	EXPECT_TRUE (BIN::check_bit_coverage (UINT32_MAX, UINT32_MAX));
+	EXPECT_TRUE (BIN::check_bit_coverage (UINT32_MAX, UINT32_MAX ^ 0b101, 0b100, 0b001));
+	EXPECT_FALSE (BIN::check_bit_coverage (UINT32_MAX, UINT32_MAX ^ 0b101, 0b100));
+	EXPECT_FALSE (BIN::check_bit_coverage (UINT32_MAX, UINT32_MAX ^ 0b101, 0b100, 0b011));
+
+	EXPECT_TRUE (BIN::check_bit_coverage (UINT64_MAX, UINT64_MAX));
+	EXPECT_TRUE (BIN::check_bit_coverage (UINT64_MAX, UINT64_MAX ^ 0b101, 0b100, 0b001));
+	EXPECT_FALSE (BIN::check_bit_coverage (UINT64_MAX, UINT64_MAX ^ 0b101, 0b100));
+	EXPECT_FALSE (BIN::check_bit_coverage (UINT64_MAX, UINT64_MAX ^ 0b101, 0b100, 0b011));
+}
+
 TEST (BIN, big_endian_from)
 {
 	BIN::endian_detect ();

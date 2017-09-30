@@ -460,7 +460,8 @@ namespace shaga {
 		mbedtls_sha256 (reinterpret_cast<const unsigned char *> (buf), len, output, 0);
 		return std::string (reinterpret_cast<const char *> (output), sze);
 #else
-		(void) plain;
+		(void) buf;
+		(void) len;
 		cThrow ("Digest is not supported in lite version");
 #endif // SHAGA_FULL
 	}
@@ -473,7 +474,8 @@ namespace shaga {
 		mbedtls_sha256 (buf, len, output, 0);
 		return std::string (reinterpret_cast<const char *> (output), sze);
 #else
-		(void) plain;
+		(void) buf;
+		(void) len;
 		cThrow ("Digest is not supported in lite version");
 #endif // SHAGA_FULL
 	}
@@ -486,7 +488,8 @@ namespace shaga {
 		mbedtls_sha512 (reinterpret_cast<const unsigned char *> (buf), len, output, 0);
 		return std::string (reinterpret_cast<const char *> (output), sze);
 #else
-		(void) plain;
+		(void) buf;
+		(void) len;
 		cThrow ("Digest is not supported in lite version");
 #endif // SHAGA_FULL
 	}
@@ -499,7 +502,8 @@ namespace shaga {
 		mbedtls_sha512 (buf, len, output, 0);
 		return std::string (reinterpret_cast<const char *> (output), sze);
 #else
-		(void) plain;
+		(void) buf;
+		(void) len;
 		cThrow ("Digest is not supported in lite version");
 #endif // SHAGA_FULL
 	}

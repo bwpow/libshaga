@@ -304,7 +304,7 @@ namespace shaga
 
 	static_assert (BIN::check_bit_coverage (UINT32_MAX, Chunk::key_type_mask, Chunk::key_is_tracert_mask, Chunk::key_trust_mask,
 					Chunk::key_prio_mask, Chunk::key_ttl_mask, Chunk::key_has_payload_mask, Chunk::key_has_dest_mask,
-					Chunk::key_multicast_mask, Chunk::key_reserved_mask, Chunk::key_highbit_mask), "Chunk key don't add up or overlap");
+					Chunk::key_channel_mask, Chunk::key_reserved_mask, Chunk::key_highbit_mask), "Chunk key don't add up or overlap");
 
 	static_assert ((Chunk::key_type_min < Chunk::key_type_max) && (Chunk::key_type_max <= Chunk::key_type_mask), "Chunk type key doesn't fit mask");
 

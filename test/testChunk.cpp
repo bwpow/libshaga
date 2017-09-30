@@ -154,7 +154,7 @@ TEST (Chunk, tracert)
 	EXPECT_TRUE (d2.tracert_hops_get ().size () == 0);
 }
 
-TEST (Chunk, multicast)
+TEST (Chunk, channel)
 {
 	const size_t sze = 1000;
 	std::vector<Chunk> v1, v2;
@@ -163,22 +163,28 @@ TEST (Chunk, multicast)
 	/* Generate different types of chunks */
 	for (size_t i = 0; i < sze; ++i) {
 		v1.emplace_back (i, "AAAA");
-		v1.back ().set_multicast (false);
+		v1.back ().set_channel (false);
 
 		v1.emplace_back (i, "ZZZZ");
-		v1.back ().set_multicast (false);
+		v1.back ().set_channel (false);
 
 		v1.emplace_back (i, "AAAA");
-		v1.back ().set_multicast (true);
+		if ((i % 2) == 0) {
+			/* Channel == true is default */
+			v1.back ().set_channel (true);
+		}
 
 		v1.emplace_back (i, "ZZZZ", "payload");
-		v1.back ().set_multicast (true);
+		if ((i % 2) == 0) {
+			/* Channel == true is default */
+			v1.back ().set_channel (true);
+		}
 
 		v1.emplace_back (i, "TRAC");
-		v1.back ().set_multicast (false);
+		v1.back ().set_channel (false);
 
 		v1.emplace_back (i, "TRAC");
-		v1.back ().set_multicast (true);
+		v1.back ().set_channel (true);
 	}
 
 	/* Create one long string */
@@ -198,21 +204,21 @@ TEST (Chunk, multicast)
 
 	pos = 0;
 	for (size_t i = 0; i < sze; ++i) {
-		EXPECT_FALSE (v2[pos++].get_multicast ());
-		EXPECT_FALSE (v2[pos++].get_multicast ());
+		EXPECT_FALSE (v2[pos++].get_channel ());
+		EXPECT_FALSE (v2[pos++].get_channel ());
 
-		EXPECT_TRUE (v2[pos++].get_multicast ());
-		EXPECT_TRUE (v2[pos++].get_multicast ());
+		EXPECT_TRUE (v2[pos++].get_channel ());
+		EXPECT_TRUE (v2[pos++].get_channel ());
 
-		EXPECT_FALSE (v2[pos++].get_multicast ());
-		EXPECT_TRUE (v2[pos++].get_multicast ());
+		EXPECT_FALSE (v2[pos++].get_channel ());
+		EXPECT_TRUE (v2[pos++].get_channel ());
 	}
 	EXPECT_TRUE (pos == v2.size ());
 
 	for (size_t i = 0; i < v1.size (); ++i) {
 		EXPECT_TRUE (v1[i].get_source_hwid () == v2[i].get_source_hwid ());
 		EXPECT_TRUE (v1[i].get_num_type () == v2[i].get_num_type ());
-		EXPECT_TRUE (v1[i].get_multicast () == v2[i].get_multicast ());
+		EXPECT_TRUE (v1[i].get_channel () == v2[i].get_channel ());
 		EXPECT_TRUE (v1[i].get_payload () == v2[i].get_payload ());
 	}
 }
