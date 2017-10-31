@@ -14,9 +14,8 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	template <typename T>
-	static T opts_get (const uint8_t &opts, const uint8_t shift, const uint8_t bits, T maxval)
+	static T opts_get (const uint8_t opts, const uint8_t shift, const uint8_t bits)
 	{
-		(void) maxval;
 		return static_cast<T>((opts >> shift) & ((1 << bits) - 1));
 	}
 
@@ -41,7 +40,6 @@ namespace shaga {
 
 	ReDataConfig::ReDataConfig (const ReDataConfig &conf)
 	{
-		_used_coding = conf._used_coding;
 		_used_crypto = conf._used_crypto;
 		_used_digest = conf._used_digest;
 
@@ -50,7 +48,6 @@ namespace shaga {
 
 	ReDataConfig::ReDataConfig (ReDataConfig &&conf)
 	{
-		_used_coding = std::move (conf._used_coding);
 		_used_crypto = std::move (conf._used_crypto);
 		_used_digest = std::move (conf._used_digest);
 
@@ -59,7 +56,6 @@ namespace shaga {
 
 	ReDataConfig& ReDataConfig::operator= (const ReDataConfig &conf)
 	{
-		_used_coding = conf._used_coding;
 		_used_crypto = conf._used_crypto;
 		_used_digest = conf._used_digest;
 
@@ -70,7 +66,6 @@ namespace shaga {
 
 	ReDataConfig& ReDataConfig::operator= (ReDataConfig &&conf)
 	{
-		_used_coding = std::move (conf._used_coding);
 		_used_crypto = std::move (conf._used_crypto);
 		_used_digest = std::move (conf._used_digest);
 
@@ -81,7 +76,6 @@ namespace shaga {
 
 	void ReDataConfig::reset (void)
 	{
-		_used_coding = CODING::BINARY;
 		_used_crypto = CRYPTO::NONE;
 		_used_digest = DIGEST::CRC32;
 #ifdef SHAGA_FULL
@@ -93,31 +87,14 @@ namespace shaga {
 	{
 		size_t mv = offset;
 		try {
-			uint8_t opts;
-			const uint8_t b_high = msg.at (mv); mv++;
-			if ((b_high & 0x80) == 0x80) {
-				opts = b_high;
-			}
-			else {
-				const uint8_t b_low = msg.at (mv); mv++;
-				opts = BIN::byte_from_hex (b_high, b_low);
-			}
+			const uint8_t opts = msg.at (mv); mv++;
 
 			if ((opts & 0x80) != 0x80) {
 				cThrow ("Malformed data");
 			}
 
-			if ((opts & 0x80) != 0x80) {
-				cThrow ("Malformed data");
-			}
-
-			if ((opts & 0x60) == 0x60) {
-				cThrow ("Extended header is not supported yet");
-			}
-
-			set_digest (opts_get (opts, 0, 3, DIGEST::_MAX));
-			set_coding (opts_get (opts, 3, 2, CODING::_MAX));
-			set_crypto (opts_get (opts, 5, 2, CRYPTO::_MAX));
+			set_digest (opts_get<DIGEST> (opts, 0, 4));
+			set_crypto (opts_get<CRYPTO> (opts, 5, 2));
 		}
 		catch (const std::exception &e) {
 			cThrow ("Unable to decode message: %s", e.what());
@@ -139,16 +116,9 @@ namespace shaga {
 		uint8_t opts = 0x80;
 
 		opts_set (opts, 0, _used_digest);
-		opts_set (opts, 3, _used_coding);
 		opts_set (opts, 5, _used_crypto);
 
-		if (_used_coding == CODING::BINARY) {
-			msg.push_back (opts);
-		}
-		else {
-			msg.push_back (BIN::hex_from_byte (opts, true));
-			msg.push_back (BIN::hex_from_byte (opts, false));
-		}
+		msg.push_back (opts);
 	}
 
 	std::string ReDataConfig::encode (void) const
@@ -220,37 +190,6 @@ namespace shaga {
 		return *this;
 	}
 
-	ReDataConfig& ReDataConfig::set_coding (const ReDataConfig::CODING v)
-	{
-		if (v < CODING::_MAX) {
-			_used_coding = v;
-		}
-		else {
-			cThrow ("Unknown coding value");
-		}
-
-		return *this;
-	}
-
-	ReDataConfig& ReDataConfig::set_coding (const std::string &str)
-	{
-		const auto res = CODING_MAP.find (str);
-		if (res == CODING_MAP.end ()) {
-			std::string vals;
-			for (const auto &v : CODING_MAP) {
-				if (vals.empty () == false) {
-					vals.append (" ");
-				}
-				vals.append (v.first);
-			}
-			cThrow ("Unknown coding. Possible values: %s", vals.c_str ());
-		}
-
-		_used_coding = res->second;
-
-		return *this;
-	}
-
 	ReDataConfig::DIGEST ReDataConfig::get_digest (void) const
 	{
 		return _used_digest;
@@ -261,15 +200,13 @@ namespace shaga {
 		return _used_crypto;
 	}
 
-	ReDataConfig::CODING ReDataConfig::get_coding (void) const
-	{
-		return _used_coding;
-	}
-
 	std::string ReDataConfig::get_digest_text (void) const
 	{
 		switch (_used_digest) {
-			case DIGEST::CRC32: return "CRC32";
+			case DIGEST::CRC8: return "CRC-8";
+			case DIGEST::CRC32: return "CRC-32";
+			case DIGEST::CRC64: return "CRC-64";
+
 			case DIGEST::SHA1: return "SHA-1";
 			case DIGEST::SHA256: return "SHA-256";
 			case DIGEST::SHA512: return "SHA-512";
@@ -288,25 +225,12 @@ namespace shaga {
 	{
 		switch (_used_crypto) {
 			case CRYPTO::NONE: return "Plaintext";
-			case CRYPTO::AES128: return "AES-128";
-			case CRYPTO::AES256: return "AES-256";
+			case CRYPTO::AES_128_CBC: return "AES-128-CBC";
+			case CRYPTO::AES_256_CBC: return "AES-256-CBC";
 
 			case CRYPTO::_MAX: break;
 		}
 		cThrow ("Unknown crypto value");
-	}
-
-	std::string ReDataConfig::get_coding_text (void) const
-	{
-		switch (_used_coding) {
-			case CODING::BINARY: return "Binary";
-			case CODING::BASE64: return "Base64";
-			case CODING::BASE64_ALT: return "Base64 (alt table)";
-			case CODING::HEX: return "Hexadecimal";
-
-			case CODING::_MAX: break;
-		}
-		cThrow ("Unknown coding value");
 	}
 
 }

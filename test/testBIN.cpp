@@ -119,7 +119,7 @@ TEST (BIN, big_endian_from)
 
 	uint64_t val = 0;
 	for (size_t i = 0; i < 8; i++) {
-		val |= (('A' + i) << (i * 8));
+		val |= static_cast<uint64_t> ('A' + i) << (i * 8);
 	}
 
 	EXPECT_TRUE (BIN::be_from_uint8 (val & 0xff) == "A");
@@ -137,7 +137,7 @@ TEST (BIN, big_endian_to)
 
 	uint64_t testval = 0;
 	for (size_t i = 0; i < 8; i++) {
-		testval |= (('A' + i) << (i * 8));
+		testval |= static_cast<uint64_t> ('A' + i) << (i * 8);
 	}
 
 	val |= BIN::be_to_uint8 ("A");
@@ -162,7 +162,7 @@ TEST (BIN, little_endian_from)
 
 	uint64_t val = 0;
 	for (size_t i = 0; i < 8; i++) {
-		val |= (('A' + i) << (i * 8));
+		val |= static_cast<uint64_t> ('A' + i) << (i * 8);
 	}
 
 	EXPECT_TRUE (BIN::from_uint8 (val & 0xff) == "A");
@@ -180,7 +180,7 @@ TEST (BIN, little_endian_to)
 
 	uint64_t testval = 0;
 	for (size_t i = 0; i < 8; i++) {
-		testval |= (('A' + i) << (i * 8));
+		testval |= static_cast<uint64_t> ('A' + i) << (i * 8);
 	}
 
 	val |= BIN::to_uint8 ("A");

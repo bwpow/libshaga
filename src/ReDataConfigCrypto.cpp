@@ -20,11 +20,15 @@ namespace shaga {
 	static inline size_t _get_crypto_block_size (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
-			case ReDataConfig::CRYPTO::NONE: return 0;
-			case ReDataConfig::CRYPTO::AES128: return 16;
-			case ReDataConfig::CRYPTO::AES256: return 16;
+			case ReDataConfig::CRYPTO::NONE:
+				return 0;
 
-			case ReDataConfig::CRYPTO::_MAX: break;
+			case ReDataConfig::CRYPTO::AES_128_CBC:
+			case ReDataConfig::CRYPTO::AES_256_CBC:
+				return 16;
+
+			case ReDataConfig::CRYPTO::_MAX:
+				break;
 		}
 		cThrow ("Unsupported crypto");
 	}
@@ -32,11 +36,15 @@ namespace shaga {
 	static inline size_t _get_crypto_iv_size (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
-			case ReDataConfig::CRYPTO::NONE: return 0;
-			case ReDataConfig::CRYPTO::AES128: return 16;
-			case ReDataConfig::CRYPTO::AES256: return 16;
+			case ReDataConfig::CRYPTO::NONE:
+				return 0;
 
-			case ReDataConfig::CRYPTO::_MAX: break;
+			case ReDataConfig::CRYPTO::AES_128_CBC:
+			case ReDataConfig::CRYPTO::AES_256_CBC:
+				return 16;
+
+			case ReDataConfig::CRYPTO::_MAX:
+				break;
 		}
 		cThrow ("Unsupported crypto");
 	}
@@ -44,40 +52,48 @@ namespace shaga {
 	static inline size_t _get_crypto_key_size (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
-			case ReDataConfig::CRYPTO::NONE: return 0;
-			case ReDataConfig::CRYPTO::AES128: return 16;
-			case ReDataConfig::CRYPTO::AES256: return 32;
+			case ReDataConfig::CRYPTO::NONE:
+				return 0;
 
-			case ReDataConfig::CRYPTO::_MAX: break;
+			case ReDataConfig::CRYPTO::AES_128_CBC:
+				return 16;
+
+			case ReDataConfig::CRYPTO::AES_256_CBC:
+				return 32;
+
+			case ReDataConfig::CRYPTO::_MAX:
+				break;
 		}
 		cThrow ("Unsupported crypto");
 	}
 
-	static inline std::string _calc_aes (const std::string &msg, const std::string &iv, const std::string &key, const bool enc, ReDataConfig::CryptoCache &cache)
+	static inline size_t _calc_aes (std::string &out, const char *msg, const size_t msg_size, unsigned char *iv_data, const size_t iv_size, const std::string &key, const bool enc, ReDataConfig::CryptoCache &cache)
 	{
 #ifdef SHAGA_FULL
-		std::call_once(cache._aes_init_flag, [&cache](){ mbedtls_aes_init (&cache._aes_ctx); });
-
-		if ((enc == true ? mbedtls_aes_setkey_enc : mbedtls_aes_setkey_dec)(&cache._aes_ctx, reinterpret_cast<const unsigned char *> (key.data ()), key.size () * 8) != 0) {
-			cThrow ("Wrong crypto key size");
-		}
-
-		if (iv.size () != 16) {
+		if (iv_size != 16) {
 			cThrow ("Wrong crypto IV size");
 		}
 
-		::memcpy (cache.temp_iv, iv.data (), 16);
+		std::call_once(cache._aes_init_flag, [&cache]()->void { mbedtls_aes_init (&cache._aes_ctx); });
 
-		std::string out;
-		out.resize (msg.size ());
-		if (mbedtls_aes_crypt_cbc (&cache._aes_ctx, (enc == true) ? MBEDTLS_AES_ENCRYPT : MBEDTLS_AES_DECRYPT, msg.size (), cache.temp_iv, reinterpret_cast<const unsigned char *> (msg.data ()), reinterpret_cast<unsigned char *> (&out[0])) != 0) {
+		if ((true == enc ? mbedtls_aes_setkey_enc : mbedtls_aes_setkey_dec)(&cache._aes_ctx, reinterpret_cast<const unsigned char *> (key.data ()), key.size () * 8) != 0) {
+			cThrow ("Wrong crypto key size");
+		}
+
+		const size_t orig_out_size = out.size ();
+		out.resize (orig_out_size + msg_size);
+		if (mbedtls_aes_crypt_cbc (&cache._aes_ctx, (true == enc) ? MBEDTLS_AES_ENCRYPT : MBEDTLS_AES_DECRYPT, msg_size, iv_data, reinterpret_cast<const unsigned char *> (msg), reinterpret_cast<unsigned char *> (&out[0]) + orig_out_size) != 0) {
 			cThrow ("Wrong crypto message size");
 		}
 
-		return out;
+		return msg_size;
+
 #else
+		(void) out;
 		(void) msg;
-		(void) iv;
+		(void) msg_size;
+		(void) iv_data;
+		(void) iv_size;
 		(void) key;
 		(void) enc;
 		(void) cache;
@@ -85,39 +101,64 @@ namespace shaga {
 #endif // SHAGA_FULL
 	}
 
-	typedef std::function<std::string(const std::string &, const std::string &, const std::string &, const bool, ReDataConfig::CryptoCache &)> CRYPTO_FUNC;
+	typedef std::function<size_t(std::string &, const char *, const size_t, unsigned char *, const size_t, const std::string &, const bool, ReDataConfig::CryptoCache &)> CRYPTO_FUNC;
 
 	static inline CRYPTO_FUNC _get_crypto_calc_function (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
-			case ReDataConfig::CRYPTO::NONE: break;
+			case ReDataConfig::CRYPTO::NONE:
+				break;
 
-			case ReDataConfig::CRYPTO::AES128: return _calc_aes;
-			case ReDataConfig::CRYPTO::AES256: return _calc_aes;
+			case ReDataConfig::CRYPTO::AES_128_CBC:
+			case ReDataConfig::CRYPTO::AES_256_CBC:
+				return _calc_aes;
 
-			case ReDataConfig::CRYPTO::_MAX: break;
+			case ReDataConfig::CRYPTO::_MAX:
+				break;
 		}
 		cThrow ("Unsupported crypto");
 	}
 
-	static inline std::string _random_string (const size_t sze, ReDataConfig::CryptoCache &cache)
+	static inline void _random_string (unsigned char *str, const size_t sze, ReDataConfig::CryptoCache &cache)
 	{
 #ifdef SHAGA_FULL
-		std::string out (sze, 0);
 		for (size_t i = 0; i < sze; ++i) {
-			out[i] = cache._rand_dist (cache._rand_rng);
+			str[i] = static_cast<unsigned char> (cache._rand_dist (cache._rand_rng));
 		}
-		return out;
 #else
+		(void) str;
 		(void) sze;
 		(void) cache;
 		cThrow ("Cryptography is not supported in lite version");
 #endif // SHAGA_FULL
 	}
 
-	static inline size_t round_up_pow2 (const size_t numToRound, const size_t multiple)
+	static inline size_t _round_up_pow2 (const size_t numToRound, const size_t multiple)
 	{
 		return (numToRound + multiple - 1) & ~(multiple - 1);
+	}
+
+	static inline void _pad_to_blocksize (std::string &str, const size_t block_size, ReDataConfig::CryptoCache &cache)
+	{
+#ifdef SHAGA_FULL
+		/* Store original data size before any modification */
+		const size_t orig_size = str.size ();
+
+		/* Find nearest greater size divisible by block_size. Add 3 bytes at the end that will be used to store original size */
+		const size_t new_size = _round_up_pow2 (str.size () + 3, block_size);
+
+		/* Add needed padding and reserve enough memory for the 3 additional bytes */
+		str.reserve (new_size);
+		str.resize (new_size - 3, static_cast<char> (cache._rand_dist (cache._rand_rng)));
+
+		/* Append last 3 bytes with 24-bit little endian encoded original data size */
+		BIN::from_uint24 (orig_size, str);
+#else
+		(void) str;
+		(void) block_size;
+		(void) cache;
+		cThrow ("Cryptography is not supported in lite version");
+#endif // SHAGA_FULL
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -128,82 +169,99 @@ namespace shaga {
 	//  Public class methods  ///////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	size_t ReDataConfig::calc_crypto_enc (const std::string &plain, std::string &out, const std::string &key)
+	void ReDataConfig::calc_crypto_enc (std::string &plain, std::string &out, const std::string &key)
 	{
+		/* This function is appending data to out, because header might already be present */
+
 		const size_t key_size = _get_crypto_key_size (_used_crypto);
-		if (key_size == 0) {
+
+		if (0 == key_size) {
 			out.append (plain);
-			return plain.size ();
 		}
-		if (key_size != key.size ()) {
+		else if (key_size != key.size ()) {
 			cThrow ("Wrong crypto key size. Expected %" PRIu32 " bits, got %" PRIu32 " bits.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
 		}
+		else {
+			const size_t iv_size = _get_crypto_iv_size (_used_crypto);
+			if (iv_size > MBEDTLS_MAX_IV_LENGTH) {
+				cThrow ("IV size larger than allowed maximum");
+			}
 
-		const size_t orig_size = out.size ();
-		const size_t iv_size = _get_crypto_iv_size (_used_crypto);
-		const size_t block_size = _get_crypto_block_size (_used_crypto);
-		CRYPTO_FUNC func = _get_crypto_calc_function (_used_crypto);
-		const std::string iv = _random_string (iv_size, _cache_crypto);
+			const size_t block_size = _get_crypto_block_size (_used_crypto);
+			CRYPTO_FUNC func = _get_crypto_calc_function (_used_crypto);
 
-		BIN::from_size (plain.size (), out);
-		out.append (iv);
+			/* Create random IV */
+			_random_string (_temp_iv, iv_size, _cache_crypto);
 
-		std::string msg = plain;
-		msg.resize (round_up_pow2 (plain.size (), block_size));
+			/* Add IV to output */
+			out.append (reinterpret_cast<const char *> (_temp_iv), iv_size);
 
-		out.append (func (msg, iv, key, true, _cache_crypto));
+			/* Add padding to plain data to match block size */
+			_pad_to_blocksize (plain, block_size, _cache_crypto);
 
-		return out.size () - orig_size;
+			func (out, plain.data (), plain.size (), _temp_iv, iv_size, key, true, _cache_crypto);
+		}
 	}
 
-	std::string ReDataConfig::calc_crypto_enc (const std::string &plain, const std::string &key)
+	void ReDataConfig::calc_crypto_dec (const std::string &msg, size_t offset, std::string &out, const std::string &key)
 	{
-		std::string out;
-		calc_crypto_enc (plain, out, key);
-		return out;
-	}
+		/* This function is replacing data in out */
 
-	size_t ReDataConfig::calc_crypto_dec (const std::string &msg, std::string &out, const std::string &key)
-	{
 		const size_t key_size = _get_crypto_key_size (_used_crypto);
 
-		if (key_size == 0) {
-			out.append (msg);
-			return msg.size ();
+		if (0 == key_size) {
+			out.assign (msg.substr (offset));
 		}
-
-		if (key_size != key.size ()) {
+		else if (key_size != key.size ()) {
 			cThrow ("Wrong crypto key size. Expected %" PRIu32 " bits, got %" PRIu32 " bits.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
 		}
+		else {
+			/* Get IV size */
+			const size_t iv_size = _get_crypto_iv_size (_used_crypto);
+			if (iv_size > MBEDTLS_MAX_IV_LENGTH) {
+				cThrow ("IV size larger than allowed maximum");
+			}
 
-		const size_t iv_size = _get_crypto_iv_size (_used_crypto);
-		CRYPTO_FUNC func = _get_crypto_calc_function (_used_crypto);
+			const size_t block_size = _get_crypto_block_size (_used_crypto);
+			if (block_size < 3) {
+				cThrow ("Block size smaller than allowed minimum");
+			}
 
-		size_t offset = 0;
+			/* Get crypto function */
+			CRYPTO_FUNC func = _get_crypto_calc_function (_used_crypto);
 
-		const size_t plain_size = BIN::to_size (msg, offset);
+			/* IV + encrypted data are following, but are there enought bytes? */
+			if ((offset + iv_size) > msg.size ()) {
+				cThrow ("Not enough data for IV");
+			}
 
-		const std::string iv = msg.substr (offset, iv_size);
-		if (iv.size () != iv_size) {
-			cThrow ("Not enough data for IV");
+			/* Copy IV from message to temporary memory, that needs to be modifiable */
+			::memcpy (_temp_iv, msg.data () + offset, iv_size);
+
+			/* Move offset to the beginning of the encrypted data */
+			offset += iv_size;
+
+			/* Clear out */
+			out.resize (0);
+
+			size_t decrypted_size = func (out, msg.data () + offset, msg.size () - offset, _temp_iv, iv_size, key, false, _cache_crypto);
+			if (0 == decrypted_size || (decrypted_size % block_size) != 0) {
+				/* Decrypted size cannot be zero and it must be multiplication of block_size */
+				cThrow ("Decryption failed");
+			}
+
+			/* Last 3 bytes contain plain size */
+			decrypted_size -= 3;
+			const size_t plain_size = BIN::to_uint24 (out, decrypted_size);
+
+			/* Plain size cannot be larger than decrypted size minus last 3 bytes */
+			if (plain_size > (decrypted_size - 3)) {
+				cThrow ("Decryption failed");
+			}
+
+			/* Strip padding from the end of decrypted data */
+			out.resize (plain_size);
 		}
-		offset += iv_size;
-
-		const std::string plain = func (msg.substr (offset), iv, key, false, _cache_crypto);
-		if (plain.size () < plain_size) {
-			cThrow ("Decrypted less bytes than expected");
-		}
-
-		out.append (plain.substr (0, plain_size));
-
-		return plain_size;
-	}
-
-	std::string ReDataConfig::calc_crypto_dec (const std::string &msg, const std::string &key)
-	{
-		std::string out;
-		calc_crypto_dec (msg, out, key);
-		return out;
 	}
 
 	size_t ReDataConfig::get_crypto_block_size (void) const

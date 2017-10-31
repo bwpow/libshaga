@@ -17,51 +17,31 @@ namespace shaga {
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/** \brief Decodes the messagge by applying set coding, crypto and digest. Final decoded message is stored in private class variable _plain.
-	 *
-	 * \param msg Encoded message without header to be decoded
-	 * \param offset Offset from the start of the message
-	 */
-	void ReData::decode_message (const std::string &msg, size_t &offset, const size_t key_id)
+	void ReData::decode_message (const std::string &msg, const size_t offset, std::string &plain, const size_t key_id)
 	{
 		try {
-			std::string wmsg;
-
-			switch (_conf.get_coding ()) {
-				case ReDataConfig::CODING::BINARY:
-					wmsg = msg.substr (offset);
-					break;
-
-				case ReDataConfig::CODING::BASE64:
-					BIN::from_base64 (msg.substr (offset), wmsg, false);
-					break;
-
-				case ReDataConfig::CODING::BASE64_ALT:
-					BIN::from_base64 (msg.substr (offset), wmsg, true);
-					break;
-
-				case ReDataConfig::CODING::HEX:
-					BIN::from_hex (msg.substr (offset), wmsg);
-					break;
-
-				default:
-					cThrow ("Unsupported coding");
-			}
-
 			if (_conf.get_crypto () != ReDataConfig::CRYPTO::NONE) {
-				wmsg = _conf.calc_crypto_dec (wmsg, _crypto_keys.at (key_id));
+				/* No need to clear _work_msg, because calc_crypto_dec will clear it for us */
+				_conf.calc_crypto_dec (msg, offset, _work_msg, _crypto_keys.at (key_id));
+			}
+			else {
+				/* No encryption, just copy the data */
+				_work_msg.assign (msg.substr (offset));
 			}
 
 			const size_t digest_size = _conf.get_digest_result_size ();
-			if (wmsg.size () < digest_size) {
-				cThrow ("Message is too short");
+			if (_work_msg.size () < digest_size) {
+				cThrow ("Message is too short, no digest present");
 			}
 
-			_plain.assign (wmsg.substr (digest_size));
+			/* Skip digest and copy the rest of data to plain output */
+			plain.assign (_work_msg.substr (digest_size));
 
-			const std::string digest = wmsg.substr (0, digest_size);
-			const std::string tdigest = _conf.calc_digest (_plain, _hmac_keys.at (key_id));
-			if (tdigest.compare (digest) != 0) {
+			/* Calculate digest from plain data */
+			const std::string tdigest = _conf.calc_digest (plain, _hmac_keys.at (key_id));
+
+			/* Compare digest from message with calculated digest */
+			if (_work_msg.compare (0, digest_size, tdigest) != 0) {
 				cThrow ("Digest check failed");
 			}
 		}
@@ -71,44 +51,21 @@ namespace shaga {
 		catch (...) {
 			throw;
 		}
-
-		offset = msg.size ();
 	}
 
-	/** \brief Encodes the messgae by applying set digest, crypto and coding. Plain message to be encoded is taken from private class variable _plain.
-	 *
-	 * \param msg Appended with encoded message.
-	 */
-	void ReData::encode_message (std::string &msg, const size_t key_id)
+	void ReData::encode_message (const std::string &plain, std::string &msg, const size_t key_id)
 	{
+		/* This function is appending data to msg */
 		try {
-			std::string wmsg;
-
-			wmsg = _conf.calc_digest (_plain, _hmac_keys.at (key_id)) + _plain;
-
 			if (_conf.get_crypto () != ReDataConfig::CRYPTO::NONE) {
-				wmsg = _conf.calc_crypto_enc (wmsg, _crypto_keys.at (key_id));
+				/* Compute digest and append plain data after digest to _work_msg */
+				_work_msg.assign (_conf.calc_digest (plain, _hmac_keys.at (key_id)) + plain);
+				/* Encrypt everything in _work_msg and append to msg */
+				_conf.calc_crypto_enc (_work_msg, msg, _crypto_keys.at (key_id));
 			}
-
-			switch (_conf.get_coding ()) {
-				case ReDataConfig::CODING::BINARY:
-					msg.append (wmsg);
-					break;
-
-				case ReDataConfig::CODING::BASE64:
-					BIN::to_base64 (wmsg, msg, false);
-					break;
-
-				case ReDataConfig::CODING::BASE64_ALT:
-					BIN::to_base64 (wmsg, msg, true);
-					break;
-
-				case ReDataConfig::CODING::HEX:
-					BIN::to_hex (wmsg, msg);
-					break;
-
-				default:
-					cThrow ("Unsupported coding");
+			else {
+				/* Compute digest and append plain data after digest and append everything to msg */
+				msg.append (_conf.calc_digest (plain, _hmac_keys.at (key_id)) + plain);
 			}
 		}
 		catch (const std::exception &e) {
@@ -119,7 +76,6 @@ namespace shaga {
 		}
 	}
 
-
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Public class methods  ///////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -129,25 +85,22 @@ namespace shaga {
 		reset (true);
 	}
 
-	ReData::ReData (const ReDataConfig &conf)
+	ReData::ReData (const ReDataConfig &conf) : ReData ()
 	{
-		reset (true);
 		_conf = conf;
 	}
 
-	ReData::ReData (ReDataConfig &&conf)
+	ReData::ReData (ReDataConfig &&conf) : ReData ()
 	{
-		reset (true);
 		_conf = std::move (conf);
 	}
 
-	void ReData::reset (const bool reset_keys)
+	void ReData::reset (const bool also_reset_keys)
 	{
 		_conf.reset ();
-		_plain.resize (0);
 		_use_config_header = true;
 
-		if (reset_keys) {
+		if (true == also_reset_keys) {
 			_key_id = 0;
 
 			_hmac_keys.clear ();
@@ -158,50 +111,54 @@ namespace shaga {
 		}
 	}
 
-	void ReData::decode (const std::string &msg, size_t &offset, std::function<bool(const ReDataConfig &)> check_callback)
+	void ReData::decode (const std::string &msg, size_t &offset, std::string &out, std::function<bool(const ReDataConfig &)> check_callback)
 	{
-		if (_use_config_header == true) {
+		if (true == _use_config_header) {
 			_conf.decode (msg, offset);
 		}
-		if (check_callback != nullptr) {
+
+		if (nullptr != check_callback) {
 			if (check_callback (_conf) == false) {
 				cThrow ("Checker callback function refused message parameters");
 			}
 		}
+
 		const size_t len = std::max (_hmac_keys.size (), _crypto_keys.size ());
 		for (size_t i = 0; i < len; ++i) {
 			try {
-				decode_message (msg, offset, (i + _key_id) % len);
+				decode_message (msg, offset, out, (i + _key_id) % len);
 				/* If it didn't throw exception, decode is successfull */
 				_key_id = (i + _key_id) % len;
 				break;
 			}
 			catch (...) {
 				if ((i + 1) >= len) {
+					/* This is the last possible key, so rethrow away */
 					throw;
 				}
 			}
 		}
 	}
 
-	void ReData::decode (const std::string &msg, std::function<bool(const ReDataConfig &)> check_callback)
+	void ReData::decode (const std::string &msg, std::string &out, std::function<bool(const ReDataConfig &)> check_callback)
 	{
 		size_t offset = 0;
-		decode (msg, offset, check_callback);
+		decode (msg, offset, out, check_callback);
 	}
 
-	void ReData::encode (std::string &output)
+	void ReData::encode (const std::string &plain, std::string &out)
 	{
 		if (_use_config_header == true) {
-			_conf.encode (output);
+			_conf.encode (out);
 		}
-		encode_message (output, _key_id);
+		encode_message (plain, out, _key_id);
+		//printf ("encode %zu | %s | %s\n", out.size (), _conf.get_digest_text ().c_str (), _conf.get_crypto_text ().c_str ());
 	}
 
-	std::string ReData::encode (void)
+	std::string ReData::encode (const std::string &plain)
 	{
 		std::string out;
-		encode (out);
+		encode (plain, out);
 		return out;
 	}
 
@@ -246,7 +203,7 @@ namespace shaga {
 		}
 	}
 
-	void ReData::set_crypto_key (const COMMON_VECTOR &keys)
+	void ReData::set_crypto_keys (const COMMON_VECTOR &keys)
 	{
 		_crypto_keys = keys;
 		if (_crypto_keys.empty () == true) {
@@ -265,11 +222,6 @@ namespace shaga {
 			cThrow ("Key id out of range");
 		}
 		_key_id = id;
-	}
-
-	std::string& ReData::plaintext (void)
-	{
-		return _plain;
 	}
 
 	bool ReData::config_header_enabled (void) const

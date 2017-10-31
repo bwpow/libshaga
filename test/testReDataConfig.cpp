@@ -13,35 +13,31 @@ using namespace shaga;
 TEST (ReDataConfig, constructors)
 {
 	ReDataConfig first;
-	first.set_digest (ReDataConfig::DIGEST::SHA1).set_crypto (ReDataConfig::CRYPTO::AES256).set_coding (ReDataConfig::CODING::BASE64_ALT);
+	first.set_digest (ReDataConfig::DIGEST::SHA1).set_crypto (ReDataConfig::CRYPTO::AES_256_CBC);
 
 	ReDataConfig second (first);
 
 	EXPECT_TRUE (first.get_digest() == second.get_digest ());
 	EXPECT_TRUE (first.get_crypto() == second.get_crypto ());
-	EXPECT_TRUE (first.get_coding() == second.get_coding ());
 
 	ReDataConfig third (std::move (first));
 
 	EXPECT_TRUE (third.get_digest() == second.get_digest ());
 	EXPECT_TRUE (third.get_crypto() == second.get_crypto ());
-	EXPECT_TRUE (third.get_coding() == second.get_coding ());
 }
 
 TEST (ReDataConfig, assign_operators)
 {
 	ReDataConfig first;
-	first.set_digest (ReDataConfig::DIGEST::SHA1).set_crypto (ReDataConfig::CRYPTO::AES256).set_coding (ReDataConfig::CODING::BASE64_ALT);
+	first.set_digest (ReDataConfig::DIGEST::SHA1).set_crypto (ReDataConfig::CRYPTO::AES_256_CBC);
 
 	ReDataConfig second = first;
 
 	EXPECT_TRUE (first.get_digest() == second.get_digest ());
 	EXPECT_TRUE (first.get_crypto() == second.get_crypto ());
-	EXPECT_TRUE (first.get_coding() == second.get_coding ());
 
 	ReDataConfig third = std::move (first);
 
 	EXPECT_TRUE (third.get_digest() == second.get_digest ());
 	EXPECT_TRUE (third.get_crypto() == second.get_crypto ());
-	EXPECT_TRUE (third.get_coding() == second.get_coding ());
 }

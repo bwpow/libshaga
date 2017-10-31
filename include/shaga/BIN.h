@@ -15,7 +15,7 @@ namespace shaga {
 
 		template <typename T>
 		constexpr size_t _count_trailing_zeros_helper (const T x, const size_t pos, const size_t sze) {
-			return (pos >= sze || (x & (1 << pos)) != 0) ? pos : _count_trailing_zeros_helper (x, pos + 1, sze);
+			return (pos >= sze || (x & (static_cast<T>(1) << pos)) != 0) ? pos : _count_trailing_zeros_helper (x, pos + 1, sze);
 		}
 
 		template <typename T>
@@ -25,7 +25,7 @@ namespace shaga {
 
 		template <typename T>
 		constexpr size_t _count_zeros_helper (const T x, const size_t pos, const size_t sze) {
-			return (pos >= sze) ? 0 : (_count_zeros_helper (x, pos + 1, sze) + (((x & (1 << pos)) == 0) ? 1 : 0));
+			return (pos >= sze) ? 0 : (_count_zeros_helper (x, pos + 1, sze) + (((x & (static_cast<T>(1) << pos)) == 0) ? 1 : 0));
 		}
 
 		template <typename T>
@@ -35,7 +35,7 @@ namespace shaga {
 
 		template <typename T>
 		constexpr size_t _count_trailing_ones_helper (const T x, const size_t pos, const size_t sze) {
-			return (pos >= sze || (x & (1 << pos)) == 0) ? pos : _count_trailing_ones_helper (x, pos + 1, sze);
+			return (pos >= sze || (x & (static_cast<T>(1) << pos)) == 0) ? pos : _count_trailing_ones_helper (x, pos + 1, sze);
 		}
 
 		template <typename T>
@@ -45,7 +45,7 @@ namespace shaga {
 
 		template <typename T>
 		constexpr size_t _count_ones_helper (const T x, const size_t pos, const size_t sze) {
-			return (pos >= sze) ? 0 : (_count_ones_helper (x, pos + 1, sze) + (((x & (1 << pos)) != 0) ? 1 : 0));
+			return (pos >= sze) ? 0 : (_count_ones_helper (x, pos + 1, sze) + (((x & (static_cast<T>(1) << pos)) != 0) ? 1 : 0));
 		}
 
 		template <typename T>

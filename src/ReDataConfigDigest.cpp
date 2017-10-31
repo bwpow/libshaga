@@ -23,7 +23,10 @@ namespace shaga {
 	static inline size_t _get_digest_result_size (const ReDataConfig::DIGEST digest)
 	{
 		switch (digest) {
+			case ReDataConfig::DIGEST::CRC8: return (1);
 			case ReDataConfig::DIGEST::CRC32: return (4);
+			case ReDataConfig::DIGEST::CRC64: return (8);
+
 			case ReDataConfig::DIGEST::SHA1: return (20);
 			case ReDataConfig::DIGEST::SHA256: return (32);
 			case ReDataConfig::DIGEST::SHA512: return (64);
@@ -41,35 +44,66 @@ namespace shaga {
 	static inline size_t _get_digest_hmac_block_size (const ReDataConfig::DIGEST digest)
 	{
 		switch (digest) {
-			case ReDataConfig::DIGEST::CRC32: return 0;
-			case ReDataConfig::DIGEST::SHA1: return 0;
-			case ReDataConfig::DIGEST::SHA256: return 0;
-			case ReDataConfig::DIGEST::SHA512: return 0;
+			case ReDataConfig::DIGEST::CRC8:
+			case ReDataConfig::DIGEST::CRC32:
+			case ReDataConfig::DIGEST::CRC64:
+			case ReDataConfig::DIGEST::SHA1:
+			case ReDataConfig::DIGEST::SHA256:
+			case ReDataConfig::DIGEST::SHA512:
+				return 0;
 
-			case ReDataConfig::DIGEST::HMAC_RIPEMD160: return 64;
-			case ReDataConfig::DIGEST::HMAC_SHA1: return 64;
-			case ReDataConfig::DIGEST::HMAC_SHA256: return 64;
-			case ReDataConfig::DIGEST::HMAC_SHA512: return 128;
+			case ReDataConfig::DIGEST::HMAC_RIPEMD160:
+			case ReDataConfig::DIGEST::HMAC_SHA1:
+			case ReDataConfig::DIGEST::HMAC_SHA256:
+				return 64;
+
+			case ReDataConfig::DIGEST::HMAC_SHA512:
+				return 128;
 
 			case ReDataConfig::DIGEST::_MAX: break;
 		}
 		cThrow ("Unsupported digest");
 	}
 
-	extern const uint_fast32_t _crc32_table[256];
+
+	static inline ReDataConfig::DIGEST_HMAC_TYPE _get_digest_hmac_type (const ReDataConfig::DIGEST digest)
+	{
+		switch (digest) {
+			case ReDataConfig::DIGEST::CRC8:
+			case ReDataConfig::DIGEST::CRC32:
+			case ReDataConfig::DIGEST::CRC64:
+			case ReDataConfig::DIGEST::SHA1:
+			case ReDataConfig::DIGEST::SHA256:
+			case ReDataConfig::DIGEST::SHA512:
+				return ReDataConfig::DIGEST_HMAC_TYPE::NONE;
+
+			case ReDataConfig::DIGEST::HMAC_RIPEMD160:
+			case ReDataConfig::DIGEST::HMAC_SHA1:
+			case ReDataConfig::DIGEST::HMAC_SHA256:
+			case ReDataConfig::DIGEST::HMAC_SHA512:
+				return ReDataConfig::DIGEST_HMAC_TYPE::TYPICAL;
+
+			case ReDataConfig::DIGEST::_MAX: break;
+		}
+		cThrow ("Unsupported digest");
+	}
+
+	static inline std::string _calc_crc8 (const std::string &plain, ReDataConfig::DigestCache &cache)
+	{
+		(void) cache;
+		return BIN::from_uint8 (CRC::crc8 (plain.data (), plain.size ()));
+	}
 
 	static inline std::string _calc_crc32 (const std::string &plain, ReDataConfig::DigestCache &cache)
 	{
 		(void) cache;
-		uint_fast32_t val = UINT32_MAX;
+		return BIN::from_uint32 (CRC::crc32 (plain.data (), plain.size ()));
+	}
 
-		#define UPDC32(octet,crc) crc=(_crc32_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
-		for (std::string::const_iterator iter = plain.begin (); iter != plain.end (); ++iter) {
-			UPDC32 (static_cast<uint_fast32_t> (*iter), val);
-		}
-		#undef UPDC32
-
-		return BIN::from_uint32 (val ^ UINT32_MAX);
+	static inline std::string _calc_crc64 (const std::string &plain, ReDataConfig::DigestCache &cache)
+	{
+		(void) cache;
+		return BIN::from_uint64 (CRC::crc64 (plain.data (), plain.size ()));
 	}
 
 	static inline std::string _calc_sha1 (const std::string &plain, ReDataConfig::DigestCache &cache)
@@ -129,7 +163,10 @@ namespace shaga {
 	static inline HASH_FUNC _get_digest_calc_function (const ReDataConfig::DIGEST digest)
 	{
 		switch (digest) {
+			case ReDataConfig::DIGEST::CRC8: return _calc_crc8;
 			case ReDataConfig::DIGEST::CRC32: return _calc_crc32;
+			case ReDataConfig::DIGEST::CRC64: return _calc_crc64;
+
 			case ReDataConfig::DIGEST::SHA1: return _calc_sha1;
 			case ReDataConfig::DIGEST::SHA256: return _calc_sha256;
 			case ReDataConfig::DIGEST::SHA512: return _calc_sha512;
@@ -155,24 +192,21 @@ namespace shaga {
 #ifdef SHAGA_FULL
 	ReDataConfig::DigestCache::DigestCache () :
 		digest (ReDataConfig::DIGEST::CRC32)
-	{
-	}
+	{ }
 
 	ReDataConfig::DigestCache::DigestCache (const ReDataConfig::DigestCache &other) :
 		digest (other.digest),
 		key (other.key),
 		ipad (other.ipad),
 		opad (other.opad)
-	{
-	}
+	{ }
 
 	ReDataConfig::DigestCache::DigestCache (ReDataConfig::DigestCache &&other) :
 		digest (std::move (other.digest)),
 		key (std::move (other.key)),
 		ipad (std::move (other.ipad)),
 		opad (std::move (other.opad))
-	{
-	}
+	{ }
 
 	ReDataConfig::DigestCache& ReDataConfig::DigestCache::operator= (const ReDataConfig::DigestCache &other)
 	{
@@ -197,10 +231,10 @@ namespace shaga {
 
 	std::string ReDataConfig::calc_digest (const std::string &plain, const std::string &key)
 	{
-		const size_t blocksize = _get_digest_hmac_block_size (_used_digest);
 		HASH_FUNC hfunc = _get_digest_calc_function (_used_digest);
+		const DIGEST_HMAC_TYPE hmac_type = _get_digest_hmac_type (_used_digest);
 
-		if (0 == blocksize) {
+		if (DIGEST_HMAC_TYPE::NONE == hmac_type) {
 			return hfunc (plain, _cache_digest);
 		}
 
@@ -209,27 +243,35 @@ namespace shaga {
 			cThrow ("Key for HMAC is not provided");
 		}
 
-		if (_cache_digest.digest != _used_digest || _cache_digest.key != key) {
-			_cache_digest.digest = _used_digest;
-			_cache_digest.key.assign (key);
+		const size_t blocksize = _get_digest_hmac_block_size (_used_digest);
 
-			_cache_digest.opad = std::string (blocksize, 0x5c);
-			_cache_digest.ipad = std::string (blocksize, 0x36);
+		if (DIGEST_HMAC_TYPE::TYPICAL == hmac_type) {
+			if (_cache_digest.digest != _used_digest || _cache_digest.key != key) {
+				/* Key is not cached, so prepare IPAD and OPAD for HMAC calculation for the new key */
+				_cache_digest.digest = _used_digest;
+				_cache_digest.key.assign (key);
 
-			std::string wkey;
-			if (key.size () > blocksize) {
-				wkey = hfunc (key, _cache_digest);
+				_cache_digest.opad = std::string (blocksize, 0x5c);
+				_cache_digest.ipad = std::string (blocksize, 0x36);
+
+				std::string wkey;
+				if (key.size () > blocksize) {
+					wkey = hfunc (key, _cache_digest);
+				}
+				else {
+					wkey.assign (key);
+				}
+				wkey.resize (blocksize, 0x00);
+
+				BIN::XOR (_cache_digest.ipad, wkey);
+				BIN::XOR (_cache_digest.opad, wkey);
 			}
-			else {
-				wkey.assign (key);
-			}
-			wkey.resize (blocksize, 0x00);
 
-			BIN::XOR (_cache_digest.ipad, wkey);
-			BIN::XOR (_cache_digest.opad, wkey);
+			/* Calculate HFUNC (OPAD + HFUNC (IPAD + TEXT)) */
+			return hfunc (_cache_digest.opad + hfunc (_cache_digest.ipad + plain, _cache_digest), _cache_digest);
 		}
 
-		return hfunc (_cache_digest.opad + hfunc (_cache_digest.ipad + plain, _cache_digest), _cache_digest);
+		cThrow ("Unsupported HMAC type");
 #else
 		(void) key;
 		cThrow ("Digest is not supported in lite version");
@@ -248,7 +290,7 @@ namespace shaga {
 
 	bool ReDataConfig::has_hmac (void) const
 	{
-		return _get_digest_hmac_block_size (_used_digest) > 0;
+		return _get_digest_hmac_type (_used_digest) != DIGEST_HMAC_TYPE::NONE;
 	}
 
 	bool ReDataConfig::has_digest_size_at_least_bits (const size_t limit) const

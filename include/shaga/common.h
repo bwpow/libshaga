@@ -220,7 +220,7 @@ namespace shaga
 	{
 		out.clear ();
 
-		if (offset == buf.size ()) {
+		if (buf.size () == offset) {
 			return;
 		}
 

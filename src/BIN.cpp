@@ -7,32 +7,32 @@ All rights reserved.
 *******************************************************************************/
 #include "shaga/common.h"
 
-#if defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN || \
-	defined(__BIG_ENDIAN__) || \
-	defined(__ARMEB__) || \
-	defined(__THUMBEB__) || \
-	defined(__AARCH64EB__) || \
-	defined(_MIBSEB) || defined(__MIBSEB) || defined(__MIBSEB__)
+#ifdef _WIN32
+	#define BYTE_ORDER __LITTLE_ENDIAN
+#elif !defined BYTE_ORDER
+	#include <endian.h>
+#endif
 
-	#define ENDIAN_IS_BIG if (true) {
-	#define ENDIAN_IS_LITTLE if (false) {
-	#pragma message "shaga::BIN Hardcoded for big endian machine"
+#ifndef LITTLE_ENDIAN
+	#define LITTLE_ENDIAN __LITTLE_ENDIAN
+#endif
 
-#elif defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN || \
-	defined(__LITTLE_ENDIAN__) || \
-	defined(__ARMEL__) || \
-	defined(__THUMBEL__) || \
-	defined(__AARCH64EL__) || \
-	defined(_MIPSEL) || defined(__MIPSEL) || defined(__MIPSEL__)
+#ifndef BIG_ENDIAN
+	#define BIG_ENDIAN __BIG_ENDIAN
+#endif
 
+#if BYTE_ORDER == LITTLE_ENDIAN
 	#define ENDIAN_IS_BIG if (false) {
 	#define ENDIAN_IS_LITTLE if (true) {
 	#pragma message "shaga::BIN Hardcoded for little endian machine"
-
+#elif BYTE_ORDER == BIG_ENDIAN
+	#define ENDIAN_IS_BIG if (true) {
+	#define ENDIAN_IS_LITTLE if (false) {
+	#pragma message "shaga::BIN Hardcoded for big endian machine"
 #else
 	#define ENDIAN_IS_BIG if (Endian::BIG == _endian) {
 	#define ENDIAN_IS_LITTLE if (Endian::LITTLE == _endian) {
-	#pragma message "shaga::BIN Not hardcoded for any endian, can be changed at runtime"
+	#pragma message "shaga::BIN Not hardcoded for any endian, will detect during runtime"
 #endif
 
 #define ENDIAN_ELSE } else {
@@ -1233,7 +1233,6 @@ namespace shaga {
 
 	void BIN::from_size (const size_t sze, std::string &s)
 	{
-
 		if (sze <= 0x7F) {
 			s.push_back (static_cast<uint8_t> (sze));
 		}
@@ -1260,6 +1259,7 @@ namespace shaga {
 	std::string BIN::from_size (const size_t sze)
 	{
 		std::string out;
+		out.reserve (4);
 		from_size (sze, out);
 		return out;
 	}
