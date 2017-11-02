@@ -7,39 +7,17 @@ All rights reserved.
 *******************************************************************************/
 #include "shaga/common.h"
 
-#ifdef _WIN32
-	#define BYTE_ORDER __LITTLE_ENDIAN
-#elif !defined BYTE_ORDER
-	#include <endian.h>
-#endif
-
-#ifndef LITTLE_ENDIAN
-	#define LITTLE_ENDIAN __LITTLE_ENDIAN
-#endif
-
-#ifndef BIG_ENDIAN
-	#define BIG_ENDIAN __BIG_ENDIAN
-#endif
-
 #if BYTE_ORDER == LITTLE_ENDIAN
-	#define ENDIAN_IS_BIG if (false) {
-	#define ENDIAN_IS_LITTLE if (true) {
 	#pragma message "shaga::BIN Hardcoded for little endian machine"
 #elif BYTE_ORDER == BIG_ENDIAN
-	#define ENDIAN_IS_BIG if (true) {
-	#define ENDIAN_IS_LITTLE if (false) {
 	#pragma message "shaga::BIN Hardcoded for big endian machine"
 #else
-	#define ENDIAN_IS_BIG if (Endian::BIG == _endian) {
-	#define ENDIAN_IS_LITTLE if (Endian::LITTLE == _endian) {
 	#pragma message "shaga::BIN Not hardcoded for any endian, will detect during runtime"
 #endif
 
-#define ENDIAN_ELSE } else {
-#define ENDIAN_END }
-
 namespace shaga {
 	namespace BIN {
+		Endian _endian = Endian::UNKNOWN;
 
 		static const uint8_t _b_hex[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
@@ -56,7 +34,6 @@ namespace shaga {
 		static const uint8_t _b_alt64_pad = '-';
 
 		static std::once_flag _endian_once_flag;
-		static Endian _endian;
 
 		static void _endian_detect_once (void)
 		{
@@ -219,6 +196,7 @@ namespace shaga {
 	size_t BIN::to_hex (const std::string &from, std::string &to)
 	{
 		const size_t start_size = to.size ();
+		to.reserve (to.size () + (from.size () << 1));
 
 		for (std::string::const_iterator iter = from.begin (); iter != from.end (); ++iter) {
 			to.push_back (_hex_from_byte (*iter, true));
@@ -238,6 +216,7 @@ namespace shaga {
 	size_t BIN::from_hex (const std::string &from, std::string &to)
 	{
 		const size_t start_size = to.size ();
+		to.reserve (to.size () + (from.size () >> 1));
 
 		for (std::string::const_iterator iter = from.cbegin (); iter != from.cend (); ++iter) {
 			const uint8_t b_high = *iter;
@@ -306,6 +285,8 @@ namespace shaga {
 
 	size_t BIN::to_base64 (const std::string &from, std::string &to, const bool use_alt)
 	{
+		to.reserve (to.size () + (from.size () << 1));
+
 		const size_t start_size = to.size ();
 		std::string::const_iterator fromp = from.cbegin ();
 		uint8_t cbyte;
@@ -369,6 +350,8 @@ namespace shaga {
 
 	size_t BIN::from_base64 (const std::string &from, std::string &to, const bool use_alt)
 	{
+		to.reserve (to.size () + (from.size () >> 1));
+
 		const size_t start_size = to.size ();
 		std::string::const_iterator fromp = from.cbegin ();
 		uint8_t cbyte;
@@ -631,13 +614,13 @@ namespace shaga {
 		}
 		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint16_t v = 0;
+		uint16_t v;
 
 		ENDIAN_IS_BIG
 			::memcpy (&v, _be_le_data, BYTES);
 		ENDIAN_ELSE
-			#define SAT(x) v |= static_cast<uint16_t> (_be_le_data[x])
-			SAT(0) << 8;
+			#define SAT(x) static_cast<uint16_t> (_be_le_data[x])
+			v =	SAT(0) << 8 |
 			SAT(1);
 			#undef SAT
 		ENDIAN_END
@@ -657,11 +640,11 @@ namespace shaga {
 		}
 		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint32_t v = 0;
+		uint32_t v;
 
-		#define SAT(x) v |= static_cast<uint32_t> (_be_le_data[x])
-		SAT(0) << 16;
-		SAT(1) << 8;
+		#define SAT(x) static_cast<uint32_t> (_be_le_data[x])
+		v = SAT(0) << 16 |
+		SAT(1) << 8 |
 		SAT(2);
 		#undef SAT
 
@@ -680,15 +663,15 @@ namespace shaga {
 		}
 		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint32_t v = 0;
+		uint32_t v;
 
 		ENDIAN_IS_BIG
 			::memcpy (&v, _be_le_data, BYTES);
 		ENDIAN_ELSE
-			#define SAT(x) v |= static_cast<uint32_t> (_be_le_data[x])
-			SAT(0) << 24;
-			SAT(1) << 16;
-			SAT(2) << 8;
+			#define SAT(x) static_cast<uint32_t> (_be_le_data[x])
+			v = SAT(0) << 24 |
+			SAT(1) << 16 |
+			SAT(2) << 8 |
 			SAT(3);
 			#undef SAT
 		ENDIAN_END
@@ -708,20 +691,20 @@ namespace shaga {
 		}
 		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint64_t v = 0;
+		uint64_t v;
 
 		ENDIAN_IS_BIG
 			::memcpy (&v, _be_le_data, BYTES);
 		ENDIAN_ELSE
-			#define SAT(x) v |= static_cast<uint64_t> (_be_le_data[x])
-			SAT(0) << 56;
-			SAT(1) << 48;
-			SAT(2) << 40;
-			SAT(3) << 32;
+			#define SAT(x) static_cast<uint64_t> (_be_le_data[x])
+			v = SAT(0) << 56 |
+			SAT(1) << 48 |
+			SAT(2) << 40 |
+			SAT(3) << 32 |
 
-			SAT(4) << 24;
-			SAT(5) << 16;
-			SAT(6) << 8;
+			SAT(4) << 24 |
+			SAT(5) << 16 |
+			SAT(6) << 8 |
 			SAT(7);
 			#undef SAT
 		ENDIAN_END
@@ -1010,13 +993,13 @@ namespace shaga {
 		}
 		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint16_t v = 0;
+		uint16_t v;
 
 		ENDIAN_IS_LITTLE
 			::memcpy (&v, _be_le_data, BYTES);
 		ENDIAN_ELSE
-			#define SAT(x) v |= static_cast<uint16_t> (_be_le_data[x])
-			SAT(0);
+			#define SAT(x) static_cast<uint16_t> (_be_le_data[x])
+			v = SAT(0) |
 			SAT(1) << 8;
 			#undef SAT
 		ENDIAN_END
@@ -1036,11 +1019,11 @@ namespace shaga {
 		}
 		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint32_t v = 0;
+		uint32_t v;
 
-		#define SAT(x) v |= static_cast<uint32_t> (_be_le_data[x])
-		SAT(0);
-		SAT(1) << 8;
+		#define SAT(x) static_cast<uint32_t> (_be_le_data[x])
+		v = SAT(0) |
+		SAT(1) << 8 |
 		SAT(2) << 16;
 		#undef SAT
 
@@ -1059,15 +1042,15 @@ namespace shaga {
 		}
 		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint32_t v = 0;
+		uint32_t v;
 
 		ENDIAN_IS_LITTLE
 			::memcpy (&v, _be_le_data, BYTES);
 		ENDIAN_ELSE
-			#define SAT(x) v |= static_cast<uint32_t> (_be_le_data[x])
-			SAT(0);
-			SAT(1) << 8;
-			SAT(2) << 16;
+			#define SAT(x) static_cast<uint32_t> (_be_le_data[x])
+			v = SAT(0) |
+			SAT(1) << 8 |
+			SAT(2) << 16 |
 			SAT(3) << 24;
 			#undef SAT
 		ENDIAN_END
@@ -1087,20 +1070,20 @@ namespace shaga {
 		}
 		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint64_t v = 0;
+		uint64_t v;
 
 		ENDIAN_IS_LITTLE
 			::memcpy (&v, _be_le_data, BYTES);
 		ENDIAN_ELSE
-			#define SAT(x) v |= static_cast<uint64_t> (_be_le_data[x])
-			SAT(0);
-			SAT(1) << 8;
-			SAT(2) << 16;
-			SAT(3) << 24;
+			#define SAT(x) static_cast<uint64_t> (_be_le_data[x])
+			v = SAT(0) |
+			SAT(1) << 8 |
+			SAT(2) << 16 |
+			SAT(3) << 24 |
 
-			SAT(4) << 32;
-			SAT(5) << 40;
-			SAT(6) << 48;
+			SAT(4) << 32 |
+			SAT(5) << 40 |
+			SAT(6) << 48 |
 			SAT(7) << 56;
 			#undef SAT
 		ENDIAN_END

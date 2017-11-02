@@ -216,6 +216,11 @@ namespace shaga {
 			case DIGEST::HMAC_SHA256: return "HMAC-SHA-256";
 			case DIGEST::HMAC_SHA512: return "HMAC-SHA-512";
 
+			case DIGEST::SIPHASH24_64: return "SipHash-2-4-64";
+			case DIGEST::SIPHASH24_128: return "SipHash-2-4-128";
+			case DIGEST::SIPHASH48_64: return "SipHash-4-8-64";
+			case DIGEST::SIPHASH48_128: return "SipHash-4-8-128";
+
 			case DIGEST::_MAX: break;
 		}
 		cThrow ("Unknown digest value");

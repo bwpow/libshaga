@@ -179,7 +179,7 @@ namespace shaga {
 			out.append (plain);
 		}
 		else if (key_size != key.size ()) {
-			cThrow ("Wrong crypto key size. Expected %" PRIu32 " bits, got %" PRIu32 " bits.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
+			cThrow ("Wrong crypto key size. Expected %" PRIu32 " bytes, got %" PRIu32 " bytes.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
 		}
 		else {
 			const size_t iv_size = _get_crypto_iv_size (_used_crypto);
@@ -213,7 +213,7 @@ namespace shaga {
 			out.assign (msg.substr (offset));
 		}
 		else if (key_size != key.size ()) {
-			cThrow ("Wrong crypto key size. Expected %" PRIu32 " bits, got %" PRIu32 " bits.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
+			cThrow ("Wrong crypto key size. Expected %" PRIu32 " bytes, got %" PRIu32 " bytes.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
 		}
 		else {
 			/* Get IV size */

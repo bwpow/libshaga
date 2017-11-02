@@ -64,6 +64,7 @@ namespace shaga {
 		}
 
 		enum class Endian { UNKNOWN, LITTLE, BIG };
+		extern Endian _endian;
 
 		void endian_detect (void);
 		bool is_little_endian (void);

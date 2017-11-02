@@ -11,6 +11,7 @@ All rights reserved.
 int main(int argc, char **argv)
 {
 	::testing::InitGoogleTest(&argc, argv);
+	shaga::BIN::endian_detect ();
 	return RUN_ALL_TESTS();
 }
 

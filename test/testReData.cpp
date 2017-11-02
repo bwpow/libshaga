@@ -61,7 +61,7 @@ static void _redata_test (const shaga::ReDataConfig &config, const bool use_head
 		rd2.set_config (config);
 	}
 
-	const int test_str_sizes[] = {0, 1, 2, 3, 5, 16, 21, 25, 28, 31, 32, 60, 64, 65, 100, 1000, 10000, 65536, -1};
+	const int test_str_sizes[] = {0, 1, 2, 3, 5, 16, 21, 25, 28, 31, 32, 60, 64, 65, 100, 1000, 10000, 0x100, 0x10000, -1};
 
 	for (size_t i = 0; test_str_sizes[i] >= 0; ++i) {
 		rd1.set_key_id (0);
@@ -75,7 +75,7 @@ static void _redata_test (const shaga::ReDataConfig &config, const bool use_head
 		std::string plain2;
 		ASSERT_NO_THROW (rd2.decode (msg, plain2));
 
-		EXPECT_EQ (plain, plain2);
+		EXPECT_TRUE (plain.compare (plain2) == 0);
 
 		/* Expect first or the last key has to be used, depending on whether encryption and HMAC is used */
 		EXPECT_TRUE (rd2.get_key_id () == 0 || rd2.get_key_id () == 10);

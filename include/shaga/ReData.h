@@ -26,6 +26,7 @@ namespace shaga {
 			enum class DIGEST_HMAC_TYPE {
 				NONE,
 				TYPICAL,
+				SIPHASH,
 				_MAX
 			};
 
@@ -42,6 +43,11 @@ namespace shaga {
 				HMAC_SHA1,
 				HMAC_SHA256,
 				HMAC_SHA512,
+
+				SIPHASH24_64,
+				SIPHASH24_128,
+				SIPHASH48_64,
+				SIPHASH48_128,
 
 				_MAX
 			};
@@ -75,7 +81,23 @@ namespace shaga {
 				{"hmac-sha-256", DIGEST::HMAC_SHA256},
 
 				{"hmac-sha512", DIGEST::HMAC_SHA512},
-				{"hmac-sha-512", DIGEST::HMAC_SHA512}
+				{"hmac-sha-512", DIGEST::HMAC_SHA512},
+
+				{"siphash24", DIGEST::SIPHASH24_64},
+				{"siphash24-64", DIGEST::SIPHASH24_64},
+				{"siphash-2-4", DIGEST::SIPHASH24_64},
+				{"siphash-2-4-64", DIGEST::SIPHASH24_64},
+
+				{"siphash24-128", DIGEST::SIPHASH24_128},
+				{"siphash-2-4-128", DIGEST::SIPHASH24_128},
+
+				{"siphash48", DIGEST::SIPHASH48_64},
+				{"siphash48-64", DIGEST::SIPHASH48_64},
+				{"siphash-4-8", DIGEST::SIPHASH48_64},
+				{"siphash-4-8-64", DIGEST::SIPHASH48_64},
+
+				{"siphash48-128", DIGEST::SIPHASH48_128},
+				{"siphash-4-8-128", DIGEST::SIPHASH48_128},
 			};
 
 			enum class CRYPTO {
@@ -110,6 +132,9 @@ namespace shaga {
 				CryptoCache (const CryptoCache &) = delete;
 				CryptoCache (CryptoCache &&) = delete;
 			};
+#else
+			struct CryptoCache { };
+#endif // SHAGA_FULL
 
 			struct DigestCache {
 				unsigned char output[64];
@@ -118,16 +143,15 @@ namespace shaga {
 				std::string ipad;
 				std::string opad;
 
+				uint64_t siphash_k0;
+				uint64_t siphash_k1;
+
 				DigestCache ();
 				DigestCache (const DigestCache &other);
 				DigestCache (DigestCache &&other);
 				DigestCache& operator= (const DigestCache &other);
 				DigestCache& operator= (DigestCache &&other);
 			};
-#else
-			struct CryptoCache { };
-			struct DigestCache { };
-#endif // SHAGA_FULL
 
 		private:
 			DIGEST _used_digest;

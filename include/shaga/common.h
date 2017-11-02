@@ -114,6 +114,35 @@ All rights reserved.
 	#define UINT64_C(c) (c ## ULL)
 #endif
 
+/* Detect endian */
+#ifdef _WIN32
+	#define BYTE_ORDER __LITTLE_ENDIAN
+#elif !defined BYTE_ORDER
+	#include <endian.h>
+#endif
+
+#ifndef LITTLE_ENDIAN
+	#define LITTLE_ENDIAN __LITTLE_ENDIAN
+#endif
+
+#ifndef BIG_ENDIAN
+	#define BIG_ENDIAN __BIG_ENDIAN
+#endif
+
+#if BYTE_ORDER == LITTLE_ENDIAN
+	#define ENDIAN_IS_BIG if (false) {
+	#define ENDIAN_IS_LITTLE if (true) {
+#elif BYTE_ORDER == BIG_ENDIAN
+	#define ENDIAN_IS_BIG if (true) {
+	#define ENDIAN_IS_LITTLE if (false) {
+#else
+	#define ENDIAN_IS_BIG if (BIN::Endian::BIG == BIN::_endian) {
+	#define ENDIAN_IS_LITTLE if (BIN::Endian::LITTLE == BIN::_endian) {
+#endif
+
+#define ENDIAN_ELSE } else {
+#define ENDIAN_END }
+
 namespace shaga
 {
 	typedef std::vector< std::string > COMMON_VECTOR;

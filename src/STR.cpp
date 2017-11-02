@@ -295,7 +295,6 @@ namespace shaga {
 		}
 	}
 
-
 	COMMON_VECTOR STR::split_to_vector (const std::string &what, const std::string &delimiter)
 	{
 		COMMON_VECTOR out;
