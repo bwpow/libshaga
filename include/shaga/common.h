@@ -30,6 +30,15 @@ All rights reserved.
 
 #define _FILE_OFFSET_BITS 64
 
+/* If you want to use single thread optimalizations during compile time, define SHAGA_SINGLE_THREAD before including shaga*.h */
+#ifdef SHAGA_THREADING
+	#undef SHAGA_THREADING
+#endif // SHAGA_THREADING
+
+#ifndef SHAGA_SINGLE_THREAD
+	#define SHAGA_THREADING
+#endif // SHAGA_SINGLE_THREAD
+
 /* Detection based upon: http://nadeausoftware.com/articles/2012/01/c_c_tip_how_use_compiler_predefined_macros_detect_operating_system */
 #undef OS_WIN
 #undef OS_LINUX
@@ -93,13 +102,17 @@ All rights reserved.
 #include <sstream>
 #include <iomanip>
 #include <functional>
+#include <memory>
 
 #include <random>
-#include <thread>
-#include <mutex>
-#include <atomic>
 #include <chrono>
-#include <condition_variable>
+
+#ifdef SHAGA_THREADING
+	#include <thread>
+	#include <mutex>
+	#include <atomic>
+	#include <condition_variable>
+#endif // SHAGA_THREADING
 
 #ifdef OS_LINUX
 	#include <sys/eventfd.h>
@@ -168,9 +181,6 @@ namespace shaga
 	#define cLogThrow(format, ...) throw shaga::CommonException(true, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
 	#define cThrow(format, ...) throw shaga::CommonException(false, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
 
-	//#define cEnter P::debug_printf ("FUNC ENTER %s line %d", __PRETTY_FUNCTION__, __LINE__)
-	//#define cLeave P::debug_printf ("FUNC LEAVE %s line %d", __PRETTY_FUNCTION__, __LINE__)
-
 	void add_at_exit_callback (std::function<void (void)> func);
 	[[noreturn]] void exit (const int rcode, const char *fmt, ...);
 	[[noreturn]] void exit (const char *fmt, ...);
@@ -186,13 +196,31 @@ namespace shaga
 	void _try_to_shutdown (const char *file, const char *funct, const int line);
 	bool is_shutting_down (void);
 
-	#define RELOG_REGISTER
+	/* Set in shaga.cpp to constant value depending on compile-time settings */
+	extern const bool _shaga_compiled_with_threading;
+
+	/* Call from main to check if compile time settings match runtime settings */
+	inline void shaga_check_threading (void)
+	{
+		#ifdef SHAGA_THREADING
+			if (false == _shaga_compiled_with_threading) {
+				cThrow ("Shaga threading mismatch, compiled without threading and used with threading");
+			}
+		#else
+			if (true == _shaga_compiled_with_threading) {
+				cThrow ("Shaga threading mismatch, compiled with threading and used without threading");
+			}
+		#endif // SHAGA_THREADING
+	}
+
+	#define ANLOG_REGISTER
 
 	#define SHAGA_MAIN(a) int main (int argc, char **argv) try { \
 		(void) argc; \
 		(void) argv; \
+		shaga_check_threading (); \
 		BIN::endian_detect (); \
-		RELOG_REGISTER; \
+		ANLOG_REGISTER; \
 		a \
 		shaga::exit (); \
 		cThrow ("Fell over the edge of the world"); \

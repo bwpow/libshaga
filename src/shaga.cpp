@@ -7,11 +7,25 @@ All rights reserved.
 *******************************************************************************/
 #include "shaga/common.h"
 
-#include <atomic>
-#include <mutex>
 #include <cstdarg>
 
 namespace shaga {
+
+	#ifdef SHAGA_THREADING
+		#pragma message "Threading support: YES"
+		const bool _shaga_compiled_with_threading {true};
+	#else
+		#pragma message "Threading support: NO"
+		const bool _shaga_compiled_with_threading {false};
+	#endif // SHAGA_THREADING
+
+	#if BYTE_ORDER == LITTLE_ENDIAN
+		#pragma message "Endian: LITTLE"
+	#elif BYTE_ORDER == BIG_ENDIAN
+		#pragma message "Endian: BIG"
+	#else
+		#pragma message "Endian: Runtime detection"
+	#endif
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Most used templates  ////////////////////////////////////////////////////////////////////////////////////////
@@ -32,8 +46,10 @@ namespace shaga {
 	//  Static definitions  /////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	static std::mutex _callback_mutex;
-	static std::recursive_mutex _exit_mutex;
+	#ifdef SHAGA_THREADING
+		static std::mutex _callback_mutex;
+		static std::recursive_mutex _exit_mutex;
+	#endif // SHAGA_THREADING
 
 	typedef std::list<std::function<void (void)>> CALLBACK_LIST;
 
@@ -41,8 +57,13 @@ namespace shaga {
 	static CALLBACK_LIST _at_exit_callback_list;
 	static FINAL_CALL _final_call = nullptr;
 
-	static std::atomic<bool> _is_shutdown (false);
-	static std::atomic<bool> _is_in_exit (false);
+	#ifdef SHAGA_THREADING
+		static std::atomic<bool> _is_shutdown (false);
+		static std::atomic<bool> _is_in_exit (false);
+	#else
+		volatile bool _is_shutdown {false};
+		bool _is_in_exit {false};
+	#endif // SHAGA_THREADING
 
 	CommonException::CommonException (const bool log, const char *str_file, const char *str_function, int str_line, const char *fmt, ...) throw ()
 	{
@@ -78,25 +99,37 @@ namespace shaga {
 
 	void add_at_exit_callback (std::function<void (void)> func)
 	{
-		std::lock_guard<std::mutex> lock(_callback_mutex);
+		#ifdef SHAGA_THREADING
+			std::lock_guard<std::mutex> lock(_callback_mutex);
+		#endif // SHAGA_THREADING
 		_at_exit_callback_list.push_back (func);
 	}
 
 	[[noreturn]] static void _exit (const char *text, const int rcode)
 	{
-		std::unique_lock<std::recursive_mutex> exitlck (_exit_mutex);
+		#ifdef SHAGA_THREADING
+			std::unique_lock<std::recursive_mutex> exitlck (_exit_mutex);
+		#endif // SHAGA_THREADING
 
+		#ifdef SHAGA_THREADING
 		if (_is_in_exit.exchange (true) == true) {
+		#else
+		if (std::exchange (_is_in_exit, true) == true) {
+		#endif // SHAGA_THREADING
 			/* This function is already being executed, clearly from one of the callback functions. */
 			P::printf ("FATAL ERROR: Exit executed recursively from callback function.");
 			fprintf (stderr, "FATAL ERROR: Exit executed recursively from callback function.\n");
 			::exit (EXIT_FAILURE);
 		}
 
-		std::unique_lock<std::mutex> lck(_callback_mutex);
+		#ifdef SHAGA_THREADING
+			std::unique_lock<std::mutex> lck(_callback_mutex);
+		#endif // SHAGA_THREADING
 		CALLBACK_LIST lst;
 		lst.swap (_at_exit_callback_list);
-		lck.unlock ();
+		#ifdef SHAGA_THREADING
+			lck.unlock ();
+		#endif // SHAGA_THREADING
 
 		for (const auto &func : lst) {
 			if (func != nullptr) {
@@ -160,19 +193,29 @@ namespace shaga {
 
 	void add_at_shutdown_callback (std::function<void (void)> func)
 	{
-		std::lock_guard<std::mutex> lock(_callback_mutex);
+		#ifdef SHAGA_THREADING
+			std::lock_guard<std::mutex> lock(_callback_mutex);
+		#endif // SHAGA_THREADING
 		_at_shutdown_callback_list.push_back (func);
 	}
 
 	void _try_to_shutdown (const char *file, const char *funct, const int line)
 	{
+		#ifdef SHAGA_THREADING
 		if (_is_shutdown.exchange (true) == false) {
+		#else
+		if (std::exchange (_is_shutdown, true) == false) {
+		#endif // SHAGA_THREADING
 			P::printf ("Shutdown requested from %s: %s line %d", file, funct, line);
 
-			std::unique_lock<std::mutex> lck(_callback_mutex);
+			#ifdef SHAGA_THREADING
+				std::unique_lock<std::mutex> lck(_callback_mutex);
+			#endif // SHAGA_THREADING
 			CALLBACK_LIST lst;
 			lst.swap (_at_shutdown_callback_list);
-			lck.unlock ();
+			#ifdef SHAGA_THREADING
+				lck.unlock ();
+			#endif // SHAGA_THREADING
 
 			for (const auto &func : lst) {
 				if (func != nullptr) {
@@ -184,7 +227,11 @@ namespace shaga {
 
 	bool is_shutting_down (void)
 	{
-		return _is_shutdown.load ();
+		#ifdef SHAGA_THREADING
+			return _is_shutdown.load ();
+		#else
+			return _is_shutdown;
+		#endif // SHAGA_THREADING
 	}
 
 	int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime)

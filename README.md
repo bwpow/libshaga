@@ -13,6 +13,7 @@ Basic fields covered by this library:
 * Digital signatures (using [mbed TLS](https://tls.mbed.org/))
 * CRC
 * Single producer single consumer queues
+* Possibility to compile without multithreading
 
 There is a full and lite version of the library. Lite version should compile without additional libraries. Full version requires [mbed TLS](https://tls.mbed.org/).
 
@@ -23,6 +24,11 @@ will hopefully allow dropping of some outdated functions.
 
 License was changed in 2014 to the [BSD license](LICENSE.md). It also contains code downloaded from the internet. All sources are hopefully documented and mentioned in header
 files and also in the [license document](LICENSE.md).
+
+## Single-thread vs. multi-thread version
+You can compile using single-thread and/or multi-thread version of the library. This possibility was added to speed-up execution of applications when multi-threading
+is not required. Using atomic operations and mutex locking is quite expensive on some operating systems and architectures. By providing single-thread version of the library,
+the programmer may avoid using atomics and mutexes altogether and compile without pthread.
 
 ## Current progress and future development
 I am currently working on unit tests using [Google Test](https://github.com/google/googletest) that were missing in the original library.
@@ -38,6 +44,6 @@ I was basically listening to their music exclusively while working on the code.
 
 ## Contact
 You can contact me using email address skupka@sageteam.eu or visit:
-* [Homepage](http://www.bwpow.eu/)
+* [Homepage](https://www.bwpow.eu/)
 * [Facebook profile](https://www.facebook.com/bwpow)
 * [Linkedin profile](https://www.linkedin.com/in/kupka)

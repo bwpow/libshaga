@@ -126,7 +126,11 @@ namespace shaga {
 				std::uniform_int_distribution<int> _rand_dist;
 
 				mbedtls_aes_context _aes_ctx;
-				std::once_flag _aes_init_flag;
+				#ifdef SHAGA_THREADING
+					std::once_flag _aes_init_flag;
+				#else
+					bool _aes_init_flag {false};
+				#endif // SHAGA_THREADING
 
 				CryptoCache () : _rand_rng(_rand_rd ()), _rand_dist (0, UINT8_MAX) {}
 				CryptoCache (const CryptoCache &) = delete;
@@ -190,6 +194,8 @@ namespace shaga {
 			std::string get_digest_text (void) const;
 			std::string get_crypto_text (void) const;
 
+			std::string describe (void) const;
+
 			/* ReDataConfigDigest.cpp */
 			std::string calc_digest (const std::string &plain, const std::string &key);
 
@@ -243,8 +249,8 @@ namespace shaga {
 			void set_hmac_key (const std::string &key);
 			void set_crypto_key (const std::string &key);
 
-			void set_hmac_keys (const COMMON_VECTOR &keys);
-			void set_crypto_keys (const COMMON_VECTOR &keys);
+			void set_hmac_keys (const COMMON_VECTOR &keys, const size_t key_id = SIZE_MAX);
+			void set_crypto_keys (const COMMON_VECTOR &keys, const size_t key_id = SIZE_MAX);
 
 			size_t get_key_id (void) const;
 			void set_key_id (const size_t id);

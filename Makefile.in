@@ -4,43 +4,71 @@ TESTSRCDIR = test
 LIBSOURCES = $(wildcard $(SRCDIR)/*.cpp)
 TESTSOURCES = $(wildcard $(TESTSRCDIR)/*.cpp)
 
-RELEASEDIR = $(OBJDIR)/release
-RELEASELIB = $(LIBDIR)/libshaga.a
-RELEASEOBJS = $(addprefix $(RELEASEDIR)/, $(LIBSOURCES:.cpp=.o))
-RELEASEFLAGS = -s -O2 -Iinclude -include shaga.h
+MT_RELEASEDIR = $(OBJDIR)/release_mt
+MT_RELEASELIB = $(LIBDIR)/libshaga.a
+MT_RELEASEOBJS = $(addprefix $(MT_RELEASEDIR)/, $(LIBSOURCES:.cpp=.o))
+MT_RELEASEFLAGS = -s -O2 -Iinclude -include shaga.h
 
-LITEDIR = $(OBJDIR)/lite
-LITELIB = $(LIBDIR)/libshagalite.a
-LITEOBJS = $(addprefix $(LITEDIR)/, $(LIBSOURCES:.cpp=.o))
-LITEFLAGS = -s -O2 -Iinclude -include shagalite.h
+ST_RELEASEDIR = $(OBJDIR)/release_st
+ST_RELEASELIB = $(LIBDIR)/libshaga_st.a
+ST_RELEASEOBJS = $(addprefix $(ST_RELEASEDIR)/, $(LIBSOURCES:.cpp=.o))
+ST_RELEASEFLAGS = -DSHAGA_SINGLE_THREAD -s -O2 -Iinclude -include shaga.h
 
-DEBUGDIR = $(OBJDIR)/debug
-DEBUGLIB = $(LIBDIR)/libshaga_debug.a
-DEBUGOBJS = $(addprefix $(DEBUGDIR)/, $(LIBSOURCES:.cpp=.o))
-DEBUGFLAGS = -g -O2 -Iinclude -include shaga.h
+MT_LITEDIR = $(OBJDIR)/lite_mt
+MT_LITELIB = $(LIBDIR)/libshagalite.a
+MT_LITEOBJS = $(addprefix $(MT_LITEDIR)/, $(LIBSOURCES:.cpp=.o))
+MT_LITEFLAGS = -s -O2 -Iinclude -include shagalite.h
 
-TESTDIR = $(OBJDIR)/test
-TESTBIN = $(BINDIR)/test.$(BINEXT)
-TESTOBJS = $(addprefix $(TESTDIR)/, $(TESTSOURCES:.cpp=.o))
-TESTFLAGS = -g -O2 -Iinclude
-TESTLIBS = -lgtest
+ST_LITEDIR = $(OBJDIR)/lite_st
+ST_LITELIB = $(LIBDIR)/libshagalite_st.a
+ST_LITEOBJS = $(addprefix $(ST_LITEDIR)/, $(LIBSOURCES:.cpp=.o))
+ST_LITEFLAGS = -DSHAGA_SINGLE_THREAD -s -O2 -Iinclude -include shagalite.h
 
-.PHONY: all lib prep clean distclean remake debug release lite test install
+MT_DEBUGDIR = $(OBJDIR)/debug_mt
+MT_DEBUGLIB = $(LIBDIR)/libshaga_debug.a
+MT_DEBUGOBJS = $(addprefix $(MT_DEBUGDIR)/, $(LIBSOURCES:.cpp=.o))
+MT_DEBUGFLAGS = -g -O2 -Iinclude -include shaga.h
 
-all: release lite debug test
+ST_DEBUGDIR = $(OBJDIR)/debug_st
+ST_DEBUGLIB = $(LIBDIR)/libshaga_st_debug.a
+ST_DEBUGOBJS = $(addprefix $(ST_DEBUGDIR)/, $(LIBSOURCES:.cpp=.o))
+ST_DEBUGFLAGS = -DSHAGA_SINGLE_THREAD -g -O2 -Iinclude -include shaga.h
 
-lib: release lite
+MT_TESTDIR = $(OBJDIR)/test_mt
+MT_TESTBIN = $(BINDIR)/test_mt.$(BINEXT)
+MT_TESTOBJS = $(addprefix $(MT_TESTDIR)/, $(TESTSOURCES:.cpp=.o))
+MT_TESTFLAGS = -g -O2 -Iinclude
+MT_TESTLIBS = -lgtest
+
+ST_TESTDIR = $(OBJDIR)/test_st
+ST_TESTBIN = $(BINDIR)/test_st.$(BINEXT)
+ST_TESTOBJS = $(addprefix $(ST_TESTDIR)/, $(TESTSOURCES:.cpp=.o))
+ST_TESTFLAGS = -DSHAGA_SINGLE_THREAD -g -O2 -Iinclude
+ST_TESTLIBS = -lgtest
+
+.PHONY: all lib test prep clean distclean remake debug debug_st release release_st lite lite_st test test_st install
+
+all: release_mt release_st lite_mt lite_st debug_mt debug_st test test_st
+
+lib: release_mt release_st lite_mt lite_st
+
+test: test_mt test_st
 
 prep:
-	$(MKDIR) $(RELEASEDIR)/$(SRCDIR)
-	$(MKDIR) $(LITEDIR)/$(SRCDIR)
-	$(MKDIR) $(DEBUGDIR)/$(SRCDIR)
-	$(MKDIR) $(TESTDIR)/$(TESTSRCDIR)
+	$(MKDIR) $(MT_RELEASEDIR)/$(SRCDIR)
+	$(MKDIR) $(ST_RELEASEDIR)/$(SRCDIR)
+	$(MKDIR) $(MT_LITEDIR)/$(SRCDIR)
+	$(MKDIR) $(ST_LITEDIR)/$(SRCDIR)
+	$(MKDIR) $(MT_DEBUGDIR)/$(SRCDIR)
+	$(MKDIR) $(ST_DEBUGDIR)/$(SRCDIR)
+	$(MKDIR) $(MT_TESTDIR)/$(TESTSRCDIR)
+	$(MKDIR) $(ST_TESTDIR)/$(TESTSRCDIR)
 	$(MKDIR) $(LIBDIR)
 	$(MKDIR) $(BINDIR)
 
 clean:
-	$(RM) -f $(RELEASELIB) $(RELEASEOBJS) $(LITELIB) $(LITEOBJS) $(DEBUGLIB) $(DEBUGOBJS) $(TESTBIN) $(TESTOBJS)
+	$(RM) -f $(MT_RELEASELIB) $(MT_RELEASEOBJS) $(MT_LITELIB) $(MT_LITEOBJS) $(MT_DEBUGLIB) $(MT_DEBUGOBJS) $(MT_TESTBIN) $(MT_TESTOBJS)
+	$(RM) -f $(ST_RELEASELIB) $(ST_RELEASEOBJS) $(ST_LITELIB) $(ST_LITEOBJS) $(ST_DEBUGLIB) $(ST_DEBUGOBJS) $(ST_TESTBIN) $(ST_TESTOBJS)
 
 distclean: clean
 	$(RM) -rf $(LIBDIR)/
@@ -49,39 +77,81 @@ distclean: clean
 
 remake: clean all
 
-debug: prep $(DEBUGLIB)
+### DEBUG ###
+debug_mt: prep $(MT_DEBUGLIB)
 
-$(DEBUGLIB): $(DEBUGOBJS)
+$(MT_DEBUGLIB): $(MT_DEBUGOBJS)
 	$(AR) rcsD $@ $^
 
-$(DEBUGDIR)/%.o:%.cpp
-	$(GPP) $(DEBUGFLAGS) $(CPPFLAGS) -c $< -o $@
+$(MT_DEBUGDIR)/%.o:%.cpp
+	$(GPP) $(MT_DEBUGFLAGS) $(MT_CPPFLAGS) -c $< -o $@
 
-release: prep $(RELEASELIB)
+### Single thread DEBUG ###
+debug_st: prep $(ST_DEBUGLIB)
 
-$(RELEASELIB): $(RELEASEOBJS)
+$(ST_DEBUGLIB): $(ST_DEBUGOBJS)
 	$(AR) rcsD $@ $^
 
-$(RELEASEDIR)/%.o:%.cpp
-	$(GPP) $(RELEASEFLAGS) $(CPPFLAGS) -c $< -o $@
+$(ST_DEBUGDIR)/%.o:%.cpp
+	$(GPP) $(ST_DEBUGFLAGS) $(ST_CPPFLAGS) -c $< -o $@
 
-lite: prep $(LITELIB)
+### RELEASE ###
+release_mt: prep $(MT_RELEASELIB)
 
-$(LITELIB): $(LITEOBJS)
+$(MT_RELEASELIB): $(MT_RELEASEOBJS)
 	$(AR) rcsD $@ $^
 
-$(LITEDIR)/%.o:%.cpp
-	$(GPP) $(LITEFLAGS) $(CPPFLAGS) -c $< -o $@
+$(MT_RELEASEDIR)/%.o:%.cpp
+	$(GPP) $(MT_RELEASEFLAGS) $(MT_CPPFLAGS) -c $< -o $@
 
-test: debug $(TESTBIN)
+### Single thread RELEASE ###
+release_st: prep $(ST_RELEASELIB)
 
-$(TESTBIN): $(TESTOBJS) $(DEBUGLIB)
-	$(GPP) $(TESTFLAGS) $(LDFLAGS) $^ $(TESTLIBS) $(LIBS) -o $@
+$(ST_RELEASELIB): $(ST_RELEASEOBJS)
+	$(AR) rcsD $@ $^
 
-$(TESTDIR)/%.o:%.cpp
-	$(GPP) $(TESTFLAGS) $(CPPFLAGS) -c $< -o $@
+$(ST_RELEASEDIR)/%.o:%.cpp
+	$(GPP) $(ST_RELEASEFLAGS) $(ST_CPPFLAGS) -c $< -o $@
 
-install: release lite
+### LITE ###
+lite_mt: prep $(MT_LITELIB)
+
+$(MT_LITELIB): $(MT_LITEOBJS)
+	$(AR) rcsD $@ $^
+
+$(MT_LITEDIR)/%.o:%.cpp
+	$(GPP) $(MT_LITEFLAGS) $(MT_CPPFLAGS) -c $< -o $@
+
+### Single thread LITE ###
+lite_st: prep $(ST_LITELIB)
+
+$(ST_LITELIB): $(ST_LITEOBJS)
+	$(AR) rcsD $@ $^
+
+$(ST_LITEDIR)/%.o:%.cpp
+	$(GPP) $(ST_LITEFLAGS) $(ST_CPPFLAGS) -c $< -o $@
+
+### TEST ###
+test_mt: debug_mt $(MT_TESTBIN)
+
+$(MT_TESTBIN): $(MT_TESTOBJS) $(MT_DEBUGLIB)
+	$(GPP) $(MT_TESTFLAGS) $(MT_LDFLAGS) $^ $(MT_TESTLIBS) $(MT_LIBS) -o $@
+
+$(MT_TESTDIR)/%.o:%.cpp
+	$(GPP) $(MT_TESTFLAGS) $(MT_CPPFLAGS) -c $< -o $@
+
+### Single thread TEST ###
+test_st: debug_st $(ST_TESTBIN)
+
+$(ST_TESTBIN): $(ST_TESTOBJS) $(ST_DEBUGLIB)
+	$(GPP) $(ST_TESTFLAGS) $(ST_LDFLAGS) $^ $(ST_TESTLIBS) $(ST_LIBS) -o $@
+
+$(ST_TESTDIR)/%.o:%.cpp
+	$(GPP) $(ST_TESTFLAGS) $(ST_CPPFLAGS) -c $< -o $@
+
+install: release_mt release_st lite_mt lite_st
 	$(CP) -av ./include/* $(DESTINCLUDE)
-	$(CP) -v $(RELEASELIB) $(DESTLIB)
-	$(CP) -v $(LITELIB) $(DESTLIB)
+	$(CP) -v $(MT_RELEASELIB) $(DESTLIB)
+	$(CP) -v $(ST_RELEASELIB) $(DESTLIB)
+	$(CP) -v $(MT_LITELIB) $(DESTLIB)
+	$(CP) -v $(ST_LITELIB) $(DESTLIB)

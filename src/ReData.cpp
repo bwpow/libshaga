@@ -187,27 +187,37 @@ namespace shaga {
 	{
 		_hmac_keys.clear ();
 		_hmac_keys.push_back (key);
+		_key_id = 0;
 	}
 
 	void ReData::set_crypto_key (const std::string &key)
 	{
 		_crypto_keys.clear ();
 		_crypto_keys.push_back (key);
+		_key_id = 0;
 	}
 
-	void ReData::set_hmac_keys (const COMMON_VECTOR &keys)
+	void ReData::set_hmac_keys (const COMMON_VECTOR &keys, const size_t key_id)
 	{
 		_hmac_keys = keys;
 		if (_hmac_keys.empty () == true) {
 			_hmac_keys.push_back ("");
 		}
+
+		if (SIZE_MAX != key_id) {
+			_key_id = key_id;
+		}
 	}
 
-	void ReData::set_crypto_keys (const COMMON_VECTOR &keys)
+	void ReData::set_crypto_keys (const COMMON_VECTOR &keys, const size_t key_id)
 	{
 		_crypto_keys = keys;
 		if (_crypto_keys.empty () == true) {
 			_crypto_keys.push_back ("");
+		}
+
+		if (SIZE_MAX != key_id) {
+			_key_id = key_id;
 		}
 	}
 
@@ -219,9 +229,11 @@ namespace shaga {
 	void ReData::set_key_id (const size_t id)
 	{
 		if (id >= std::max (_hmac_keys.size (), _crypto_keys.size ())) {
-			cThrow ("Key id out of range");
+			_key_id = std::max (_hmac_keys.size (), _crypto_keys.size ()) - 1;
 		}
-		_key_id = id;
+		else {
+			_key_id = id;
+		}
 	}
 
 	bool ReData::config_header_enabled (void) const

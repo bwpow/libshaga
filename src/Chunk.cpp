@@ -12,8 +12,11 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	static std::atomic<uint_fast64_t> _chunk_global_counter (0);
+	#ifdef SHAGA_THREADING
+		static std::atomic<uint_fast64_t> _chunk_global_counter (0);
+	#else
+		static uint_fast64_t _chunk_global_counter {0};
+	#endif // SHAGA_THREADING
 
 	static inline uint32_t _key_char_to_val (const unsigned char c)
 	{
@@ -104,7 +107,11 @@ namespace shaga {
 
 	void Chunk::_construct (void)
 	{
-		_counter = _chunk_global_counter.fetch_add (1, std::memory_order_relaxed);
+		#ifdef SHAGA_THREADING
+			_counter = _chunk_global_counter.fetch_add (1, std::memory_order_relaxed);
+		#else
+			_counter = _chunk_global_counter++;
+		#endif // SHAGA_THREADING
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -207,6 +214,11 @@ namespace shaga {
 		return _channel;
 	}
 
+	uint_fast8_t Chunk::get_channel_bitmask (void) const
+	{
+		return _channel ? channel_primary : channel_secondary;
+	}
+
 	HWID Chunk::get_source_hwid (void) const
 	{
 		return _hwid_source;
@@ -242,6 +254,11 @@ namespace shaga {
 	void Chunk::set_payload (std::string &&payload)
 	{
 		std::swap (_payload, payload);
+	}
+
+	void Chunk::swap_payload (std::string &other)
+	{
+		_payload.swap (other);
 	}
 
 	std::string Chunk::get_payload (void) const
@@ -507,7 +524,7 @@ namespace shaga {
 	{
 		(void) r;
 		Chunk::TrustLevel l = Chunk::_TrustLevel_last;
-		return l++;
+		return ++l;
 	}
 
 	Chunk::TrustLevel uint8_to_trustlevel (const uint8_t v)
@@ -635,6 +652,22 @@ namespace shaga {
 		return bin_to_chunklist (s, offset);
 	}
 
+	void bin_to_chunklist (const std::string &s, size_t &offset, CHUNKLIST &cs)
+	{
+		while (offset != s.size ()) {
+			cs.emplace_back (s, offset);
+		}
+	}
+
+	void bin_to_chunklist (const std::string &s, CHUNKLIST &cs)
+	{
+		size_t offset = 0;
+
+		while (offset != s.size ()) {
+			cs.emplace_back (s, offset);
+		}
+	}
+
 	void chunklist_to_bin (CHUNKLIST &cs, std::string &out, const size_t max_size, const Chunk::Priority max_priority, const bool erase_skipped)
 	{
 		size_t sze = 0;
@@ -652,7 +685,7 @@ namespace shaga {
 				continue;
 			}
 
-			temp.clear ();
+			temp.resize (0);
 			iter->to_bin (temp);
 			if (max_size > 0 && (temp.size () + sze) > max_size) {
 				if (cnt == 0) {
@@ -672,6 +705,7 @@ namespace shaga {
 	std::string chunklist_to_bin (CHUNKLIST &cs, const size_t max_size, const Chunk::Priority max_priority, const bool erase_skipped)
 	{
 		std::string out;
+		out.reserve (max_size);
 		chunklist_to_bin (cs, out, max_size, max_priority, erase_skipped);
 		return out;
 	}
@@ -690,7 +724,29 @@ namespace shaga {
 	CHUNKSET bin_to_chunkset (const std::string &s)
 	{
 		size_t offset = 0;
-		return bin_to_chunkset (s, offset);
+		CHUNKSET cs;
+
+		while (offset != s.size ()) {
+			cs.emplace (s, offset);
+		}
+
+		return cs;
+	}
+
+	void bin_to_chunkset (const std::string &s, size_t &offset, CHUNKSET &cs)
+	{
+		while (offset != s.size ()) {
+			cs.emplace (s, offset);
+		}
+	}
+
+	void bin_to_chunkset (const std::string &s, CHUNKSET &cs)
+	{
+		size_t offset = 0;
+
+		while (offset != s.size ()) {
+			cs.emplace (s, offset);
+		}
 	}
 
 

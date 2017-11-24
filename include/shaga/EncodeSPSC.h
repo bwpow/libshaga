@@ -34,8 +34,13 @@ namespace shaga {
 			std::vector<std::unique_ptr<value_type>> _data;
 			value_type* _curdata;
 
-			std::atomic<uint_fast32_t> _pos_read {0};
-			std::atomic<uint_fast32_t> _pos_write {0};
+			#ifdef SHAGA_THREADING
+				std::atomic<uint_fast32_t> _pos_read {0};
+				std::atomic<uint_fast32_t> _pos_write {0};
+			#else
+				uint_fast32_t _pos_read {0};
+				uint_fast32_t _pos_write {0};
+			#endif // SHAGA_THREADING
 
 			virtual uint_fast32_t read_eventfd (void) final
 			{
@@ -53,14 +58,25 @@ namespace shaga {
 
 			virtual void push (void) final
 			{
-				uint_fast32_t next = _pos_write.load (std::memory_order_relaxed) + 1;
-				RING (next);
+				#ifdef SHAGA_THREADING
+					uint_fast32_t next = _pos_write.load (std::memory_order_relaxed) + 1;
+					RING (next);
 
-				if (next == _pos_read.load (std::memory_order_acquire)) {
-					cThrow ("%s: Ring full", _name.c_str ());
-				}
+					if (next == _pos_read.load (std::memory_order_acquire)) {
+						cThrow ("%s: Ring full", _name.c_str ());
+					}
 
-				_pos_write.store (next, std::memory_order_release);
+					_pos_write.store (next, std::memory_order_release);
+				#else
+					uint_fast32_t next = _pos_write + 1;
+					RING (next);
+
+					if (next == _pos_read) {
+						cThrow ("%s: Ring full", _name.c_str ());
+					}
+
+					_pos_write = next;
+				#endif // SHAGA_THREADING
 
 				#ifdef OS_LINUX
 				_eventfd_write_val = _curdata->size ();
@@ -124,8 +140,13 @@ namespace shaga {
 
 			virtual bool empty (void) const final
 			{
-				const uint_fast32_t now_read = _pos_read.load (std::memory_order_relaxed);
-				const uint_fast32_t now_write = _pos_write.load (std::memory_order_acquire);
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now_read = _pos_read.load (std::memory_order_relaxed);
+					const uint_fast32_t now_write = _pos_write.load (std::memory_order_acquire);
+				#else
+					const uint_fast32_t now_read = _pos_read;
+					const uint_fast32_t now_write = _pos_write;
+				#endif // SHAGA_THREADING
 				return (now_read == now_write);
 			}
 
@@ -159,8 +180,13 @@ namespace shaga {
 					_remaining_total = 0;
 				#endif // OS_LINUX
 
-				uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
-				const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#ifdef SHAGA_THREADING
+					uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
+					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#else
+					uint_fast32_t now_read = this->_pos_read;
+					const uint_fast32_t now_write = this->_pos_write;
+				#endif // SHAGA_THREADING
 
 				while (now_read != now_write) {
 					this->_data[now_read]->free ();
@@ -169,7 +195,11 @@ namespace shaga {
 				}
 
 				_read_offset = 0;
-				this->_pos_read.store (now_read, std::memory_order_release);
+				#ifdef SHAGA_THREADING
+					this->_pos_read.store (now_read, std::memory_order_release);
+				#else
+					this->_pos_read = now_read;
+				#endif // SHAGA_THREADING
 			}
 
 			virtual uint_fast32_t fill_front_buffer (char *outbuffer, uint_fast32_t len) override final
@@ -186,8 +216,14 @@ namespace shaga {
 					return 0;
 				}
 
-				uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
-				const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#ifdef SHAGA_THREADING
+					uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
+					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#else
+					uint_fast32_t now_read = this->_pos_read;
+					const uint_fast32_t now_write = this->_pos_write;
+				#endif // SHAGA_THREADING
+
 				if (now_write == now_read) {
 					return 0;
 				}
@@ -235,8 +271,13 @@ namespace shaga {
 					return;
 				}
 
-				uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
-				const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#ifdef SHAGA_THREADING
+					uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
+					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#else
+					uint_fast32_t now_read = this->_pos_read;
+					const uint_fast32_t now_write = this->_pos_write;
+				#endif // SHAGA_THREADING
 
 				uint_fast32_t read_offset = _read_offset;
 				uint_fast32_t remaining;
@@ -269,7 +310,11 @@ namespace shaga {
 				}
 
 				_read_offset = read_offset;
-				this->_pos_read.store (now_read, std::memory_order_release);
+				#ifdef SHAGA_THREADING
+					this->_pos_read.store (now_read, std::memory_order_release);
+				#else
+					this->_pos_read = now_read;
+				#endif // SHAGA_THREADING
 			}
 
 			#ifdef OS_LINUX
@@ -298,8 +343,13 @@ namespace shaga {
 				this->read_eventfd ();
 				#endif // OS_LINUX
 
-				uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
-				const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#ifdef SHAGA_THREADING
+					uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
+					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#else
+					uint_fast32_t now_read = this->_pos_read;
+					const uint_fast32_t now_write = this->_pos_write;
+				#endif // SHAGA_THREADING
 
 				while (now_read != now_write) {
 					this->_data[now_read]->free ();
@@ -307,7 +357,11 @@ namespace shaga {
 					RING (now_read);
 				}
 
-				this->_pos_read.store (now_read, std::memory_order_release);
+				#ifdef SHAGA_THREADING
+					this->_pos_read.store (now_read, std::memory_order_release);
+				#else
+					this->_pos_read = now_read;
+				#endif // SHAGA_THREADING
 			}
 
 			virtual uint_fast32_t fill_front_buffer (char *outbuffer, uint_fast32_t len) override final
@@ -320,8 +374,14 @@ namespace shaga {
 					return 0;
 				}
 
-				uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
-				const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#ifdef SHAGA_THREADING
+					uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
+					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#else
+					uint_fast32_t now_read = this->_pos_read;
+					const uint_fast32_t now_write = this->_pos_write;
+				#endif // SHAGA_THREADING
+
 				if (now_write == now_read) {
 					return 0;
 				}
@@ -345,8 +405,13 @@ namespace shaga {
 					return;
 				}
 
-				uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
-				const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#ifdef SHAGA_THREADING
+					uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
+					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#else
+					uint_fast32_t now_read = this->_pos_read;
+					const uint_fast32_t now_write = this->_pos_write;
+				#endif // SHAGA_THREADING
 
 				if (now_read == now_write) {
 					cThrow ("%s: Unable to move front buffer. Destination too far.", this->_name.c_str ());
@@ -360,7 +425,11 @@ namespace shaga {
 				++now_read;
 				RING (now_read);
 
-				this->_pos_read.store (now_read, std::memory_order_release);
+				#ifdef SHAGA_THREADING
+					this->_pos_read.store (now_read, std::memory_order_release);
+				#else
+					this->_pos_read = now_read;
+				#endif // SHAGA_THREADING
 			}
 	};
 

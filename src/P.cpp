@@ -27,7 +27,6 @@ namespace shaga {
 		static char _printf_buf[_buffer_size];
 		static char _printf_time[_buffer_size];
 		static char _printf_fname[PATH_MAX];
-		static std::mutex _printf_mutex;
 		static bool _printf_ms = false;
 
 		static bool _check_size = false;
@@ -37,7 +36,11 @@ namespace shaga {
 
 		static bool _debug_enabled = false;
 		static char _debug_printf_buf[_buffer_size];
-		static std::mutex _debug_printf_mutex;
+
+		#ifdef SHAGA_THREADING
+			static std::mutex _printf_mutex;
+			static std::mutex _debug_printf_mutex;
+		#endif // SHAGA_THREADING
 
 		static std::string _dir_log;
 		static std::string _name_log;
@@ -108,8 +111,10 @@ namespace shaga {
 			return;
 		}
 
-		// Since we can write logs to non-POSIX filesystems, let's do locking here instead on FS level.
-		std::lock_guard<std::mutex> lock(_printf_mutex);
+		#ifdef SHAGA_THREADING
+			// Since we can write logs to non-POSIX filesystems, let's do locking here instead on FS level.
+			std::lock_guard<std::mutex> lock(_printf_mutex);
+		#endif // SHAGA_THREADING
 
 		::va_list ap;
 		::va_start (ap, fmt);
@@ -234,7 +239,9 @@ namespace shaga {
 			return;
 		}
 
-		std::lock_guard<std::mutex> lock(_debug_printf_mutex);
+		#ifdef SHAGA_THREADING
+			std::lock_guard<std::mutex> lock(_debug_printf_mutex);
+		#endif // SHAGA_THREADING
 
 		va_list ap;
 

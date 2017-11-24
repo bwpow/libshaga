@@ -10,6 +10,8 @@ All rights reserved.
 
 #include "common.h"
 
+#ifdef SHAGA_THREADING
+
 namespace shaga {
 
 	class Semaphore
@@ -85,5 +87,5 @@ namespace shaga {
 	};
 
 }
-
+#endif // SHAGA_THREADING
 #endif // HEAD_shaga_Semaphore

@@ -238,4 +238,9 @@ namespace shaga {
 		cThrow ("Unknown crypto value");
 	}
 
+
+	std::string ReDataConfig::describe (void) const
+	{
+		return get_digest_text () + ", " + get_crypto_text ();
+	}
 }

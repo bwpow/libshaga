@@ -7,14 +7,6 @@ All rights reserved.
 *******************************************************************************/
 #include "shaga/common.h"
 
-#if BYTE_ORDER == LITTLE_ENDIAN
-	#pragma message "shaga::BIN Hardcoded for little endian machine"
-#elif BYTE_ORDER == BIG_ENDIAN
-	#pragma message "shaga::BIN Hardcoded for big endian machine"
-#else
-	#pragma message "shaga::BIN Not hardcoded for any endian, will detect during runtime"
-#endif
-
 namespace shaga {
 	namespace BIN {
 		Endian _endian = Endian::UNKNOWN;
@@ -33,7 +25,11 @@ namespace shaga {
 				'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_', '.' };
 		static const uint8_t _b_alt64_pad = '-';
 
-		static std::once_flag _endian_once_flag;
+		#ifdef SHAGA_THREADING
+			static std::once_flag _endian_once_flag;
+		#else
+			static bool _endian_once_flag {false};
+		#endif // SHAGA_THREADING
 
 		static void _endian_detect_once (void)
 		{
@@ -64,24 +60,30 @@ namespace shaga {
 
 	void BIN::endian_detect (void)
 	{
-		std::call_once (_endian_once_flag, _endian_detect_once);
+		#ifdef SHAGA_THREADING
+			std::call_once (_endian_once_flag, _endian_detect_once);
+		#else
+			if (std::exchange (_endian_once_flag, true) == false) {
+				_endian_detect_once ();
+			}
+		#endif // SHAGA_THREADING
 	}
 
 	bool BIN::is_little_endian (void)
 	{
-		std::call_once (_endian_once_flag, _endian_detect_once);
+		endian_detect ();
 		return _endian == Endian::LITTLE;
 	}
 
 	bool BIN::is_big_endian (void)
 	{
-		std::call_once (_endian_once_flag, _endian_detect_once);
+		endian_detect ();
 		return _endian == Endian::BIG;
 	}
 
 	std::string BIN::endian_to_string (void)
 	{
-		std::call_once (_endian_once_flag, _endian_detect_once);
+		endian_detect ();
 		switch (_endian) {
 			case Endian::UNKNOWN: return "unknown endian";
 			case Endian::LITTLE: return "little endian";

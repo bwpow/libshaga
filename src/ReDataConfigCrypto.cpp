@@ -74,7 +74,13 @@ namespace shaga {
 			cThrow ("Wrong crypto IV size");
 		}
 
-		std::call_once(cache._aes_init_flag, [&cache]()->void { mbedtls_aes_init (&cache._aes_ctx); });
+		#ifdef SHAGA_THREADING
+			std::call_once(cache._aes_init_flag, [&cache]()->void { mbedtls_aes_init (&cache._aes_ctx); });
+		#else
+			if (std::exchange (cache._aes_init_flag, true) == false) {
+				mbedtls_aes_init (&cache._aes_ctx);
+			}
+		#endif // SHAGA_THREADING
 
 		if ((true == enc ? mbedtls_aes_setkey_enc : mbedtls_aes_setkey_dec)(&cache._aes_ctx, reinterpret_cast<const unsigned char *> (key.data ()), key.size () * 8) != 0) {
 			cThrow ("Wrong crypto key size");

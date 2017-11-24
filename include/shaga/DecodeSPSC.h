@@ -20,7 +20,12 @@ namespace shaga {
 	template<class T> class DecodeSPSC
 	{
 		private:
-			std::atomic<int> _err_count {0};
+			#ifdef SHAGA_THREADING
+				std::atomic<int> _err_count {0};
+			#else
+				int _err_count {0};
+			#endif // SHAGA_THREADING
+
 			std::weak_ptr<StringSPSC> _err_spsc;
 			bool _throw_at_error {false};
 
@@ -37,8 +42,13 @@ namespace shaga {
 			std::vector<std::unique_ptr<value_type>> _data;
 			value_type* _curdata;
 
-			std::atomic<uint_fast32_t> _pos_read {0};
-			std::atomic<uint_fast32_t> _pos_write {0};
+			#ifdef SHAGA_THREADING
+				std::atomic<uint_fast32_t> _pos_read {0};
+				std::atomic<uint_fast32_t> _pos_write {0};
+			#else
+				uint_fast32_t _pos_read {0};
+				uint_fast32_t _pos_write {0};
+			#endif // SHAGA_THREADING
 
 			virtual bool read_eventfd (void) final
 			{
@@ -57,7 +67,12 @@ namespace shaga {
 
 			virtual void nonfatal_error (const char *buf) final
 			{
-				_err_count.fetch_add (1);
+				#ifdef SHAGA_THREADING
+					_err_count.fetch_add (1);
+				#else
+					_err_count++;
+				#endif // SHAGA_THREADING
+
 				if (true == _throw_at_error) {
 					cThrow ("%s: %s", _name.c_str (), buf);
 				}
@@ -75,14 +90,25 @@ namespace shaga {
 
 			virtual void push (void) final
 			{
-				uint_fast32_t next = _pos_write.load (std::memory_order_relaxed) + 1;
-				RING (next);
+				#ifdef SHAGA_THREADING
+					uint_fast32_t next = _pos_write.load (std::memory_order_relaxed) + 1;
+					RING (next);
 
-				if (next == _pos_read.load (std::memory_order_acquire)) {
-					cThrow ("%s: Ring full", _name.c_str ());
-				}
+					if (next == _pos_read.load (std::memory_order_acquire)) {
+						cThrow ("%s: Ring full", _name.c_str ());
+					}
 
-				_pos_write.store (next, std::memory_order_release);
+					_pos_write.store (next, std::memory_order_release);
+				#else
+					uint_fast32_t next = _pos_write + 1;
+					RING (next);
+
+					if (next == _pos_read) {
+						cThrow ("%s: Ring full", _name.c_str ());
+					}
+
+					_pos_write = next;
+				#endif // SHAGA_THREADING
 
 				#ifdef OS_LINUX
 				if (::write (_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)) < 0) {
@@ -151,12 +177,20 @@ namespace shaga {
 
 			virtual int get_err_count (void) const final
 			{
-				return _err_count.load ();
+				#ifdef SHAGA_THREADING
+					return _err_count.load ();
+				#else
+					return _err_count;
+				#endif // SHAGA_THREADING
 			}
 
 			virtual int get_err_count_reset (void) final
 			{
-				return _err_count.exchange (0);
+				#ifdef SHAGA_THREADING
+					return _err_count.exchange (0);
+				#else
+					return std::exchange (_err_count, 0);
+				#endif // SHAGA_THREADING
 			}
 
 			virtual int get_eventfd (void) const final
@@ -172,13 +206,23 @@ namespace shaga {
 				}
 				#endif // OS_LINUX
 
-				const uint_fast32_t now = this->_pos_read.load (std::memory_order_relaxed);
-				if (now == this->_pos_write.load (std::memory_order_acquire)) {
-					#ifdef OS_LINUX
-					cThrow ("%s: Internal error: eventfd test passed but atomic position didn't", this->_name.c_str ());
-					#endif // OS_LINUX
-					return false;
-				}
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = this->_pos_read.load (std::memory_order_relaxed);
+					if (now == this->_pos_write.load (std::memory_order_acquire)) {
+						#ifdef OS_LINUX
+						cThrow ("%s: Internal error: eventfd test passed but atomic position didn't", this->_name.c_str ());
+						#endif // OS_LINUX
+						return false;
+					}
+				#else
+					const uint_fast32_t now = this->_pos_read;
+					if (now == this->_pos_write) {
+						#ifdef OS_LINUX
+						cThrow ("%s: Internal error: eventfd test passed but read/write position didn't", this->_name.c_str ());
+						#endif // OS_LINUX
+						return false;
+					}
+				#endif // SHAGA_THREADING
 
 				out.assign (reinterpret_cast<const char *> (this->_data[now]->buffer), this->_data[now]->size ());
 				this->_data[now]->free ();
@@ -186,7 +230,11 @@ namespace shaga {
 				uint_fast32_t next = now + 1;
 				RING (next);
 
-				this->_pos_read.store (next, std::memory_order_release);
+				#ifdef SHAGA_THREADING
+					this->_pos_read.store (next, std::memory_order_release);
+				#else
+					this->_pos_read = next;
+				#endif // SHAGA_THREADING
 
 				return true;
 			}

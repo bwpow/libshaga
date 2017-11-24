@@ -12,7 +12,7 @@ All rights reserved.
 
 namespace shaga {
 
-#define RING(x) { if ((x) >= _size) { (x) = 0; } }
+#define RING(x) if ((x) >= _size) { (x) = 0; }
 
 	template<class T>
 	class SPSC {
@@ -20,13 +20,19 @@ namespace shaga {
 			typedef T value_type;
 
 			const uint_fast32_t _size;
-			std::atomic<uint_fast32_t> _pos_read;
-			std::atomic<uint_fast32_t> _pos_write;
+
+			#ifdef SHAGA_THREADING
+				std::atomic<uint_fast32_t> _pos_read {0};
+				std::atomic<uint_fast32_t> _pos_write {0};
+			#else
+				uint_fast32_t _pos_read {0};
+				uint_fast32_t _pos_write {0};
+			#endif // SHAGA_THREADING
 
 			T* const _data;
 
 		public:
-			explicit SPSC (const uint_fast32_t sze) : _size (sze), _pos_read (0), _pos_write (0), _data (static_cast<T*> (::malloc (sizeof (T) * sze)))
+			explicit SPSC (const uint_fast32_t sze) : _size (sze), _data (static_cast<T*> (::malloc (sizeof (T) * sze)))
 			{
 				if (sze < 2) {
 					cThrow ("Ring size must be at least 2");
@@ -39,8 +45,14 @@ namespace shaga {
 
 			~SPSC ()
 			{
-				uint_fast32_t now = _pos_read.load (std::memory_order_consume);
-				const uint_fast32_t last = _pos_write.load (std::memory_order_consume);
+				#ifdef SHAGA_THREADING
+					uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
+					const uint_fast32_t last = _pos_write.load (std::memory_order_acquire);
+				#else
+					uint_fast32_t now = _pos_read;
+					const uint_fast32_t last = _pos_write;
+				#endif // SHAGA_THREADING
+
 				while (now != last) {
 					_data[now++].~T();
 					RING (now);
@@ -49,44 +61,72 @@ namespace shaga {
 				::free(_data);
 			}
 
-			/* Disable copy and assignment */
-			SPSC (const SPSC &) = delete;
-			SPSC& operator= (const SPSC &) = delete;
-
 			bool is_lock_free (void) const
 			{
-				return _pos_read.is_lock_free () && _pos_write.is_lock_free ();
+				#ifdef SHAGA_THREADING
+					return _pos_read.is_lock_free () && _pos_write.is_lock_free ();
+				#else
+					return true;
+				#endif // SHAGA_THREADING
 			}
 
 			bool push_back (const T &entry)
 			{
-				const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
+				#else
+					const uint_fast32_t now = _pos_write;
+				#endif // SHAGA_THREADING
+
 				uint_fast32_t next = now + 1;
 				RING (next);
 
+				#ifdef SHAGA_THREADING
 				if (next == _pos_read.load (std::memory_order_acquire)) {
+				#else
+				if (next == _pos_read) {
+				#endif // SHAGA_THREADING
 					return false;
 				}
 
 				new (&_data[now]) T(entry);
-				_pos_write.store (next, std::memory_order_release);
+
+				#ifdef SHAGA_THREADING
+					_pos_write.store (next, std::memory_order_release);
+				#else
+					_pos_write = next;
+				#endif // SHAGA_THREADING
 
 				return true;
 			}
 
 			bool push_back (T &&entry)
 			{
-				const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
+				#else
+					const uint_fast32_t now = _pos_write;
+				#endif // SHAGA_THREADING
+
 				uint_fast32_t next = now + 1;
 				RING (next);
 
+				#ifdef SHAGA_THREADING
 				if (next == _pos_read.load (std::memory_order_acquire)) {
+				#else
+				if (next == _pos_read) {
+				#endif // SHAGA_THREADING
 					return false;
 				}
 
 				new (&_data[now]) T();
 				_data[now] = std::move (entry);
-				_pos_write.store (next, std::memory_order_release);
+
+				#ifdef SHAGA_THREADING
+					_pos_write.store (next, std::memory_order_release);
+				#else
+					_pos_write = next;
+				#endif // SHAGA_THREADING
 
 				return true;
 			}
@@ -94,26 +134,47 @@ namespace shaga {
 			template<class ...Args>
 			bool emplace_back (Args&&... args)
 			{
-				const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
+				#else
+					const uint_fast32_t now = _pos_write;
+				#endif // SHAGA_THREADING
+
 				uint_fast32_t next = now + 1;
 				RING (next);
 
+				#ifdef SHAGA_THREADING
 				if (next == _pos_read.load (std::memory_order_acquire)) {
+				#else
+				if (next == _pos_read) {
+				#endif // SHAGA_THREADING
 					return false;
 				}
 
 				new (&_data[now]) T(std::forward<Args>(args)...);
-				_pos_write.store (next, std::memory_order_release);
+
+				#ifdef SHAGA_THREADING
+					_pos_write.store (next, std::memory_order_release);
+				#else
+					_pos_write = next;
+				#endif // SHAGA_THREADING
 
 				return true;
 			}
 
 			bool pop_front (T &entry)
 			{
-				const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
-				if (now == _pos_write.load (std::memory_order_acquire)) {
-					return false;
-				}
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
+					if (now == _pos_write.load (std::memory_order_acquire)) {
+						return false;
+					}
+				#else
+					const uint_fast32_t now = _pos_read;
+					if (now == _pos_write) {
+						return false;
+					}
+				#endif // SHAGA_THREADING
 
 				uint_fast32_t next = now + 1;
 				RING (next);
@@ -121,32 +182,54 @@ namespace shaga {
 				entry = std::move (_data[now]);
 				_data[now].~T();
 
-				_pos_read.store (next, std::memory_order_release);
+				#ifdef SHAGA_THREADING
+					_pos_read.store (next, std::memory_order_release);
+				#else
+					_pos_read = next;
+				#endif // SHAGA_THREADING
 				return true;
 			}
 
 			bool pop_front (void)
 			{
-				const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
-				if (now == _pos_write.load (std::memory_order_acquire)) {
-					return false;
-				}
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
+					if (now == _pos_write.load (std::memory_order_acquire)) {
+						return false;
+					}
+				#else
+					const uint_fast32_t now = _pos_read;
+					if (now == _pos_write) {
+						return false;
+					}
+				#endif // SHAGA_THREADING
 
 				uint_fast32_t next = now + 1;
 				RING (next);
 
 				_data[now].~T();
 
-				_pos_read.store (next, std::memory_order_release);
+				#ifdef SHAGA_THREADING
+					_pos_read.store (next, std::memory_order_release);
+				#else
+					_pos_read = next;
+				#endif // SHAGA_THREADING
 				return true;
 			}
 
 			T* front (void)
 			{
-				const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
-				if (now == _pos_write.load (std::memory_order_acquire)) {
-					return nullptr;
-				}
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
+					if (now == _pos_write.load (std::memory_order_acquire)) {
+						return nullptr;
+					}
+				#else
+					const uint_fast32_t now = _pos_read;
+					if (now == _pos_write) {
+						return nullptr;
+					}
+				#endif // SHAGA_THREADING
 
 				return &_data[now];
 			}
@@ -158,15 +241,33 @@ namespace shaga {
 
 			bool empty (void) const
 			{
-				return _pos_read.load (std::memory_order_consume) == _pos_write.load (std::memory_order_consume);
+				#ifdef SHAGA_THREADING
+					return _pos_read.load (std::memory_order_consume) == _pos_write.load (std::memory_order_consume);
+				#else
+					return _pos_read == _pos_write;
+				#endif // SHAGA_THREADING
 			}
 
 			bool full (void) const
 			{
-				uint_fast32_t next = _pos_write.load (std::memory_order_consume) + 1;
+				#ifdef SHAGA_THREADING
+					uint_fast32_t next = _pos_write.load (std::memory_order_consume) + 1;
+				#else
+					uint_fast32_t next = _pos_write + 1;
+				#endif // SHAGA_THREADING
+
 				RING (next);
-				return (next == _pos_read.load (std::memory_order_consume));
+
+				#ifdef SHAGA_THREADING
+					return (next == _pos_read.load (std::memory_order_consume));
+				#else
+					return (next == _pos_read);
+				#endif // SHAGA_THREADING
 			}
+
+			/* Disable copy and assignment */
+			SPSC (const SPSC &) = delete;
+			SPSC& operator= (const SPSC &) = delete;
 	};
 
 	template<class T>
@@ -175,14 +276,20 @@ namespace shaga {
 			typedef T value_type;
 
 			const uint_fast32_t _size;
-			std::atomic<uint_fast32_t> _pos_read;
-			std::atomic<uint_fast32_t> _pos_write;
+
+			#ifdef SHAGA_THREADING
+				std::atomic<uint_fast32_t> _pos_read {0};
+				std::atomic<uint_fast32_t> _pos_write {0};
+			#else
+				uint_fast32_t _pos_read {0};
+				uint_fast32_t _pos_write {0};
+			#endif // SHAGA_THREADING
 
 			T* const _data;
 
 		public:
 			template<class ...Args>
-			explicit PaSPSC (const uint_fast32_t sze, Args&&... args) : _size (sze), _pos_read (0), _pos_write (0), _data (static_cast<T*> (::malloc (sizeof (T) * sze)))
+			explicit PaSPSC (const uint_fast32_t sze, Args&&... args) : _size (sze), _data (static_cast<T*> (::malloc (sizeof (T) * sze)))
 			{
 				if (sze < 2) {
 					cThrow ("Ring size must be at least 2");
@@ -208,16 +315,29 @@ namespace shaga {
 
 			bool is_lock_free (void) const
 			{
-				return _pos_read.is_lock_free () && _pos_write.is_lock_free ();
+				#ifdef SHAGA_THREADING
+					return _pos_read.is_lock_free () && _pos_write.is_lock_free ();
+				#else
+					return true;
+				#endif // SHAGA_THREADING
 			}
 
 			T& back (void)
 			{
-				const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
+				#else
+					const uint_fast32_t now = _pos_write;
+				#endif // SHAGA_THREADING
+
 				uint_fast32_t next = now + 1;
 				RING (next);
 
+				#ifdef SHAGA_THREADING
 				if (next == _pos_read.load (std::memory_order_acquire)) {
+				#else
+				if (next == _pos_read) {
+				#endif // SHAGA_THREADING
 					cThrow ("Ring full");
 				}
 
@@ -226,40 +346,71 @@ namespace shaga {
 
 			T& push_back (void)
 			{
-				const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
+				#else
+					const uint_fast32_t now = _pos_write;
+				#endif // SHAGA_THREADING
+
 				uint_fast32_t next = now + 1;
 				RING (next);
 
+				#ifdef SHAGA_THREADING
 				if (next == _pos_read.load (std::memory_order_acquire)) {
+				#else
+				if (next == _pos_read) {
+				#endif // SHAGA_THREADING
 					cThrow ("Ring full");
 				}
 
-				_pos_write.store (next, std::memory_order_release);
+				#ifdef SHAGA_THREADING
+					_pos_write.store (next, std::memory_order_release);
+				#else
+					_pos_write = next;
+				#endif // SHAGA_THREADING
 
 				return _data[next];
 			}
 
 			T& front (void)
 			{
-				const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
-				if (now == _pos_write.load (std::memory_order_acquire)) {
-					cThrow ("Ring empty");
-				}
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
+					if (now == _pos_write.load (std::memory_order_acquire)) {
+						cThrow ("Ring empty");
+					}
+				#else
+					const uint_fast32_t now = _pos_read;
+					if (now == _pos_write) {
+						cThrow ("Ring empty");
+					}
+				#endif // SHAGA_THREADING
 
 				return _data[now];
 			}
 
 			void pop_front (void)
 			{
-				const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
-				if (now == _pos_write.load (std::memory_order_acquire)) {
-					cThrow ("Ring empty");
-				}
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
+					if (now == _pos_write.load (std::memory_order_acquire)) {
+						cThrow ("Ring empty");
+					}
+				#else
+					const uint_fast32_t now = _pos_read;
+					if (now == _pos_write) {
+						cThrow ("Ring empty");
+					}
+				#endif // SHAGA_THREADING
 
 				uint_fast32_t next = now + 1;
 				RING (next);
 
-				_pos_read.store (next, std::memory_order_release);
+				#ifdef SHAGA_THREADING
+					_pos_read.store (next, std::memory_order_release);
+				#else
+					_pos_read = next;
+				#endif // SHAGA_THREADING
 			}
 
 			void clear (void)
@@ -269,14 +420,28 @@ namespace shaga {
 
 			bool empty (void) const
 			{
-				return _pos_read.load (std::memory_order_consume) == _pos_write.load (std::memory_order_consume);
+				#ifdef SHAGA_THREADING
+					return _pos_read.load (std::memory_order_consume) == _pos_write.load (std::memory_order_consume);
+				#else
+					return _pos_read == _pos_write;
+				#endif // SHAGA_THREADING
 			}
 
 			bool full (void) const
 			{
-				uint_fast32_t next = _pos_write.load (std::memory_order_consume) + 1;
+				#ifdef SHAGA_THREADING
+					uint_fast32_t next = _pos_write.load (std::memory_order_consume) + 1;
+				#else
+					uint_fast32_t next = _pos_write + 1;
+				#endif // SHAGA_THREADING
+
 				RING (next);
-				return (next == _pos_read.load (std::memory_order_consume));
+
+				#ifdef SHAGA_THREADING
+					return (next == _pos_read.load (std::memory_order_consume));
+				#else
+					return (next == _pos_read);
+				#endif // SHAGA_THREADING
 			}
 
 			/* Disable default copy constructors */

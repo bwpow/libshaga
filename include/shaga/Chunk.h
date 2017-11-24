@@ -109,6 +109,9 @@ namespace shaga {
 			static const uint8_t max_ttl {0x7};
 			static const uint8_t max_hop_counter {0x7};
 
+			static const uint_fast8_t channel_primary {0b10};
+			static const uint_fast8_t channel_secondary {0b01};
+
 			static uint32_t key_to_bin (const std::string &key);
 			static std::string bin_to_key (const uint32_t bkey);
 
@@ -202,6 +205,7 @@ namespace shaga {
 
 			void set_channel (const bool enabled);
 			bool get_channel (void) const;
+			uint_fast8_t get_channel_bitmask (void) const;
 
 			HWID get_source_hwid (void) const;
 			bool is_for_me (const HWID hwid) const;
@@ -212,6 +216,7 @@ namespace shaga {
 
 			void set_payload (const std::string &payload);
 			void set_payload (std::string &&payload);
+			void swap_payload (std::string &other);
 			std::string get_payload (void) const;
 
 			void set_prio (const Priority prio);
@@ -276,12 +281,24 @@ namespace shaga {
 	CHUNKLIST bin_to_chunklist (const std::string &s, size_t &offset);
 	CHUNKLIST bin_to_chunklist (const std::string &s);
 
+	/* Append to CHUNKLIST &cs */
+	void bin_to_chunklist (const std::string &s, size_t &offset, CHUNKLIST &cs);
+	/* Append to CHUNKLIST &cs */
+	void bin_to_chunklist (const std::string &s, CHUNKLIST &cs);
+
+	/* Append out std::string &out */
 	void chunklist_to_bin (CHUNKLIST &cs, std::string &out, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool erase_skipped = false);
 	std::string chunklist_to_bin (CHUNKLIST &cs, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool erase_skipped = false);
 
 	CHUNKSET bin_to_chunkset (const std::string &s, size_t &offset);
 	CHUNKSET bin_to_chunkset (const std::string &s);
 
+	/* Append to CHUNKSET &cs */
+	void bin_to_chunkset (const std::string &s, size_t &offset, CHUNKSET &cs);
+	/* Append to CHUNKSET &cs */
+	void bin_to_chunkset (const std::string &s, CHUNKSET &cs);
+
+	/* Append out std::string &out */
 	void chunkset_to_bin (CHUNKSET &cs, std::string &out, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool thr = true);
 	std::string chunkset_to_bin (CHUNKSET &cs, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool thr = true);
 
