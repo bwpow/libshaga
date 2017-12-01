@@ -176,254 +176,22 @@ namespace shaga {
 	}
 
 
-/* SipHash implementation based on Reference implementation of SipHash.
- * Website: https://131002.net/siphash/
- * Downloaded from https://github.com/veorq/SipHash on 2017-11-01.
- *
- * Copyright (c) 2012-2016 Jean-Philippe Aumasson <jeanphilippe.aumasson@gmail.com>
- * Copyright (c) 2012-2014 Daniel J. Bernstein <djb@cr.yp.to>
- * To the extent possible under law, the author(s) have dedicated all copyright
- * and related and neighboring rights to this software to the public domain
- * worldwide. This software is distributed without any warranty.
- */
+#define SIPHASH_DATA reinterpret_cast<const uint8_t *>(plain.data ())
+#define SIPHASH_DATA_SIZE plain.size ()
+#define SIPHASH_PARAMS (const std::string &plain, ReDataConfig::DigestCache &cache)
 
-	static_assert (sizeof (uint64_t) == 8, "Expected uint64_t to be 8 bytes");
-
-	static inline uint64_t _siphash_to_uint64 (const uint8_t *data)
-	{
-		#define BYTES 8
-
-		uint64_t v = 0;
-
-		ENDIAN_IS_LITTLE
-			::memcpy (&v, data, BYTES);
-		ENDIAN_ELSE
-			#define SAT(x)  static_cast<uint64_t> (data[x])
-			v = SAT(0) |
-			SAT(1) << 8 |
-			SAT(2) << 16 |
-			SAT(3) << 24 |
-
-			SAT(4) << 32 |
-			SAT(5) << 40 |
-			SAT(6) << 48 |
-			SAT(7) << 56;
-			#undef SAT
-		ENDIAN_END
-
-		#undef BYTES
-		return v;
-	}
-
-#define ROTL(x, b) (((x) << (b)) | ((x) >> (64 - (b))))
-
-#define SIPHASH_ROUND \
-	vv0 += vv1;												\
-	vv2 += vv3;												\
-	vv1 = ROTL (vv1, 13ULL);								\
-	vv3 = ROTL (vv3, 16ULL);								\
-	vv1 ^= vv0;												\
-	vv3 ^= vv2;												\
-	vv0 = ROTL (vv0, 32ULL);								\
-	vv2 += vv1;												\
-	vv0 += vv3;												\
-	vv1 = ROTL (vv1, 17ULL);								\
-	vv3 = ROTL (vv3, 21ULL);								\
-	vv1 ^= vv2;												\
-	vv3 ^= vv0;												\
-	vv2 = ROTL (vv2, 32ULL)
-
-#define SIPHASH_LAST \
-	val = static_cast<uint64_t> (plain.size () & 0xff) << 56;	\
-	switch (plain.size () & 7) {								\
-		case 7:													\
-			val |= ((uint64_t)in[6]) << 48;						\
-		case 6:													\
-			val |= ((uint64_t)in[5]) << 40;						\
-		case 5:													\
-			val |= ((uint64_t)in[4]) << 32;						\
-		case 4:													\
-			val |= ((uint64_t)in[3]) << 24;						\
-		case 3:													\
-			val |= ((uint64_t)in[2]) << 16;						\
-		case 2:													\
-			val |= ((uint64_t)in[1]) << 8;						\
-		case 1:													\
-			val |= ((uint64_t)in[0]);							\
-			break;												\
-		case 0:													\
-			break;												\
-	}
-
-#define SIPHASH_BEGIN \
+#define SIPHASH_BEGIN_KEYS \
 	uint64_t vv0 = 0x736f6d6570736575ULL ^ cache.siphash_k0;				\
 	uint64_t vv1 = 0x646f72616e646f6dULL ^ cache.siphash_k1;				\
 	uint64_t vv2 = 0x6c7967656e657261ULL ^ cache.siphash_k0;				\
-	uint64_t vv3 = 0x7465646279746573ULL ^ cache.siphash_k1;				\
-	uint64_t val;															\
-	const uint8_t *in = reinterpret_cast<const uint8_t *>(plain.data ());	\
-	const uint8_t *end = in + plain.size () - (plain.size () & 7);
+	uint64_t vv3 = 0x7465646279746573ULL ^ cache.siphash_k1;
 
-	static inline std::string _calc_siphash24_64 (const std::string &plain, ReDataConfig::DigestCache &cache)
-	{
-		SIPHASH_BEGIN
+#include "internal_siphash.h"
 
-		for (; in != end; in += 8) {
-			val = _siphash_to_uint64 (in);
-			vv3 ^= val;
-			SIPHASH_ROUND;
-			SIPHASH_ROUND;
-			vv0 ^= val;
-		}
-
-		SIPHASH_LAST
-
-		vv3 ^= val;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		vv0 ^= val;
-
-		vv2 ^= 0xffULL;
-
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-
-		return BIN::from_uint64 (vv0 ^ vv1 ^ vv2 ^ vv3);
-	}
-
-	static inline std::string _calc_siphash24_128 (const std::string &plain, ReDataConfig::DigestCache &cache)
-	{
-		SIPHASH_BEGIN
-
-		vv1 ^= 0xeeULL;
-
-		for (; in != end; in += 8) {
-			val = _siphash_to_uint64 (in);
-			vv3 ^= val;
-			SIPHASH_ROUND;
-			SIPHASH_ROUND;
-			vv0 ^= val;
-		}
-
-
-		SIPHASH_LAST
-		vv3 ^= val;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		vv0 ^= val;
-
-		vv2 ^= 0xeeULL;
-
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-
-		val = vv0 ^ vv1 ^ vv2 ^ vv3;
-
-		vv1 ^= 0xddULL;
-
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-
-		return BIN::from_uint64 (val) + BIN::from_uint64 (vv0 ^ vv1 ^ vv2 ^ vv3);
-	}
-
-	static inline std::string _calc_siphash48_64 (const std::string &plain, ReDataConfig::DigestCache &cache)
-	{
-		SIPHASH_BEGIN
-
-		for (; in != end; in += 8) {
-			val = _siphash_to_uint64 (in);
-			vv3 ^= val;
-			SIPHASH_ROUND;
-			SIPHASH_ROUND;
-			SIPHASH_ROUND;
-			SIPHASH_ROUND;
-			vv0 ^= val;
-		}
-
-		SIPHASH_LAST
-		vv3 ^= val;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		vv0 ^= val;
-
-		vv2 ^= 0xffULL;
-
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-
-		return BIN::from_uint64 (vv0 ^ vv1 ^ vv2 ^ vv3);
-	}
-
-	static inline std::string _calc_siphash48_128 (const std::string &plain, ReDataConfig::DigestCache &cache)
-	{
-		SIPHASH_BEGIN
-
-		vv1 ^= 0xeeULL;
-
-		for (; in != end; in += 8) {
-			val = _siphash_to_uint64 (in);
-			vv3 ^= val;
-			SIPHASH_ROUND;
-			SIPHASH_ROUND;
-			SIPHASH_ROUND;
-			SIPHASH_ROUND;
-			vv0 ^= val;
-		}
-
-		SIPHASH_LAST
-		vv3 ^= val;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		vv0 ^= val;
-
-		vv2 ^= 0xeeULL;
-
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-
-		val = vv0 ^ vv1 ^ vv2 ^ vv3;
-
-		vv1 ^= 0xddULL;
-
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-		SIPHASH_ROUND;
-
-		return BIN::from_uint64 (val) + BIN::from_uint64 (vv0 ^ vv1 ^ vv2 ^ vv3);
-	}
-
-#undef ROTL
-#undef SIPHASH_ROUND
-#undef SIPHASH_LAST
-#undef SIPHASH_BEGIN
+#undef SIPHASH_BEGIN_KEYS
+#undef SIPHASH_PARAMS
+#undef SIPHASH_DATA_SIZE
+#undef SIPHASH_DATA
 
 	typedef std::function<std::string(const std::string &, ReDataConfig::DigestCache &)> HASH_FUNC;
 
@@ -557,7 +325,7 @@ namespace shaga {
 			}
 
 			if (_cache_digest.digest != _used_digest || _cache_digest.key != key) {
-				/* Key is not cached, so prepare IPAD and OPAD for HMAC calculation for the new key */
+				/* Key is not cached, so fill k0 and k1 */
 				_cache_digest.digest = _used_digest;
 				_cache_digest.key.assign (key);
 

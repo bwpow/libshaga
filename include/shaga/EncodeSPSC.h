@@ -20,7 +20,11 @@ namespace shaga {
 	template<class T> class EncodeSPSC
 	{
 		private:
+			#ifdef OS_LINUX
 			int _eventfd {-1};
+			SHARED_SOCKET _event_sock;
+			#endif // OS_LINUX
+
 			uint64_t _eventfd_write_val {0};
 			uint64_t _eventfd_read_val {0};
 
@@ -108,6 +112,7 @@ namespace shaga {
 				if (_eventfd < 0) {
 					cThrow ("%s: Unable to init eventfd: %s", _name.c_str (), strerror (errno));
 				}
+				_event_sock = std::make_shared<ShSocket> (_eventfd);
 				#endif // OS_LINUX
 
 				_name.assign (typeid (*this).name ());
@@ -115,11 +120,6 @@ namespace shaga {
 
 			virtual ~EncodeSPSC ()
 			{
-				if (_eventfd >= 0) {
-					::close (_eventfd);
-					_eventfd = -1;
-				}
-
 				_curdata = nullptr;
 				_data.clear ();
 			}
@@ -133,10 +133,17 @@ namespace shaga {
 				_name.assign (name);
 			}
 
+			#ifdef OS_LINUX
 			virtual int get_eventfd (void) const final
 			{
 				return _eventfd;
 			}
+
+			virtual SHARED_SOCKET get_event_socket (void) final
+			{
+				return _event_sock;
+			}
+			#endif // OS_LINUX
 
 			virtual bool empty (void) const final
 			{

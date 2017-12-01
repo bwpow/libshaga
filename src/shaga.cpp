@@ -100,7 +100,7 @@ namespace shaga {
 	void add_at_exit_callback (std::function<void (void)> func)
 	{
 		#ifdef SHAGA_THREADING
-			std::lock_guard<std::mutex> lock(_callback_mutex);
+		std::lock_guard<std::mutex> lock(_callback_mutex);
 		#endif // SHAGA_THREADING
 		_at_exit_callback_list.push_back (func);
 	}
@@ -108,7 +108,7 @@ namespace shaga {
 	[[noreturn]] static void _exit (const char *text, const int rcode)
 	{
 		#ifdef SHAGA_THREADING
-			std::unique_lock<std::recursive_mutex> exitlck (_exit_mutex);
+		std::unique_lock<std::recursive_mutex> exitlck (_exit_mutex);
 		#endif // SHAGA_THREADING
 
 		#ifdef SHAGA_THREADING
@@ -123,17 +123,20 @@ namespace shaga {
 		}
 
 		#ifdef SHAGA_THREADING
-			std::unique_lock<std::mutex> lck(_callback_mutex);
-		#endif // SHAGA_THREADING
-		CALLBACK_LIST lst;
-		lst.swap (_at_exit_callback_list);
-		#ifdef SHAGA_THREADING
-			lck.unlock ();
+		std::unique_lock<std::mutex> lck(_callback_mutex);
 		#endif // SHAGA_THREADING
 
-		for (const auto &func : lst) {
+		CALLBACK_LIST lst;
+		lst.swap (_at_exit_callback_list);
+
+		#ifdef SHAGA_THREADING
+		lck.unlock ();
+		#endif // SHAGA_THREADING
+
+		for (auto &func : lst) {
 			if (func != nullptr) {
 				func ();
+				func = nullptr;
 			}
 		}
 		lst.clear ();
@@ -146,7 +149,10 @@ namespace shaga {
 
 		if (nullptr != _final_call) {
 			_final_call (text, rcode);
+			_final_call = nullptr;
 		}
+
+		P::set_enabled (false);
 
 		::exit (rcode);
 	}

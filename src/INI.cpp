@@ -101,7 +101,7 @@ namespace shaga {
 
 	void INI::parse_line (INI_MAP &m, const std::string &line, std::string &active_section, const bool allow_include)
 	{
-		if (line.empty ()) {
+		if (line.empty () == true) {
 			return;
 		}
 
@@ -166,7 +166,7 @@ namespace shaga {
 		}
 
 		const size_t pos = line.find_first_of ("=");
-		if (pos == std::string::npos || pos == 0) {
+		if (pos == std::string::npos || pos == 0 || pos == (line.size () - 1)) {
 			cThrow ("Malformed line '%s'", line.c_str ());
 		}
 

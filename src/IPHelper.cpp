@@ -360,13 +360,13 @@ namespace shaga {
 				cThrow ("Unknown protocol family");
 		}
 
-		memcpy (&_addr, &addr_in, sizeof (struct sockaddr_storage));
+		::memcpy (&_addr, &addr_in, sizeof (struct sockaddr_storage));
 		test ();
 	}
 
 	IPHelper::IPHelper (const Type type, const void *buf, const size_t sze)
 	{
-		memset (&_addr, 0, sizeof (_addr));
+		::memset (&_addr, 0, sizeof (_addr));
 		struct sockaddr_in* addr4 = (struct sockaddr_in*)&_addr;
 		struct sockaddr_in6* addr6 = (struct sockaddr_in6*)&_addr;
 

@@ -58,11 +58,11 @@ namespace shaga {
 			cThrow ("Filename is not set");
 		}
 
-		#ifdef O_BINARY
+#ifdef O_BINARY
 		int flags = O_BINARY;
-		#else
+#else
 		int flags = 0;
-		#endif // O_BINARY
+#endif // O_BINARY
 
 		if ((_mode & mREAD) && (_mode & mWRITE)) {
 			flags |= O_RDWR | O_CREAT;
@@ -125,7 +125,7 @@ namespace shaga {
 		}
 	}
 
-	void ShFile::close (void)
+	void ShFile::close (void) noexcept
 	{
 		if (nullptr != _printf_buf) {
 			::free (_printf_buf);

@@ -16,17 +16,17 @@ namespace shaga {
 		void set_name_log (const std::string &var);
 		void set_app_name (const std::string &var);
 
-		void check_size (const bool enabled);
-		void set_max_size_mb (const int soft, const int hard);
-		bool soft_limit_reached (void);
+		void check_size (const bool enabled) noexcept;
+		void set_max_size_mb (const int soft, const int hard) noexcept;
+		bool soft_limit_reached (void) noexcept;
 
 		void set_enabled (const bool enabled);
-		void show_ms (const bool enabled);
+		void show_ms (const bool enabled) noexcept;
 
-		void printf (const char *fmt, ...) throw ();
+		void printf (const char *fmt, ...) noexcept;
 
 		void debug_set_enabled (const bool enabled);
-		void debug_printf (const char *fmt, ...) throw ();
+		void debug_printf (const char *fmt, ...) noexcept;
 	}
 }
 

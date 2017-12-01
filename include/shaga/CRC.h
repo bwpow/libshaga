@@ -5,8 +5,8 @@ Copyright (c) 2012-2017, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_crc
-#define HEAD_shaga_crc
+#ifndef HEAD_shaga_CRC
+#define HEAD_shaga_CRC
 
 #include "common.h"
 
@@ -33,7 +33,7 @@ namespace shaga {
 
 	namespace CRC
 	{
-		/* CRC-64 */
+		/*** CRC-64 ***/
 		uint64_t crc64 (const char *buf, const size_t len, const uint64_t startval = 0);
 		uint64_t crc64 (const uint8_t *buf, const size_t len, const uint64_t startval = 0);
 
@@ -46,7 +46,7 @@ namespace shaga {
 		size_t crc64_check (const std::string &plain, const uint64_t startval = 0);
 		void crc64_add (std::string &plain, const uint64_t startval = 0);
 
-		/* CRC-32 zlib compatible */
+		/*** CRC-32 zlib compatible ***/
 		uint32_t crc32 (const char *buf, const size_t len, const uint32_t startval = 0);
 		uint32_t crc32 (const uint8_t *buf, const size_t len, const uint32_t startval = 0);
 
@@ -59,7 +59,7 @@ namespace shaga {
 		size_t crc32_check (const std::string &plain, const uint32_t startval = 0);
 		void crc32_add (std::string &plain, const uint32_t startval = 0);
 
-		/* CRC-32 Atmel CRCCU CCITT802.3 compatible */
+		/*** CRC-32 Atmel CRCCU CCITT802.3 compatible ***/
 		uint32_t crc32_atmel (const char *buf, const size_t len, const uint32_t startval = UINT32_MAX);
 		uint32_t crc32_atmel (const uint8_t *buf, const size_t len, const uint32_t startval = UINT32_MAX);
 
@@ -72,7 +72,7 @@ namespace shaga {
 		size_t crc32_atmel_check (const std::string &plain, const uint32_t startval = UINT32_MAX);
 		void crc32_atmel_add (std::string &plain, const uint32_t startval = UINT32_MAX);
 
-		/* CRC-8 */
+		/*** CRC-8 ***/
 		uint8_t crc8 (const char *buf, const size_t len, const uint8_t startval = 0);
 		uint8_t crc8 (const uint8_t *buf, const size_t len, const uint8_t startval = 0);
 
@@ -85,7 +85,7 @@ namespace shaga {
 		size_t crc8_check (const std::string &plain, const uint8_t startval = 0);
 		void crc8_add (std::string &plain, const uint8_t startval = 0);
 
-		/* SHA-256 */
+		/*** SHA-256 ***/
 		std::string sha256 (const char *buf, const size_t len);
 		std::string sha256 (const uint8_t *buf, const size_t len);
 
@@ -95,7 +95,7 @@ namespace shaga {
 			return sha256 (plain.data (), plain.size ());
 		}
 
-		/* SHA-512 */
+		/*** SHA-512 ***/
 		std::string sha512 (const char *buf, const size_t len);
 		std::string sha512 (const uint8_t *buf, const size_t len);
 
@@ -104,7 +104,42 @@ namespace shaga {
 		{
 			return sha512 (plain.data (), plain.size ());
 		}
+
+		/*** SipHash ***/
+		uint64_t siphash24 (const char *buf, const size_t len, const std::string &key);
+		uint64_t siphash24 (const uint8_t *buf, const size_t len, const std::string &key);
+		uint64_t siphash48 (const char *buf, const size_t len, const std::string &key);
+		uint64_t siphash48 (const uint8_t *buf, const size_t len, const std::string &key);
+
+		template<typename T>
+		uint64_t siphash24 (const T &plain, const std::string &key)
+		{
+			return siphash24 (plain.data (), plain.size (), key);
+		}
+
+		template<typename T>
+		uint64_t siphash48 (const T &plain, const std::string &key)
+		{
+			return siphash48 (plain.data (), plain.size (), key);
+		}
+
+		std::string siphash24_128 (const char *buf, const size_t len, const std::string &key);
+		std::string siphash24_128 (const uint8_t *buf, const size_t len, const std::string &key);
+		std::string siphash48_128 (const char *buf, const size_t len, const std::string &key);
+		std::string siphash48_128 (const uint8_t *buf, const size_t len, const std::string &key);
+
+		template<typename T>
+		std::string siphash24_128 (const T &plain, const std::string &key)
+		{
+			return siphash24_128 (plain.data (), plain.size (), key);
+		}
+
+		template<typename T>
+		std::string siphash48_128 (const T &plain, const std::string &key)
+		{
+			return siphash48_128 (plain.data (), plain.size (), key);
+		}
 	};
 };
 
-#endif // HEAD_shaga_crc
+#endif // HEAD_shaga_CRC

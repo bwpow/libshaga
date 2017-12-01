@@ -16,6 +16,7 @@ namespace shaga {
 	{
 		public:
 			explicit SPSCDataInterface () {}
+			virtual ~SPSCDataInterface () {}
 
 			/* Disable copy and assignment */
 			SPSCDataInterface (const SPSCDataInterface &) = delete;
@@ -157,26 +158,21 @@ namespace shaga {
 
 			virtual void alloc (void) override
 			{
-				if (nullptr == buffer) {
-					buffer = reinterpret_cast<uint8_t *> (::operator new (_bufsize, std::nothrow));
-					if (nullptr == buffer) {
-						cThrow ("Unable to allocate buffer");
-					}
-					_real_bufsize = _bufsize;
-				}
+				alloc (_bufsize);
 			}
 
 			virtual void alloc (const uint_fast32_t alloc_size) override
 			{
 				if (alloc_size != _real_bufsize) {
 					free ();
-				}
 
-				if (alloc_size > 0) {
-					buffer = reinterpret_cast<uint8_t *> (::operator new (alloc_size, std::nothrow));
-					if (nullptr == buffer) {
-						cThrow ("Unable to allocate buffer");
+					if (alloc_size > 0) {
+						buffer = reinterpret_cast<uint8_t *> (::operator new (alloc_size, std::nothrow));
+						if (nullptr == buffer) {
+							cThrow ("Unable to allocate buffer");
+						}
 					}
+
 					_real_bufsize = alloc_size;
 				}
 			}
@@ -186,8 +182,9 @@ namespace shaga {
 				if (nullptr != buffer) {
 					::operator delete (buffer, _real_bufsize);
 					buffer = nullptr;
-					_real_bufsize = 0;
 				}
+
+				_real_bufsize = 0;
 			}
 	};
 

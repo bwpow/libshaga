@@ -155,3 +155,8 @@ install: release_mt release_st lite_mt lite_st
 	$(CP) -v $(ST_RELEASELIB) $(DESTLIB)
 	$(CP) -v $(MT_LITELIB) $(DESTLIB)
 	$(CP) -v $(ST_LITELIB) $(DESTLIB)
+
+install_debug: debug_mt debug_st
+	$(CP) -av ./include/* $(DESTINCLUDE)
+	$(CP) -v $(MT_DEBUGLIB) $(DESTLIB)
+	$(CP) -v $(ST_DEBUGLIB) $(DESTLIB)

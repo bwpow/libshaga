@@ -250,6 +250,7 @@ namespace shaga
 #include "CRC.h"
 #include "STR.h"
 #include "P.h"
+#include "ShSocket.h"
 #include "ShFile.h"
 #include "FS.h"
 #include "BIN.h"

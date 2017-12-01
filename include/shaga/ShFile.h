@@ -58,7 +58,7 @@ namespace shaga {
 			ShFile& operator= (const ShFile &) = delete;
 
 			void open (void);
-			void close (void);
+			void close (void) noexcept;
 			void sync (const bool also_metadata = false);
 
 			void write (const std::string &data, const size_t len);

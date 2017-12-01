@@ -18,28 +18,28 @@ All rights reserved.
 namespace shaga {
 
 	namespace P {
-		static volatile bool _disabled_permanently = false;
+		static volatile bool _disabled_permanently {false};
 
-		static const int _buffer_size = 4096;
-		static const off64_t _bytes_per_mb = 1024 * 1024;
+		static const int _buffer_size {4096};
+		static const off64_t _bytes_per_mb {1024 * 1024};
 
-		static volatile bool _enabled = false;
+		static volatile bool _enabled {false};
 		static char _printf_buf[_buffer_size];
 		static char _printf_time[_buffer_size];
 		static char _printf_fname[PATH_MAX];
-		static bool _printf_ms = false;
+		static bool _printf_ms {false};
 
-		static bool _check_size = false;
-		static bool _soft_limit_reached = false;
-		static off64_t _limit_soft = 0;
-		static off64_t _limit_hard = 0;
+		static bool _check_size {false};
+		static bool _soft_limit_reached {false};
+		static off64_t _limit_soft {0};
+		static off64_t _limit_hard {0};
 
-		static bool _debug_enabled = false;
+		static bool _debug_enabled {false};
 		static char _debug_printf_buf[_buffer_size];
 
 		#ifdef SHAGA_THREADING
-			static std::mutex _printf_mutex;
-			static std::mutex _debug_printf_mutex;
+		static std::mutex _printf_mutex;
+		static std::mutex _debug_printf_mutex;
 		#endif // SHAGA_THREADING
 
 		static std::string _dir_log;
@@ -68,7 +68,7 @@ namespace shaga {
 
 	/////////////////////////////////////////////////////////////
 
-	void P::check_size (const bool enabled)
+	void P::check_size (const bool enabled) noexcept
 	{
 		_check_size = enabled;
 		if (enabled == false) {
@@ -76,14 +76,14 @@ namespace shaga {
 		}
 	}
 
-	void P::set_max_size_mb (const int soft, const int hard)
+	void P::set_max_size_mb (const int soft, const int hard) noexcept
 	{
 		_limit_soft = static_cast<off64_t> (soft) * _bytes_per_mb;
 		_limit_hard = static_cast<off64_t> (hard) * _bytes_per_mb;
 		_soft_limit_reached = false;
 	}
 
-	bool P::soft_limit_reached (void)
+	bool P::soft_limit_reached (void) noexcept
 	{
 		return _soft_limit_reached;
 	}
@@ -98,22 +98,24 @@ namespace shaga {
 			}
 		}
 		_enabled = enabled;
+
+		_printf_file.close ();
 	}
 
-	void P::show_ms (const bool enabled)
+	void P::show_ms (const bool enabled) noexcept
 	{
 		_printf_ms = enabled;
 	}
 
-	void P::printf (const char *fmt, ...) throw ()
+	void P::printf (const char *fmt, ...) noexcept
 	{
 		if (false == _enabled || true == _disabled_permanently) {
 			return;
 		}
 
 		#ifdef SHAGA_THREADING
-			// Since we can write logs to non-POSIX filesystems, let's do locking here instead on FS level.
-			std::lock_guard<std::mutex> lock(_printf_mutex);
+		// Since we can write logs to non-POSIX filesystems, let's do locking here instead on FS level.
+		std::lock_guard<std::mutex> lock(_printf_mutex);
 		#endif // SHAGA_THREADING
 
 		::va_list ap;
@@ -233,14 +235,14 @@ namespace shaga {
 		_debug_enabled = enabled;
 	}
 
-	void P::debug_printf (const char *fmt, ...) throw ()
+	void P::debug_printf (const char *fmt, ...) noexcept
 	{
 		if (false == _debug_enabled || true == _disabled_permanently) {
 			return;
 		}
 
 		#ifdef SHAGA_THREADING
-			std::lock_guard<std::mutex> lock(_debug_printf_mutex);
+		std::lock_guard<std::mutex> lock(_debug_printf_mutex);
 		#endif // SHAGA_THREADING
 
 		va_list ap;
