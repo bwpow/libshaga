@@ -58,6 +58,10 @@ namespace shaga {
 		}
 	}
 
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Endian detection  ///////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	void BIN::endian_detect (void)
 	{
 		#ifdef SHAGA_THREADING
@@ -72,13 +76,13 @@ namespace shaga {
 	bool BIN::is_little_endian (void)
 	{
 		endian_detect ();
-		return _endian == Endian::LITTLE;
+		return (_endian == Endian::LITTLE);
 	}
 
 	bool BIN::is_big_endian (void)
 	{
 		endian_detect ();
-		return _endian == Endian::BIG;
+		return (_endian == Endian::BIG);
 	}
 
 	std::string BIN::endian_to_string (void)
@@ -92,6 +96,10 @@ namespace shaga {
 
 		cThrow ("Undefined endian");
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Bitwise operations  /////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	void BIN::OR (std::string &lhs, const std::string &rhs)
 	{
@@ -137,6 +145,10 @@ namespace shaga {
 		}
 
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Hex operations  /////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	namespace BIN {
 		inline static uint8_t _byte_from_hex (const uint8_t b_high, const uint8_t b_low)
@@ -240,6 +252,10 @@ namespace shaga {
 		from_hex (from, out);
 		return out;
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Base64 functions  ///////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	/* Base64 adapted from episec.com/people/edelkind/arc/c/misc/base64.c‎ */
 
@@ -419,11 +435,18 @@ namespace shaga {
 		return out;
 	}
 
-	/*** big endian operations ***/
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Big endian operations  //////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	namespace BIN {
-		static thread_local uint8_t _be_le_buf[8];
-		static thread_local const uint8_t *_be_le_data;
+		#ifdef SHAGA_THREADING
+			static thread_local char _be_le_buf[8];
+			static thread_local const char *_be_le_data;
+		#else
+			static char _be_le_buf[8];
+			static const char *_be_le_data;
+		#endif // SHAGA_THREADING
 	}
 
 	void BIN::be_from_uint8 (const uint8_t v, std::string &s)
@@ -433,80 +456,31 @@ namespace shaga {
 
 	void BIN::be_from_uint16 (const uint16_t v, std::string &s)
 	{
-		#define BYTES 2
-
-		ENDIAN_IS_BIG
-			::memcpy (_be_le_buf, &v, BYTES);
-		ENDIAN_ELSE
-			#define TAS(p,x) _be_le_buf[p] = ((v >> x) & 0xFF)
-			TAS (0, 8);
-			TAS (1, 0);
-			#undef TAS
-		ENDIAN_END
-
-		s.append (reinterpret_cast<const char *> (_be_le_buf), BYTES);
-
-		#undef BYTES
+		_be_from_uint16 (v, _be_le_buf);
+		s.append (_be_le_buf, sizeof (uint16_t));
 	}
 
 	void BIN::be_from_uint24 (const uint32_t v, std::string &s)
 	{
-		#define BYTES 3
-
-		#define TAS(p,x) _be_le_buf[p] = ((v >> x) & 0xFF)
+		#define TAS(p,x) _be_le_buf[p] = static_cast<char> ((v >> x) & 0xFF)
 		TAS (0, 16);
 		TAS (1, 8);
 		TAS (2, 0);
 		#undef TAS
 
-		s.append (reinterpret_cast<const char *> (_be_le_buf), BYTES);
-
-		#undef BYTES
+		s.append (_be_le_buf, 3);
 	}
 
 	void BIN::be_from_uint32 (const uint32_t v, std::string &s)
 	{
-		#define BYTES 4
-
-		ENDIAN_IS_BIG
-			::memcpy (_be_le_buf, &v, BYTES);
-		ENDIAN_ELSE
-			#define TAS(p,x) _be_le_buf[p] = ((v >> x) & 0xFF)
-			TAS (0, 24);
-			TAS (1, 16);
-			TAS (2, 8);
-			TAS (3, 0);
-			#undef TAS
-		ENDIAN_END
-
-		s.append (reinterpret_cast<const char *> (_be_le_buf), BYTES);
-
-		#undef BYTES
+		_be_from_uint32 (v, _be_le_buf);
+		s.append (_be_le_buf, sizeof (uint32_t));
 	}
 
 	void BIN::be_from_uint64 (const uint64_t v, std::string &s)
 	{
-		#define BYTES 8
-
-		ENDIAN_IS_BIG
-			::memcpy (_be_le_buf, &v, BYTES);
-		ENDIAN_ELSE
-			#define TAS(p,x) _be_le_buf[p] = ((v >> x) & 0xFF)
-			TAS (0, 56);
-			TAS (1, 48);
-			TAS (2, 40);
-			TAS (3, 32);
-
-			TAS (4, 24);
-			TAS (5, 16);
-			TAS (6, 8);
-			TAS (7, 0);
-			#undef TAS
-		ENDIAN_END
-
-		s.append (reinterpret_cast<const char *> (_be_le_buf), BYTES);
-
-		#undef BYTES
+		_be_from_uint64 (v, _be_le_buf);
+		s.append (_be_le_buf, sizeof (uint64_t));
 	}
 
 	std::string BIN::be_from_uint8 (const uint8_t v)
@@ -546,30 +520,22 @@ namespace shaga {
 
 	void BIN::be_from_int8 (const int8_t v, std::string &s)
 	{
-		uint8_t uv;
-		memcpy (&uv, &v, sizeof (uint8_t));
-		be_from_uint8 (uv, s);
+		be_from_uint8 (static_cast<uint8_t> (v), s);
 	}
 
 	void BIN::be_from_int16 (const int16_t v, std::string &s)
 	{
-		uint16_t uv;
-		memcpy (&uv, &v, sizeof (uint16_t));
-		be_from_uint16 (uv, s);
+		be_from_uint16 (static_cast<uint16_t> (v), s);
 	}
 
 	void BIN::be_from_int32 (const int32_t v, std::string &s)
 	{
-		uint32_t uv;
-		memcpy (&uv, &v, sizeof (uint32_t));
-		be_from_uint32 (uv, s);
+		be_from_uint32 (static_cast<uint32_t> (v), s);
 	}
 
 	void BIN::be_from_int64 (const int64_t v, std::string &s)
 	{
-		uint64_t uv;
-		memcpy (&uv, &v, sizeof (uint64_t));
-		be_from_uint64 (uv, s);
+		be_from_uint64 (static_cast<uint64_t> (v), s);
 	}
 
 	std::string BIN::be_from_int8 (const int8_t v)
@@ -602,119 +568,50 @@ namespace shaga {
 
 	uint8_t BIN::be_to_uint8 (const std::string &s, size_t &offset)
 	{
-		const uint8_t v = static_cast<uint8_t> (s.at (offset));
-		++offset;
-		return v;
+		return static_cast<uint8_t> (s.at (offset++));
 	}
 
 	uint16_t BIN::be_to_uint16 (const std::string &s, size_t &offset)
 	{
-		#define BYTES 2
-
-		if (offset + BYTES > s.size ()) {
+		if (offset + sizeof (uint16_t) > s.size ()) {
 			cThrow ("Not enough bytes");
 		}
-		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint16_t v;
-
-		ENDIAN_IS_BIG
-			::memcpy (&v, _be_le_data, BYTES);
-		ENDIAN_ELSE
-			#define SAT(x) static_cast<uint16_t> (_be_le_data[x])
-			v =	SAT(0) << 8 |
-			SAT(1);
-			#undef SAT
-		ENDIAN_END
-
-		offset += BYTES;
-
-		#undef BYTES
-		return v;
+		return _be_to_uint16 (s.data (), offset);
 	}
 
 	uint32_t BIN::be_to_uint24 (const std::string &s, size_t &offset)
 	{
-		#define BYTES 3
-
-		if (offset + BYTES > s.size ()) {
+		if (offset + 3 > s.size ()) {
 			cThrow ("Not enough bytes");
 		}
-		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
+		_be_le_data = s.data () + offset;
 
-		uint32_t v;
-
-		#define SAT(x) static_cast<uint32_t> (_be_le_data[x])
-		v = SAT(0) << 16 |
-		SAT(1) << 8 |
-		SAT(2);
+		#define SAT(x) static_cast<uint8_t> (_be_le_data[x])
+		uint32_t v = (SAT(0) << 16) | (SAT(1) << 8) | SAT(2);
 		#undef SAT
 
-		offset += BYTES;
+		offset += 3;
 
-		#undef BYTES
 		return v;
 	}
 
 	uint32_t BIN::be_to_uint32 (const std::string &s, size_t &offset)
 	{
-		#define BYTES 4
-
-		if (offset + BYTES > s.size ()) {
+		if (offset + sizeof (uint32_t) > s.size ()) {
 			cThrow ("Not enough bytes");
 		}
-		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint32_t v;
-
-		ENDIAN_IS_BIG
-			::memcpy (&v, _be_le_data, BYTES);
-		ENDIAN_ELSE
-			#define SAT(x) static_cast<uint32_t> (_be_le_data[x])
-			v = SAT(0) << 24 |
-			SAT(1) << 16 |
-			SAT(2) << 8 |
-			SAT(3);
-			#undef SAT
-		ENDIAN_END
-
-		offset += BYTES;
-
-		#undef BYTES
-		return v;
+		return _be_to_uint32 (s.data (), offset);
 	}
 
 	uint64_t BIN::be_to_uint64 (const std::string &s, size_t &offset)
 	{
-		#define BYTES 8
-
-		if (offset + BYTES > s.size ()) {
+		if (offset + sizeof (uint64_t) > s.size ()) {
 			cThrow ("Not enough bytes");
 		}
-		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint64_t v;
-
-		ENDIAN_IS_BIG
-			::memcpy (&v, _be_le_data, BYTES);
-		ENDIAN_ELSE
-			#define SAT(x) static_cast<uint64_t> (_be_le_data[x])
-			v = SAT(0) << 56 |
-			SAT(1) << 48 |
-			SAT(2) << 40 |
-			SAT(3) << 32 |
-
-			SAT(4) << 24 |
-			SAT(5) << 16 |
-			SAT(6) << 8 |
-			SAT(7);
-			#undef SAT
-		ENDIAN_END
-
-		offset += BYTES;
-
-		#undef BYTES
-		return v;
+		return _be_to_uint64 (s.data (), offset);
 	}
 
 	uint8_t BIN::be_to_uint8 (const std::string &s)
@@ -749,34 +646,22 @@ namespace shaga {
 
 	int8_t BIN::be_to_int8 (const std::string &s, size_t &offset)
 	{
-		uint8_t uv = be_to_uint8 (s, offset);
-		int8_t v;
-		memcpy (&v, &uv, sizeof (int8_t));
-		return v;
+		return static_cast<int8_t> (be_to_uint8 (s, offset));
 	}
 
 	int16_t BIN::be_to_int16 (const std::string &s, size_t &offset)
 	{
-		uint16_t uv = be_to_uint16 (s, offset);
-		int16_t v;
-		memcpy (&v, &uv, sizeof (int16_t));
-		return v;
+		return static_cast<int16_t> (be_to_uint16 (s, offset));
 	}
 
 	int32_t BIN::be_to_int32 (const std::string &s, size_t &offset)
 	{
-		uint32_t uv = be_to_uint32 (s, offset);
-		int32_t v;
-		memcpy (&v, &uv, sizeof (int32_t));
-		return v;
+		return static_cast<int32_t> (be_to_uint32 (s, offset));
 	}
 
 	int64_t BIN::be_to_int64 (const std::string &s, size_t &offset)
 	{
-		uint64_t uv = be_to_uint64 (s, offset);
-		int64_t v;
-		memcpy (&v, &uv, sizeof (int64_t));
-		return v;
+		return static_cast<int64_t> (be_to_uint64 (s, offset));
 	}
 
 	int8_t BIN::be_to_int8 (const std::string &s)
@@ -803,7 +688,9 @@ namespace shaga {
 		return be_to_int64 (s, offset);
 	}
 
-	/*** little endian operations ***/
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Little endian operations  ///////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	void BIN::from_uint8 (const uint8_t v, std::string &s)
 	{
@@ -812,80 +699,31 @@ namespace shaga {
 
 	void BIN::from_uint16 (const uint16_t v, std::string &s)
 	{
-		#define BYTES 2
-
-		ENDIAN_IS_LITTLE
-			::memcpy (_be_le_buf, &v, BYTES);
-		ENDIAN_ELSE
-			#define TAS(p,x) _be_le_buf[p] = ((v >> x) & 0xFF)
-			TAS (0, 0);
-			TAS (1, 8);
-			#undef TAS
-		ENDIAN_END
-
-		s.append (reinterpret_cast<const char *> (_be_le_buf), BYTES);
-
-		#undef BYTES
+		_from_uint16 (v, _be_le_buf);
+		s.append (_be_le_buf, sizeof (uint16_t));
 	}
 
 	void BIN::from_uint24 (const uint32_t v, std::string &s)
 	{
-		#define BYTES 3
-
-		#define TAS(p,x) _be_le_buf[p] = ((v >> x) & 0xFF)
+		#define TAS(p,x) _be_le_buf[p] = static_cast<unsigned char> ((v >> x) & 0xFF)
 		TAS (0, 0);
 		TAS (1, 8);
 		TAS (2, 16);
 		#undef TAS
 
-		s.append (reinterpret_cast<const char *> (_be_le_buf), BYTES);
-
-		#undef BYTES
+		s.append (_be_le_buf, 3);
 	}
 
 	void BIN::from_uint32 (const uint32_t v, std::string &s)
 	{
-		#define BYTES 4
-
-		ENDIAN_IS_LITTLE
-			::memcpy (_be_le_buf, &v, BYTES);
-		ENDIAN_ELSE
-			#define TAS(p,x) _be_le_buf[p] = ((v >> x) & 0xFF)
-			TAS (0, 0);
-			TAS (1, 8);
-			TAS (2, 16);
-			TAS (3, 24);
-			#undef TAS
-		ENDIAN_END
-
-		s.append (reinterpret_cast<const char *> (_be_le_buf), BYTES);
-
-		#undef BYTES
+		_from_uint32 (v, _be_le_buf);
+		s.append (_be_le_buf, sizeof (uint32_t));
 	}
 
 	void BIN::from_uint64 (const uint64_t v, std::string &s)
 	{
-		#define BYTES 8
-
-		ENDIAN_IS_LITTLE
-			::memcpy (_be_le_buf, &v, BYTES);
-		ENDIAN_ELSE
-			#define TAS(p,x) _be_le_buf[p] = ((v >> x) & 0xFF)
-			TAS (0, 0);
-			TAS (1, 8);
-			TAS (2, 16);
-			TAS (3, 24);
-
-			TAS (4, 32);
-			TAS (5, 40);
-			TAS (6, 48);
-			TAS (7, 56);
-			#undef TAS
-		ENDIAN_END
-
-		s.append (reinterpret_cast<const char *> (_be_le_buf), BYTES);
-
-		#undef BYTES
+		_from_uint64 (v, _be_le_buf);
+		s.append (_be_le_buf, sizeof (uint64_t));
 	}
 
 	std::string BIN::from_uint8 (const uint8_t v)
@@ -925,30 +763,22 @@ namespace shaga {
 
 	void BIN::from_int8 (const int8_t v, std::string &s)
 	{
-		uint8_t uv;
-		::memcpy (&uv, &v, sizeof (uint8_t));
-		from_uint8 (uv, s);
+		from_uint8 (static_cast<uint8_t> (v), s);
 	}
 
 	void BIN::from_int16 (const int16_t v, std::string &s)
 	{
-		uint16_t uv;
-		::memcpy (&uv, &v, sizeof (uint16_t));
-		from_uint16 (uv, s);
+		from_uint16 (static_cast<uint16_t> (v), s);
 	}
 
 	void BIN::from_int32 (const int32_t v, std::string &s)
 	{
-		uint32_t uv;
-		::memcpy (&uv, &v, sizeof (uint32_t));
-		from_uint32 (uv, s);
+		from_uint32 (static_cast<uint32_t> (v), s);
 	}
 
 	void BIN::from_int64 (const int64_t v, std::string &s)
 	{
-		uint64_t uv;
-		::memcpy (&uv, &v, sizeof (uint64_t));
-		from_uint64 (uv, s);
+		from_uint64 (static_cast<uint64_t> (v), s);
 	}
 
 	std::string BIN::from_int8 (const int8_t v)
@@ -981,119 +811,50 @@ namespace shaga {
 
 	uint8_t BIN::to_uint8 (const std::string &s, size_t &offset)
 	{
-		const uint8_t v = static_cast<uint8_t> (s.at (offset));
-		++offset;
-		return v;
+		return static_cast<uint8_t> (s.at (offset++));
 	}
 
 	uint16_t BIN::to_uint16 (const std::string &s, size_t &offset)
 	{
-		#define BYTES 2
-
-		if (offset + BYTES > s.size ()) {
+		if (offset + sizeof (uint16_t) > s.size ()) {
 			cThrow ("Not enough bytes");
 		}
-		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint16_t v;
-
-		ENDIAN_IS_LITTLE
-			::memcpy (&v, _be_le_data, BYTES);
-		ENDIAN_ELSE
-			#define SAT(x) static_cast<uint16_t> (_be_le_data[x])
-			v = SAT(0) |
-			SAT(1) << 8;
-			#undef SAT
-		ENDIAN_END
-
-		offset += BYTES;
-
-		#undef BYTES
-		return v;
+		return _to_uint16 (s.data (), offset);
 	}
 
 	uint32_t BIN::to_uint24 (const std::string &s, size_t &offset)
 	{
-		#define BYTES 3
-
-		if (offset + BYTES > s.size ()) {
+		if (offset + 3 > s.size ()) {
 			cThrow ("Not enough bytes");
 		}
-		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
+		_be_le_data = s.data () + offset;
 
-		uint32_t v;
-
-		#define SAT(x) static_cast<uint32_t> (_be_le_data[x])
-		v = SAT(0) |
-		SAT(1) << 8 |
-		SAT(2) << 16;
+		#define SAT(x) static_cast<uint8_t> (_be_le_data[x])
+		uint32_t v = SAT(0) | (SAT(1) << 8) | (SAT(2) << 16);
 		#undef SAT
 
-		offset += BYTES;
+		offset += 3;
 
-		#undef BYTES
 		return v;
 	}
 
 	uint32_t BIN::to_uint32 (const std::string &s, size_t &offset)
 	{
-		#define BYTES 4
-
-		if (offset + BYTES > s.size ()) {
+		if (offset + sizeof (uint32_t) > s.size ()) {
 			cThrow ("Not enough bytes");
 		}
-		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint32_t v;
-
-		ENDIAN_IS_LITTLE
-			::memcpy (&v, _be_le_data, BYTES);
-		ENDIAN_ELSE
-			#define SAT(x) static_cast<uint32_t> (_be_le_data[x])
-			v = SAT(0) |
-			SAT(1) << 8 |
-			SAT(2) << 16 |
-			SAT(3) << 24;
-			#undef SAT
-		ENDIAN_END
-
-		offset += BYTES;
-
-		#undef BYTES
-		return v;
+		return _to_uint32 (s.data (), offset);
 	}
 
 	uint64_t BIN::to_uint64 (const std::string &s, size_t &offset)
 	{
-		#define BYTES 8
-
-		if (offset + BYTES > s.size ()) {
+		if (offset + sizeof (uint64_t) > s.size ()) {
 			cThrow ("Not enough bytes");
 		}
-		_be_le_data = reinterpret_cast<const uint8_t*> (s.data ()) + offset;
 
-		uint64_t v;
-
-		ENDIAN_IS_LITTLE
-			::memcpy (&v, _be_le_data, BYTES);
-		ENDIAN_ELSE
-			#define SAT(x) static_cast<uint64_t> (_be_le_data[x])
-			v = SAT(0) |
-			SAT(1) << 8 |
-			SAT(2) << 16 |
-			SAT(3) << 24 |
-
-			SAT(4) << 32 |
-			SAT(5) << 40 |
-			SAT(6) << 48 |
-			SAT(7) << 56;
-			#undef SAT
-		ENDIAN_END
-
-		offset += BYTES;
-
-		#undef BYTES
-		return v;
+		return _to_uint64 (s.data (), offset);
 	}
 
 	uint8_t BIN::to_uint8 (const std::string &s)
@@ -1128,34 +889,22 @@ namespace shaga {
 
 	int8_t BIN::to_int8 (const std::string &s, size_t &offset)
 	{
-		uint8_t uv = to_uint8 (s, offset);
-		int8_t v;
-		::memcpy (&v, &uv, sizeof (int8_t));
-		return v;
+		return static_cast<int8_t> (to_uint8 (s, offset));
 	}
 
 	int16_t BIN::to_int16 (const std::string &s, size_t &offset)
 	{
-		uint16_t uv = to_uint16 (s, offset);
-		int16_t v;
-		::memcpy (&v, &uv, sizeof (int16_t));
-		return v;
+		return static_cast<int16_t> (to_uint16 (s, offset));
 	}
 
 	int32_t BIN::to_int32 (const std::string &s, size_t &offset)
 	{
-		uint32_t uv = to_uint32 (s, offset);
-		int32_t v;
-		::memcpy (&v, &uv, sizeof (int32_t));
-		return v;
+		return static_cast<int32_t> (to_uint32 (s, offset));
 	}
 
 	int64_t BIN::to_int64 (const std::string &s, size_t &offset)
 	{
-		uint64_t uv = to_uint64 (s, offset);
-		int64_t v;
-		::memcpy (&v, &uv, sizeof (int64_t));
-		return v;
+		return static_cast<int64_t> (to_uint64 (s, offset));
 	}
 
 	int8_t BIN::to_int8 (const std::string &s)
@@ -1182,7 +931,9 @@ namespace shaga {
 		return to_int64 (s, offset);
 	}
 
-	/*** size ***/
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Size functions  /////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	size_t BIN::to_size (const std::string &s, size_t &offset)
 	{

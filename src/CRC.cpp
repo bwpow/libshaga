@@ -306,7 +306,7 @@ namespace shaga {
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  CRC-32  zlib compatible  ////////////////////////////////////////////////////////////////////////////////////
+	//  CRC-32 zlib compatible  /////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	uint32_t CRC::crc32 (const char *buf, const size_t len, const uint32_t startval)
@@ -527,84 +527,58 @@ namespace shaga {
 		#undef SIPHASH_DATA
 	};
 
-	uint64_t CRC::siphash24 (const char *buf, const size_t len, const std::string &key)
+	std::pair<uint64_t, uint64_t> CRC::siphash_extract_key (const std::string &key)
 	{
 		if (key.size () != 16) {
-			cThrow ("Key size must be 16 bytes");
+			cThrow ("SipHash key must be exactly 16 bytes (128 bit) long");
 		}
-		return _calc_siphash24 (reinterpret_cast<const uint8_t *> (buf), len,
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data ())),
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data () + 8)));
+
+		std::pair<uint64_t, uint64_t> out;
+
+		out.first = _siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data ()));
+		out.second = _siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data () + 8));
+
+		return out;
 	}
 
-	uint64_t CRC::siphash24 (const uint8_t *buf, const size_t len, const std::string &key)
+	uint64_t CRC::siphash24 (const char *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
 	{
-		if (key.size () != 16) {
-			cThrow ("Key size must be 16 bytes");
-		}
-		return _calc_siphash24 (buf, len,
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data ())),
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data () + 8)));
+		return _calc_siphash24 (reinterpret_cast<const uint8_t *> (buf), len, key.first, key.second);
 	}
 
-	uint64_t CRC::siphash48 (const char *buf, const size_t len, const std::string &key)
+	uint64_t CRC::siphash24 (const uint8_t *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
 	{
-		if (key.size () != 16) {
-			cThrow ("Key size must be 16 bytes");
-		}
-		return _calc_siphash48 (reinterpret_cast<const uint8_t *> (buf), len,
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data ())),
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data () + 8)));
+		return _calc_siphash24 (buf, len, key.first, key.second);
 	}
 
-	uint64_t CRC::siphash48 (const uint8_t *buf, const size_t len, const std::string &key)
+	uint64_t CRC::siphash48 (const char *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
 	{
-		if (key.size () != 16) {
-			cThrow ("Key size must be 16 bytes");
-		}
-		return _calc_siphash48 (buf, len,
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data ())),
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data () + 8)));
+		return _calc_siphash48 (reinterpret_cast<const uint8_t *> (buf), len, key.first, key.second);
 	}
 
-	std::string CRC::siphash24_128 (const char *buf, const size_t len, const std::string &key)
+	uint64_t CRC::siphash48 (const uint8_t *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
 	{
-		if (key.size () != 16) {
-			cThrow ("Key size must be 16 bytes");
-		}
-		return _calc_siphash24_128 (reinterpret_cast<const uint8_t *> (buf), len,
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data ())),
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data () + 8)));
+		return _calc_siphash48 (buf, len, key.first, key.second);
 	}
 
-	std::string CRC::siphash24_128 (const uint8_t *buf, const size_t len, const std::string &key)
+	std::string CRC::siphash24_128 (const char *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
 	{
-		if (key.size () != 16) {
-			cThrow ("Key size must be 16 bytes");
-		}
-		return _calc_siphash24_128 (buf, len,
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data ())),
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data () + 8)));
+		return _calc_siphash24_128 (reinterpret_cast<const uint8_t *> (buf), len, key.first, key.second);
 	}
 
-	std::string CRC::siphash48_128 (const char *buf, const size_t len, const std::string &key)
+	std::string CRC::siphash24_128 (const uint8_t *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
 	{
-		if (key.size () != 16) {
-			cThrow ("Key size must be 16 bytes");
-		}
-		return _calc_siphash48_128 (reinterpret_cast<const uint8_t *> (buf), len,
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data ())),
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data () + 8)));
+		return _calc_siphash24_128 (buf, len, key.first, key.second);
 	}
 
-	std::string CRC::siphash48_128 (const uint8_t *buf, const size_t len, const std::string &key)
+	std::string CRC::siphash48_128 (const char *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
 	{
-		if (key.size () != 16) {
-			cThrow ("Key size must be 16 bytes");
-		}
-		return _calc_siphash48_128 (buf, len,
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data ())),
-			_siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data () + 8)));
+		return _calc_siphash48_128 (reinterpret_cast<const uint8_t *> (buf), len, key.first, key.second);
+	}
+
+	std::string CRC::siphash48_128 (const uint8_t *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
+	{
+		return _calc_siphash48_128 (buf, len, key.first, key.second);
 	}
 
 };

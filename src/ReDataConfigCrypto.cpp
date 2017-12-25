@@ -262,7 +262,7 @@ namespace shaga {
 
 			/* Plain size cannot be larger than decrypted size minus last 3 bytes */
 			if (plain_size > (decrypted_size - 3)) {
-				cThrow ("Decryption failed");
+				cThrow ("Decryption failed, size mismatch");
 			}
 
 			/* Strip padding from the end of decrypted data */

@@ -410,7 +410,7 @@ TEST (EncDecSPSC, uart_push_pop)
 	_uartspsc_test<SPSCDataDynAlloc> ();
 }
 
-TEST (EncDecSPSC,uart_different_sizes)
+TEST (EncDecSPSC, uart_different_sizes)
 {
 	_uartspsc_sizes_test<SPSCDataPreAlloc> ();
 	_uartspsc_sizes_test<SPSCDataDynAlloc> ();
@@ -426,7 +426,7 @@ TEST (EncDecSPSC, packet_push_pop)
 	_packetspsc_test<SPSCDataDynAlloc> ();
 }
 
-TEST (EncDecSPSC,packet_different_sizes)
+TEST (EncDecSPSC, packet_different_sizes)
 {
 	_packet_sizes_test<SPSCDataDynAlloc> ();
 }
@@ -436,12 +436,12 @@ TEST (EncDecSPSC, seqpacket_push_pop_prealloc)
 	_seqpacketspsc_test<SPSCDataPreAlloc> ();
 }
 
-TEST (EncDecSPSC,seqpacket_push_pop)
+TEST (EncDecSPSC, seqpacket_push_pop)
 {
 	_seqpacketspsc_test<SPSCDataDynAlloc> ();
 }
 
-TEST (EncDecSPSC,seqpacket_different_sizes)
+TEST (EncDecSPSC, seqpacket_different_sizes)
 {
 	_seqpacket_sizes_test<SPSCDataDynAlloc> ();
 }

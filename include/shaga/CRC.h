@@ -106,36 +106,38 @@ namespace shaga {
 		}
 
 		/*** SipHash ***/
-		uint64_t siphash24 (const char *buf, const size_t len, const std::string &key);
-		uint64_t siphash24 (const uint8_t *buf, const size_t len, const std::string &key);
-		uint64_t siphash48 (const char *buf, const size_t len, const std::string &key);
-		uint64_t siphash48 (const uint8_t *buf, const size_t len, const std::string &key);
+		std::pair<uint64_t, uint64_t> siphash_extract_key (const std::string &key);
+
+		uint64_t siphash24 (const char *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key);
+		uint64_t siphash24 (const uint8_t *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key);
+		uint64_t siphash48 (const char *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key);
+		uint64_t siphash48 (const uint8_t *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key);
 
 		template<typename T>
-		uint64_t siphash24 (const T &plain, const std::string &key)
+		uint64_t siphash24 (const T &plain, const std::pair<uint64_t, uint64_t> &key)
 		{
 			return siphash24 (plain.data (), plain.size (), key);
 		}
 
 		template<typename T>
-		uint64_t siphash48 (const T &plain, const std::string &key)
+		uint64_t siphash48 (const T &plain, const std::pair<uint64_t, uint64_t> &key)
 		{
 			return siphash48 (plain.data (), plain.size (), key);
 		}
 
-		std::string siphash24_128 (const char *buf, const size_t len, const std::string &key);
-		std::string siphash24_128 (const uint8_t *buf, const size_t len, const std::string &key);
-		std::string siphash48_128 (const char *buf, const size_t len, const std::string &key);
-		std::string siphash48_128 (const uint8_t *buf, const size_t len, const std::string &key);
+		std::string siphash24_128 (const char *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key);
+		std::string siphash24_128 (const uint8_t *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key);
+		std::string siphash48_128 (const char *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key);
+		std::string siphash48_128 (const uint8_t *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key);
 
 		template<typename T>
-		std::string siphash24_128 (const T &plain, const std::string &key)
+		std::string siphash24_128 (const T &plain, const std::pair<uint64_t, uint64_t> &key)
 		{
 			return siphash24_128 (plain.data (), plain.size (), key);
 		}
 
 		template<typename T>
-		std::string siphash48_128 (const T &plain, const std::string &key)
+		std::string siphash48_128 (const T &plain, const std::pair<uint64_t, uint64_t> &key)
 		{
 			return siphash48_128 (plain.data (), plain.size (), key);
 		}

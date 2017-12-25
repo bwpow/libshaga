@@ -19,24 +19,23 @@ All rights reserved.
 
 static_assert (sizeof (uint64_t) == 8, "Expected uint64_t to be 8 bytes");
 
+static inline void _siphash_to_uint64 (const uint8_t *data, uint64_t &v)
+{
+	::memcpy (&v, data, 8);
+
+	ENDIAN_IS_BIG
+		v = __builtin_bswap64 (v);
+	ENDIAN_END
+}
+
 static inline uint64_t _siphash_to_uint64 (const uint8_t *data)
 {
-	uint64_t v = 0;
+	uint64_t v;
 
-	ENDIAN_IS_LITTLE
-		::memcpy (&v, data, 8);
-	ENDIAN_ELSE
-		#define SAT(x)  static_cast<uint64_t> (data[x])
-		v = SAT(0) |
-		SAT(1) << 8 |
-		SAT(2) << 16 |
-		SAT(3) << 24 |
+	::memcpy (&v, data, 8);
 
-		SAT(4) << 32 |
-		SAT(5) << 40 |
-		SAT(6) << 48 |
-		SAT(7) << 56;
-		#undef SAT
+	ENDIAN_IS_BIG
+		v = __builtin_bswap64 (v);
 	ENDIAN_END
 
 	return v;
@@ -92,7 +91,7 @@ static inline uint64_t _calc_siphash24 SIPHASH_PARAMS
 	SIPHASH_BEGIN
 
 	for (; in != end; in += 8) {
-		val = _siphash_to_uint64 (in);
+		_siphash_to_uint64 (in, val);
 		vv3 ^= val;
 		SIPHASH_ROUND
 		SIPHASH_ROUND
@@ -121,7 +120,7 @@ static inline std::string _calc_siphash24_64 SIPHASH_PARAMS
 	SIPHASH_BEGIN
 
 	for (; in != end; in += 8) {
-		val = _siphash_to_uint64 (in);
+		_siphash_to_uint64 (in, val);
 		vv3 ^= val;
 		SIPHASH_ROUND
 		SIPHASH_ROUND
@@ -152,7 +151,7 @@ static inline std::string _calc_siphash24_128 SIPHASH_PARAMS
 	vv1 ^= 0xeeULL;
 
 	for (; in != end; in += 8) {
-		val = _siphash_to_uint64 (in);
+		_siphash_to_uint64 (in, val);
 		vv3 ^= val;
 		SIPHASH_ROUND
 		SIPHASH_ROUND
@@ -190,7 +189,7 @@ static inline uint64_t _calc_siphash48 SIPHASH_PARAMS
 	SIPHASH_BEGIN
 
 	for (; in != end; in += 8) {
-		val = _siphash_to_uint64 (in);
+		_siphash_to_uint64 (in, val);
 		vv3 ^= val;
 		SIPHASH_ROUND
 		SIPHASH_ROUND
@@ -226,7 +225,7 @@ static inline std::string _calc_siphash48_64 SIPHASH_PARAMS
 	SIPHASH_BEGIN
 
 	for (; in != end; in += 8) {
-		val = _siphash_to_uint64 (in);
+		_siphash_to_uint64 (in, val);
 		vv3 ^= val;
 		SIPHASH_ROUND
 		SIPHASH_ROUND
@@ -264,7 +263,7 @@ static inline std::string _calc_siphash48_128 SIPHASH_PARAMS
 	vv1 ^= 0xeeULL;
 
 	for (; in != end; in += 8) {
-		val = _siphash_to_uint64 (in);
+		_siphash_to_uint64 (in, val);
 		vv3 ^= val;
 		SIPHASH_ROUND
 		SIPHASH_ROUND

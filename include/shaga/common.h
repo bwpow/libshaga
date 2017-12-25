@@ -145,16 +145,20 @@ All rights reserved.
 #if BYTE_ORDER == LITTLE_ENDIAN
 	#define ENDIAN_IS_BIG if (false) {
 	#define ENDIAN_IS_LITTLE if (true) {
+	#define ENDIAN_END }
 #elif BYTE_ORDER == BIG_ENDIAN
 	#define ENDIAN_IS_BIG if (true) {
 	#define ENDIAN_IS_LITTLE if (false) {
+	#define ENDIAN_END }
 #else
 	#define ENDIAN_IS_BIG if (BIN::Endian::BIG == BIN::_endian) {
 	#define ENDIAN_IS_LITTLE if (BIN::Endian::LITTLE == BIN::_endian) {
+	#define ENDIAN_END }
 #endif
 
-#define ENDIAN_ELSE } else {
-#define ENDIAN_END }
+#define ENDIAN_BSWAP16(val) val = __builtin_bswap16 (val)
+#define ENDIAN_BSWAP32(val) val = __builtin_bswap32 (val)
+#define ENDIAN_BSWAP64(val) val = __builtin_bswap64 (val)
 
 namespace shaga
 {
@@ -253,6 +257,7 @@ namespace shaga
 #include "ShSocket.h"
 #include "ShFile.h"
 #include "FS.h"
+#include "BINstatic.h"
 #include "BIN.h"
 #include "ChunkMeta.h"
 #include "Chunk.h"

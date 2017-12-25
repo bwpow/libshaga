@@ -7,43 +7,43 @@ TESTSOURCES = $(wildcard $(TESTSRCDIR)/*.cpp)
 MT_RELEASEDIR = $(OBJDIR)/release_mt
 MT_RELEASELIB = $(LIBDIR)/libshaga.a
 MT_RELEASEOBJS = $(addprefix $(MT_RELEASEDIR)/, $(LIBSOURCES:.cpp=.o))
-MT_RELEASEFLAGS = -s -O2 -Iinclude -include shaga.h
+MT_RELEASEFLAGS = -s -O3 -Iinclude -include shaga.h
 
 ST_RELEASEDIR = $(OBJDIR)/release_st
 ST_RELEASELIB = $(LIBDIR)/libshaga_st.a
 ST_RELEASEOBJS = $(addprefix $(ST_RELEASEDIR)/, $(LIBSOURCES:.cpp=.o))
-ST_RELEASEFLAGS = -DSHAGA_SINGLE_THREAD -s -O2 -Iinclude -include shaga.h
+ST_RELEASEFLAGS = -DSHAGA_SINGLE_THREAD -s -O3 -Iinclude -include shaga.h
 
 MT_LITEDIR = $(OBJDIR)/lite_mt
 MT_LITELIB = $(LIBDIR)/libshagalite.a
 MT_LITEOBJS = $(addprefix $(MT_LITEDIR)/, $(LIBSOURCES:.cpp=.o))
-MT_LITEFLAGS = -s -O2 -Iinclude -include shagalite.h
+MT_LITEFLAGS = -s -O3 -Iinclude -include shagalite.h
 
 ST_LITEDIR = $(OBJDIR)/lite_st
 ST_LITELIB = $(LIBDIR)/libshagalite_st.a
 ST_LITEOBJS = $(addprefix $(ST_LITEDIR)/, $(LIBSOURCES:.cpp=.o))
-ST_LITEFLAGS = -DSHAGA_SINGLE_THREAD -s -O2 -Iinclude -include shagalite.h
+ST_LITEFLAGS = -DSHAGA_SINGLE_THREAD -s -O3 -Iinclude -include shagalite.h
 
 MT_DEBUGDIR = $(OBJDIR)/debug_mt
 MT_DEBUGLIB = $(LIBDIR)/libshaga_debug.a
 MT_DEBUGOBJS = $(addprefix $(MT_DEBUGDIR)/, $(LIBSOURCES:.cpp=.o))
-MT_DEBUGFLAGS = -g -O2 -Iinclude -include shaga.h
+MT_DEBUGFLAGS = -g -O3 -Iinclude -include shaga.h
 
 ST_DEBUGDIR = $(OBJDIR)/debug_st
 ST_DEBUGLIB = $(LIBDIR)/libshaga_st_debug.a
 ST_DEBUGOBJS = $(addprefix $(ST_DEBUGDIR)/, $(LIBSOURCES:.cpp=.o))
-ST_DEBUGFLAGS = -DSHAGA_SINGLE_THREAD -g -O2 -Iinclude -include shaga.h
+ST_DEBUGFLAGS = -DSHAGA_SINGLE_THREAD -g -O3 -Iinclude -include shaga.h
 
 MT_TESTDIR = $(OBJDIR)/test_mt
 MT_TESTBIN = $(BINDIR)/test_mt.$(BINEXT)
 MT_TESTOBJS = $(addprefix $(MT_TESTDIR)/, $(TESTSOURCES:.cpp=.o))
-MT_TESTFLAGS = -g -O2 -Iinclude
+MT_TESTFLAGS = -g -O3 -Iinclude
 MT_TESTLIBS = -lgtest
 
 ST_TESTDIR = $(OBJDIR)/test_st
 ST_TESTBIN = $(BINDIR)/test_st.$(BINEXT)
 ST_TESTOBJS = $(addprefix $(ST_TESTDIR)/, $(TESTSOURCES:.cpp=.o))
-ST_TESTFLAGS = -DSHAGA_SINGLE_THREAD -g -O2 -Iinclude
+ST_TESTFLAGS = -DSHAGA_SINGLE_THREAD -g -O3 -Iinclude
 ST_TESTLIBS = -lgtest
 
 .PHONY: all lib test prep clean distclean remake debug debug_st release release_st lite lite_st test test_st install
