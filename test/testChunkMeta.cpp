@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.txt):
 
-Copyright (c) 2012-2017, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2018, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/

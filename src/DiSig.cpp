@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2017, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2018, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -25,7 +25,8 @@ namespace shaga {
 	{
 		if (err != 0) {
 			char buf[256];
-			mbedtls_strerror (err, buf, sizeof (buf));
+			::memset (buf, 0, sizeof (buf));
+			mbedtls_strerror (err, buf, sizeof (buf) - 1);
 			cThrow ("DiSig error: %s", buf);
 		}
 	}
@@ -46,12 +47,12 @@ namespace shaga {
 	void DiSig::check_hash (const mbedtls_md_type_t md_alg, const std::string &hsh) const
 	{
 		const mbedtls_md_info_t *info = mbedtls_md_info_from_type (md_alg);
-		if (info == nullptr) {
+		if (nullptr == info) {
 			cThrow ("Unknown hash type");
 		}
 
 		if (info->size != static_cast<int> (hsh.size ())) {
-			cThrow ("Hash %s expects %d bytes but %d bytes provided", info->name, info->size, static_cast<int> (hsh.size ()));
+			cThrow ("Hash %s expects %d bytes but %d bytes provided", info->name, static_cast<int> (info->size), static_cast<int> (hsh.size ()));
 		}
 	}
 
@@ -63,7 +64,7 @@ namespace shaga {
 	{
 		mbedtls_entropy_init (&_entropy);
 		mbedtls_ctr_drbg_init (&_ctr_drbg);
-		mbedtls_pk_init  (&_enc_ctx);
+		mbedtls_pk_init (&_enc_ctx);
 
 		int ret = mbedtls_ctr_drbg_seed (&_ctr_drbg, mbedtls_entropy_func, &_entropy, reinterpret_cast<const unsigned char *> (seed.data()), seed.size ());
 		check_error (ret);
@@ -118,13 +119,13 @@ namespace shaga {
 		unsigned char output_buf[16000];
 		int ret;
 
-		memset (output_buf, 0, sizeof (output_buf));
-		ret = mbedtls_pk_write_key_pem (&_enc_ctx, output_buf, sizeof (output_buf));
+		::memset (output_buf, 0, sizeof (output_buf));
+		ret = mbedtls_pk_write_key_pem (&_enc_ctx, output_buf, sizeof (output_buf) - 1);
 		check_error (ret);
 		dump_to_file (fname_priv, output_buf);
 
-		memset (output_buf, 0, sizeof (output_buf));
-		ret = mbedtls_pk_write_pubkey_pem (&_enc_ctx, output_buf, sizeof (output_buf));
+		::memset (output_buf, 0, sizeof (output_buf));
+		ret = mbedtls_pk_write_pubkey_pem (&_enc_ctx, output_buf, sizeof (output_buf) - 1);
 		check_error (ret);
 		dump_to_file (fname_pub, reinterpret_cast<const unsigned char *> (BIN::to_base64 (std::string (reinterpret_cast<const char *> (output_buf)), true).c_str ()));
 	}
@@ -134,8 +135,8 @@ namespace shaga {
 		unsigned char output_buf[16000];
 		int ret;
 
-		memset (output_buf, 0, sizeof (output_buf));
-		ret = mbedtls_pk_write_key_pem (&_enc_ctx, output_buf, sizeof (output_buf));
+		::memset (output_buf, 0, sizeof (output_buf));
+		ret = mbedtls_pk_write_key_pem (&_enc_ctx, output_buf, sizeof (output_buf) - 1);
 		check_error (ret);
 
 		return std::string (reinterpret_cast<const char *> (output_buf));
@@ -146,8 +147,8 @@ namespace shaga {
 		unsigned char output_buf[16000];
 		int ret;
 
-		memset (output_buf, 0, sizeof (output_buf));
-		ret = mbedtls_pk_write_pubkey_pem (&_enc_ctx, output_buf, sizeof (output_buf));
+		::memset (output_buf, 0, sizeof (output_buf));
+		ret = mbedtls_pk_write_pubkey_pem (&_enc_ctx, output_buf, sizeof (output_buf) - 1);
 		check_error (ret);
 
 		return BIN::to_base64 (std::string (reinterpret_cast<const char *> (output_buf)), true);
@@ -204,7 +205,7 @@ namespace shaga {
 
 		for(DEC_CTX_ENTRY &entry : _dec_ctx_list) {
 			ret = mbedtls_pk_verify (&(entry.ctx), md_alg, reinterpret_cast<const unsigned char *> (hsh.data ()), hsh.size (), reinterpret_cast<const unsigned char *> (sgn.data ()), sgn.size ());
-			if (ret == 0) {
+			if (0 == ret) {
 				key_name.assign (entry.name);
 				return true;
 			}
@@ -220,7 +221,7 @@ namespace shaga {
 		mbedtls_pk_free (&_enc_ctx);
 
 		const mbedtls_ecp_curve_info *curve_info = mbedtls_ecp_curve_info_from_name (curve_type.c_str ());
-		if (curve_info == nullptr) {
+		if (nullptr == curve_info) {
 			cThrow ("Unknown curve '%s'", curve_type.c_str ());
 		}
 
@@ -234,11 +235,6 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Global functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//#ifdef SHAGA_FULL
-//#else
-//		cThrow ("Digest is not supported in lite version");
-//#endif // SHAGA_FULL
 
 }
 

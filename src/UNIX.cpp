@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2017, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2018, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -145,6 +145,19 @@ namespace shaga {
 	}
 
 	void UNIX::renice (std::shared_ptr<shaga::INI> ini)
+	{
+		if (nullptr == ini) {
+			return;
+		}
+
+		const int prio = ini->get_uint8 ("", "renice", UINT8_MAX);
+		if (prio != UINT8_MAX) {
+			P::printf ("Changing priority to %d", prio);
+			renice (prio);
+		}
+	}
+
+	void UNIX::renice (const shaga::INI *ini)
 	{
 		if (nullptr == ini) {
 			return;

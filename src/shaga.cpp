@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2017, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2018, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -55,11 +55,11 @@ namespace shaga {
 
 	static CALLBACK_LIST _at_shutdown_callback_list;
 	static CALLBACK_LIST _at_exit_callback_list;
-	static FINAL_CALL _final_call = nullptr;
+	static FINAL_CALL _final_call {nullptr};
 
 	#ifdef SHAGA_THREADING
-		static std::atomic<bool> _is_shutdown (false);
-		static std::atomic<bool> _is_in_exit (false);
+		static std::atomic<bool> _is_shutdown {false};
+		static std::atomic<bool> _is_in_exit {false};
 	#else
 		volatile bool _is_shutdown {false};
 		bool _is_in_exit {false};
@@ -100,7 +100,7 @@ namespace shaga {
 	void add_at_exit_callback (std::function<void (void)> func)
 	{
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock(_callback_mutex);
+		std::lock_guard<std::mutex> lock (_callback_mutex);
 		#endif // SHAGA_THREADING
 		_at_exit_callback_list.push_back (func);
 	}
@@ -117,13 +117,13 @@ namespace shaga {
 		if (std::exchange (_is_in_exit, true) == true) {
 		#endif // SHAGA_THREADING
 			/* This function is already being executed, clearly from one of the callback functions. */
+			::fprintf (stderr, "FATAL ERROR: Exit executed recursively from callback function.\n");
 			P::printf ("FATAL ERROR: Exit executed recursively from callback function.");
-			fprintf (stderr, "FATAL ERROR: Exit executed recursively from callback function.\n");
 			::exit (EXIT_FAILURE);
 		}
 
 		#ifdef SHAGA_THREADING
-		std::unique_lock<std::mutex> lck(_callback_mutex);
+		std::unique_lock<std::mutex> lck (_callback_mutex);
 		#endif // SHAGA_THREADING
 
 		CALLBACK_LIST lst;
@@ -200,7 +200,7 @@ namespace shaga {
 	void add_at_shutdown_callback (std::function<void (void)> func)
 	{
 		#ifdef SHAGA_THREADING
-			std::lock_guard<std::mutex> lock(_callback_mutex);
+		std::lock_guard<std::mutex> lock(_callback_mutex);
 		#endif // SHAGA_THREADING
 		_at_shutdown_callback_list.push_back (func);
 	}
@@ -215,17 +215,20 @@ namespace shaga {
 			P::printf ("Shutdown requested from %s: %s line %d", file, funct, line);
 
 			#ifdef SHAGA_THREADING
-				std::unique_lock<std::mutex> lck(_callback_mutex);
-			#endif // SHAGA_THREADING
-			CALLBACK_LIST lst;
-			lst.swap (_at_shutdown_callback_list);
-			#ifdef SHAGA_THREADING
-				lck.unlock ();
+			std::unique_lock<std::mutex> lck (_callback_mutex);
 			#endif // SHAGA_THREADING
 
-			for (const auto &func : lst) {
+			CALLBACK_LIST lst;
+			lst.swap (_at_shutdown_callback_list);
+
+			#ifdef SHAGA_THREADING
+			lck.unlock ();
+			#endif // SHAGA_THREADING
+
+			for (auto &func : lst) {
 				if (func != nullptr) {
 					func ();
+					func = nullptr;
 				}
 			}
 		}
@@ -234,9 +237,9 @@ namespace shaga {
 	bool is_shutting_down (void)
 	{
 		#ifdef SHAGA_THREADING
-			return _is_shutdown.load ();
+		return _is_shutdown.load ();
 		#else
-			return _is_shutdown;
+		return _is_shutdown;
 		#endif // SHAGA_THREADING
 	}
 
