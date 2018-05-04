@@ -46,7 +46,14 @@ namespace shaga {
 		static std::string _name_log;
 		static std::string _app_name;
 
+		static enum class _DirLogEnum {
+			FILE,
+			SYSLOG,
+			STDOUT
+		} _dir_log_enum = _DirLogEnum::FILE;
+
 		static ShFile _printf_file;
+		static COMMON_DEQUE _printf_entries;
 	}
 
 	/////////////////////////////////////////////////////////////
@@ -96,7 +103,18 @@ namespace shaga {
 			if (_dir_log.empty () || _name_log.empty () || _app_name.empty ()) {
 				cThrow ("Can't enable P::printf, variables are not set.");
 			}
+
+			if (STR::icompare (_dir_log, "syslog") == true) {
+				_dir_log_enum = _DirLogEnum::SYSLOG;
+			}
+			else if (STR::icompare (_dir_log, "-") == true || STR::icompare (_dir_log, "stdout") == true) {
+				_dir_log_enum = _DirLogEnum::STDOUT;
+			}
+			else {
+				_dir_log_enum = _DirLogEnum::FILE;
+			}
 		}
+
 		_enabled = enabled;
 
 		_printf_file.close ();
@@ -115,57 +133,68 @@ namespace shaga {
 
 		#ifdef SHAGA_THREADING
 		// Since we can write logs to non-POSIX filesystems, let's do locking here instead on FS level.
-		std::lock_guard<std::mutex> lock(_printf_mutex);
+		std::lock_guard<std::mutex> lock (_printf_mutex);
 		#endif // SHAGA_THREADING
 
-		::va_list ap;
-		::va_start (ap, fmt);
-		::vsnprintf (_printf_buf, sizeof (_printf_buf) - 1, fmt, ap);
-		::va_end (ap);
-		_printf_buf[sizeof (_printf_buf) - 1] = '\0';
+		struct tm local_tm;
 
-		const uint64_t rt = (true == _printf_ms) ? get_realtime_msec () : 0;
-		const time_t theTime = (rt > 0) ? (rt / 1000) : get_realtime_sec ();
+		{
+			::va_list ap;
+			::va_start (ap, fmt);
+			::vsnprintf (_printf_buf, sizeof (_printf_buf) - 1, fmt, ap);
+			::va_end (ap);
+			_printf_buf[sizeof (_printf_buf) - 1] = '\0';
+		}
 
-		struct tm t;
-		::memset (&t, 0, sizeof (t));
-		::localtime_r (&theTime, &t);
+		{
+			const uint64_t rt = (true == _printf_ms) ? get_realtime_msec () : 0;
+			const time_t theTime = (rt > 0) ? (rt / 1000) : get_realtime_sec ();
+
+			::memset (&local_tm, 0, sizeof (local_tm));
+			::localtime_r (&theTime, &local_tm);
 
 #ifndef OS_WIN
-		if (true == _printf_ms) {
-			::snprintf (_printf_time, sizeof (_printf_time) - 1, "%04d-%02d-%02d %02d:%02d:%02d.%03" PRIu64 " %s : ", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, rt % 1000, t.tm_zone);
-		}
-		else {
-			::snprintf (_printf_time, sizeof (_printf_time) - 1, "%04d-%02d-%02d %02d:%02d:%02d %s : ", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, t.tm_zone);
-		}
+			if (true == _printf_ms) {
+				::snprintf (_printf_time, sizeof (_printf_time) - 1, "%04d-%02d-%02d %02d:%02d:%02d.%03" PRIu64 " %s : ",
+					local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday, local_tm.tm_hour, local_tm.tm_min, local_tm.tm_sec, rt % 1000, local_tm.tm_zone);
+			}
+			else {
+				::snprintf (_printf_time, sizeof (_printf_time) - 1, "%04d-%02d-%02d %02d:%02d:%02d %s : ",
+					local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday, local_tm.tm_hour, local_tm.tm_min, local_tm.tm_sec, local_tm.tm_zone);
+			}
 #else
-		if (true == _printf_ms) {
-			::snprintf (_printf_time, sizeof (_printf_time) - 1, "%04d-%02d-%02d %02d:%02d:%02d.%03" PRIu64 " : ", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, rt % 1000);
-		}
-		else {
-			::snprintf (_printf_time, sizeof (_printf_time) - 1, "%04d-%02d-%02d %02d:%02d:%02d : ", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
-		}
+			if (true == _printf_ms) {
+				::snprintf (_printf_time, sizeof (_printf_time) - 1, "%04d-%02d-%02d %02d:%02d:%02d.%03" PRIu64 " : ",
+					local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday, local_tm.tm_hour, local_tm.tm_min, local_tm.tm_sec, rt % 1000);
+			}
+			else {
+				::snprintf (_printf_time, sizeof (_printf_time) - 1, "%04d-%02d-%02d %02d:%02d:%02d : ",
+					local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday, local_tm.tm_hour, local_tm.tm_min, local_tm.tm_sec);
+			}
 #endif // OS_WIN
 
-		_printf_time[sizeof (_printf_time) - 1] = '\0';
+			_printf_time[sizeof (_printf_time) - 1] = '\0';
+		}
 
 #ifndef OS_WIN
-		if (_dir_log == "syslog") {
+		if (_DirLogEnum::SYSLOG == _dir_log_enum) {
 			::openlog (_name_log.c_str (), LOG_PID | LOG_CONS, LOG_USER);
 			::syslog (LOG_NOTICE, _printf_buf);
 			::closelog ();
 		}
 		else
 #endif // OS_WIN
-		if (_dir_log == "-") {
-			::fprintf (stdout, "%s%s\n", _printf_time, _printf_buf);
+		if (_DirLogEnum::STDOUT == _dir_log_enum) {
+			::fputs (_printf_time, stdout);
+			::fputs (_printf_buf, stdout);
+			::fputc ('\n', stdout);
 			::fflush (stdout);
 		}
 		else {
-			::snprintf (_printf_fname, sizeof (_printf_fname), "%s/%s_%04d-%02d-%02d.log", _dir_log.c_str (), _name_log.c_str (), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday);
+			::snprintf (_printf_fname, sizeof (_printf_fname), "%s/%s_%04d-%02d-%02d.log", _dir_log.c_str (), _name_log.c_str (), local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday);
 
-			COMMON_LIST entries;
-			entries.push_back (std::string ());
+
+			_printf_entries.push_back (std::string ());
 
 			try {
 				if (_printf_file.get_file_name ().compare (_printf_fname) != 0) {
@@ -183,36 +212,36 @@ namespace shaga {
 					const off64_t st_size = _printf_file.get_file_size ();
 					if (_limit_soft != 0 && st_size >= _limit_soft) {
 						if (false == _soft_limit_reached) {
-							entries.push_back ("Log file is getting too large. Soft limit reached.");
+							_printf_entries.push_back ("Log file is getting too large. Soft limit reached.");
 							_soft_limit_reached = true;
 						}
 					}
 
 					if (_limit_hard != 0 && st_size >= _limit_hard) {
-						entries.push_back ("Log file is too large. Shutting down!");
+						_printf_entries.push_back ("Log file is too large. Shutting down!");
 						_disabled_permanently = true;
 					}
 				}
 
-				for (COMMON_LIST::iterator iter = entries.begin (); iter != entries.end ();) {
-					if (iter->empty () == true) {
+				while (_printf_entries.empty () == false) {
+					if (_printf_entries.front ().empty () == true) {
 						_printf_file.write (_printf_time);
 						_printf_file.write (_printf_buf);
 						_printf_file.write ('\n');
 					}
 					else {
 						_printf_file.write (_printf_time);
-						_printf_file.write (*iter);
+						_printf_file.write (_printf_entries.front ());
 						_printf_file.write ('\n');
 					}
-					iter = entries.erase (iter);
+					_printf_entries.pop_front ();
 				}
 
 			}
 			catch (...) {
 #ifndef OS_WIN
 				::openlog (_name_log.c_str (), LOG_PID | LOG_CONS, LOG_USER);
-				for (const std::string &entry : entries) {
+				for (const std::string &entry : _printf_entries) {
 					if (entry.empty () == true) {
 						::syslog (LOG_NOTICE, _printf_buf);
 					}
@@ -220,6 +249,7 @@ namespace shaga {
 						::syslog (LOG_ERR, entry.c_str ());
 					}
 				}
+				_printf_entries.clear ();
 				::closelog ();
 #endif // OS_WIN
 			}
@@ -242,7 +272,7 @@ namespace shaga {
 		}
 
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock(_debug_printf_mutex);
+		std::lock_guard<std::mutex> lock (_debug_printf_mutex);
 		#endif // SHAGA_THREADING
 
 		va_list ap;

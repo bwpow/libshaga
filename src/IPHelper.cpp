@@ -430,8 +430,12 @@ namespace shaga {
 		switch (_af) {
 			case AF_INET:
 				addr4->sin_port = htons (port);
+				break;
+
 			case AF_INET6:
 				addr6->sin6_port = htons (port);
+				break;
+
 			default:
 				cThrow ("Unknown protocol family");
 		}

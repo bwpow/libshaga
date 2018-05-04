@@ -234,7 +234,7 @@ namespace shaga {
 		}
 	}
 
-	bool is_shutting_down (void)
+	SHAGA_NODISCARD bool is_shutting_down (void)
 	{
 		#ifdef SHAGA_THREADING
 		return _is_shutdown.load ();
@@ -246,16 +246,16 @@ namespace shaga {
 	int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime)
 	{
 		int64_t msec;
-		msec = (static_cast<int64_t> (finishtime.tv_sec) - static_cast<int64_t> (starttime.tv_sec)) * 1000;
-		msec += (static_cast<int64_t> (finishtime.tv_usec) - static_cast<int64_t> (starttime.tv_usec)) / 1000;
+		msec = (static_cast<int64_t> (finishtime.tv_sec) - static_cast<int64_t> (starttime.tv_sec)) * 1'000;
+		msec += (static_cast<int64_t> (finishtime.tv_usec) - static_cast<int64_t> (starttime.tv_usec)) / 1'000;
 		return msec;
 	}
 
 	int64_t timespec_diff_msec (const struct timespec &starttime, const struct timespec &finishtime)
 	{
 		int64_t msec;
-		msec = (static_cast<int64_t> (finishtime.tv_sec) - static_cast<int64_t> (starttime.tv_sec)) * 1000;
-		msec += (static_cast<int64_t> (finishtime.tv_nsec / 1000000) - static_cast<int64_t> (starttime.tv_nsec / 1000000));
+		msec = (static_cast<int64_t> (finishtime.tv_sec) - static_cast<int64_t> (starttime.tv_sec)) * 1'000;
+		msec += (static_cast<int64_t> (finishtime.tv_nsec / 1'000'000) - static_cast<int64_t> (starttime.tv_nsec / 1'000'000));
 		return msec;
 	}
 
@@ -278,7 +278,7 @@ namespace shaga {
 		#else
 		::clock_gettime(CLOCK_MONOTONIC, &monotime);
 		#endif // CLOCK_MONOTONIC_RAW
-		return (static_cast<uint64_t> (monotime.tv_sec) * 1000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1000000);
+		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000'000);
 	}
 
 	uint64_t get_monotime_usec (void)
@@ -289,7 +289,7 @@ namespace shaga {
 		#else
 		::clock_gettime(CLOCK_MONOTONIC, &monotime);
 		#endif // CLOCK_MONOTONIC_RAW
-		return (static_cast<uint64_t> (monotime.tv_sec) * 1000000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1000);
+		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000);
 	}
 
 	uint64_t get_realtime_sec (void)
@@ -303,14 +303,14 @@ namespace shaga {
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);
-		return (static_cast<uint64_t> (monotime.tv_sec) * 1000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1000000);
+		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000'000);
 	}
 
 	uint64_t get_realtime_usec (void)
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);
-		return (static_cast<uint64_t> (monotime.tv_sec) * 1000000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1000);
+		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000);
 	}
 
 }

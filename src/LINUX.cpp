@@ -67,7 +67,7 @@ namespace shaga {
 		}
 	}
 
-	bool LINUX::login_to_uid (const std::string &text, uid_t &uid)
+	SHAGA_NODISCARD bool LINUX::login_to_uid (const std::string &text, uid_t &uid)
 	{
 		bool ok = false;
 
@@ -105,7 +105,7 @@ namespace shaga {
 		return ok;
 	}
 
-	bool LINUX::group_to_gid (const std::string &text, gid_t &gid)
+	SHAGA_NODISCARD bool LINUX::group_to_gid (const std::string &text, gid_t &gid)
 	{
 		bool ok = false;
 

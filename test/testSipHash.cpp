@@ -1,5 +1,5 @@
 /******************************************************************************
-Shaga library is released under the New BSD license (see LICENSE.txt):
+Shaga library is released under the New BSD license (see LICENSE.md):
 
 Copyright (c) 2012-2018, SAGE team s.r.o., Samuel Kupka
 
@@ -94,16 +94,22 @@ static void _siphash_ref_impl (const uint8_t *in, const size_t inlen, const uint
 	switch (left) {
 	case 7:
 		b |= ((uint64_t)in[6]) << 48;
+		SHAGA_FALLTHROUGH;
 	case 6:
 		b |= ((uint64_t)in[5]) << 40;
+		SHAGA_FALLTHROUGH;
 	case 5:
 		b |= ((uint64_t)in[4]) << 32;
+		SHAGA_FALLTHROUGH;
 	case 4:
 		b |= ((uint64_t)in[3]) << 24;
+		SHAGA_FALLTHROUGH;
 	case 3:
 		b |= ((uint64_t)in[2]) << 16;
+		SHAGA_FALLTHROUGH;
 	case 2:
 		b |= ((uint64_t)in[1]) << 8;
+		SHAGA_FALLTHROUGH;
 	case 1:
 		b |= ((uint64_t)in[0]);
 		break;

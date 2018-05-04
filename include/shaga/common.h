@@ -12,6 +12,10 @@ All rights reserved.
 	#error At least C++14 compiler required.
 #endif
 
+#if (defined(Q_CC_GNU) && Q_CC_GNU >= 408) || (defined(Q_CC_CLANG) && Q_CC_CLANG >= 302)
+	#error Only GCC and Clang compilers are supported in this version.
+#endif
+
 #ifndef SHAGA
 	#error Must be included from shaga.h or shagalite.h
 #endif // SHAGA
@@ -160,6 +164,24 @@ All rights reserved.
 #define ENDIAN_BSWAP32(val) val = __builtin_bswap32 (val)
 #define ENDIAN_BSWAP64(val) val = __builtin_bswap64 (val)
 
+#if __has_cpp_attribute(fallthrough)
+	#define SHAGA_FALLTHROUGH [[fallthrough]]
+#elif __has_cpp_attribute(gcc::fallthrough)
+	#define SHAGA_FALLTHROUGH [[gcc::fallthrough]]
+#elif __has_cpp_attribute(clang::fallthrough)
+	#define SHAGA_FALLTHROUGH [[clang::fallthrough]]
+#else
+	#define SHAGA_FALLTHROUGH
+#endif
+
+#if __has_cpp_attribute(nodiscard)
+	#define SHAGA_NODISCARD [[nodiscard]]
+#elif __has_cpp_attribute(gnu::warn_unused_result)
+	#define SHAGA_NODISCARD [[gnu::warn_unused_result]]
+#else
+	#define SHAGA_NODISCARD
+#endif
+
 namespace shaga
 {
 	typedef std::vector< std::string > COMMON_VECTOR;
@@ -198,7 +220,7 @@ namespace shaga
 	#define TRY_TO_SHUTDOWN() _try_to_shutdown(__FILE__, __PRETTY_FUNCTION__, __LINE__)
 	void add_at_shutdown_callback (std::function<void (void)> func);
 	void _try_to_shutdown (const char *file, const char *funct, const int line);
-	bool is_shutting_down (void);
+	SHAGA_NODISCARD bool is_shutting_down (void);
 
 	/* Set in shaga.cpp to constant value depending on compile-time settings */
 	extern const bool _shaga_compiled_with_threading;
@@ -217,14 +239,14 @@ namespace shaga
 		#endif // SHAGA_THREADING
 	}
 
-	#define ANLOG_REGISTER
+	#define LOG_REGISTER
 
 	#define SHAGA_MAIN(a) int main (int argc, char **argv) try { \
 		(void) argc; \
 		(void) argv; \
 		shaga_check_threading (); \
 		BIN::endian_detect (); \
-		ANLOG_REGISTER; \
+		LOG_REGISTER; \
 		a \
 		shaga::exit (); \
 		cThrow ("Fell over the edge of the world"); \
@@ -351,6 +373,9 @@ namespace shaga
 	static_assert (('Z' - 'A') == 25, "Expected 26 letters between 'A' and 'Z'");
 	static_assert (8 == CHAR_BIT, "Expected char to be 8 bits");
 	static_assert (1 == sizeof (char), "Expected char to be 8 bits");
+	static_assert (2 == sizeof (uint16_t), "Expected uint16_t to be 16 bits");
+	static_assert (4 == sizeof (uint32_t), "Expected uint32_t to be 32 bits");
+	static_assert (8 == sizeof (uint64_t), "Expected uint64_t to be 64 bits");
 
 	/*** Chunk ***/
 	static_assert (std::underlying_type<Chunk::Priority>::type (Chunk::_Priority_first) < std::underlying_type<Chunk::Priority>::type (Chunk::_Priority_last),

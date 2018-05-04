@@ -18,8 +18,8 @@ namespace shaga {
 		void modify_epoll (int sock, const uint32_t ev, int epoll_fd);
 		void remove_from_epoll (int sock, int epoll_fd, const bool ignore_failure = false);
 
-		bool login_to_uid (const std::string &text, uid_t &uid);
-		bool group_to_gid (const std::string &text, gid_t &gid);
+		SHAGA_NODISCARD bool login_to_uid (const std::string &text, uid_t &uid);
+		SHAGA_NODISCARD bool group_to_gid (const std::string &text, gid_t &gid);
 	}
 }
 
