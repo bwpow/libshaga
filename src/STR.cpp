@@ -481,6 +481,27 @@ namespace shaga {
 		});
 	}
 
+	std::string STR::multiply (const std::string &what, const uint_fast32_t cnt)
+	{
+		std::string out;
+		out.reserve (what.size () * cnt);
+		for (uint_fast32_t i = 0; i < cnt; ++i) {
+			out.append (what);
+		}
+		return out;
+	}
+
+	std::string STR::multiply (const std::string &what, const uint_fast32_t cnt, const std::string &postfix)
+	{
+		std::string out;
+		out.reserve (postfix.size () + (what.size () * cnt));
+		for (uint_fast32_t i = 0; i < cnt; ++i) {
+			out.append (what);
+		}
+		out.append (postfix);
+		return out;
+	}
+
 	char * STR::dirdup (const char *buf, const bool remove_trailing_slash)
 	{
 		ssize_t l = static_cast<ssize_t> (strlen (buf));

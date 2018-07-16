@@ -204,19 +204,47 @@ namespace shaga {
 		_type = type;
 	}
 
-	void Chunk::set_channel (const bool enabled)
+	void Chunk::set_channel (const bool is_primary)
 	{
-		_channel = enabled;
+		_channel = is_primary;
 	}
 
-	bool Chunk::get_channel (void) const
+	void Chunk::set_channel (const Channel channel)
 	{
-		return _channel;
+		switch (channel) {
+			case Channel::PRIMARY:
+				_channel = true;
+				break;
+
+			case Channel::SECONDARY:
+				_channel = false;
+				break;
+		}
+	}
+
+	bool Chunk::is_primary_channel (void) const
+	{
+		return (true == _channel);
+	}
+
+	bool Chunk::is_secondary_channel (void) const
+	{
+		return (false == _channel);
+	}
+
+	Chunk::Channel Chunk::get_channel (void) const
+	{
+		if (true == _channel) {
+			return Channel::PRIMARY;
+		}
+		else {
+			return Channel::SECONDARY;
+		}
 	}
 
 	uint_fast8_t Chunk::get_channel_bitmask (void) const
 	{
-		return _channel ? channel_primary : channel_secondary;
+		return (true == _channel) ? channel_primary : channel_secondary;
 	}
 
 	HWID Chunk::get_source_hwid (void) const
@@ -305,7 +333,7 @@ namespace shaga {
 
 	bool Chunk::check_maximal_trustlevel (const Chunk::TrustLevel trust) const
 	{
-		return _trust <= trust;
+		return (_trust <= trust);
 	}
 
 	void Chunk::set_ttl (const uint8_t ttl)
@@ -331,7 +359,7 @@ namespace shaga {
 
 	bool Chunk::is_zero_ttl (void) const
 	{
-		return _ttl == 0;
+		return (_ttl == 0);
 	}
 
 	bool Chunk::hop_ttl (void)
@@ -544,12 +572,14 @@ namespace shaga {
 	std::string trustlevel_to_string (const Chunk::TrustLevel level)
 	{
 		switch (level) {
-			case Chunk::TrustLevel::UNTRUSTED:
-				return "untrusted";
-			case Chunk::TrustLevel::TRUSTED:
-				return "trusted";
 			case Chunk::TrustLevel::INTERNAL:
 				return "internal";
+			case Chunk::TrustLevel::TRUSTED:
+				return "trusted";
+			case Chunk::TrustLevel::FRIEND:
+				return "friend";
+			case Chunk::TrustLevel::UNTRUSTED:
+				return "untrusted";
 		}
 		cThrow ("Unknown Trustlevel");
 	}
@@ -557,7 +587,7 @@ namespace shaga {
 	Chunk::TrustLevel string_to_trustlevel (const std::string &str)
 	{
 		for (const auto &t : Chunk::TrustLevel ()) {
-			if (STR::icompare (str, trustlevel_to_string (t)) == true) {
+			if (true == STR::icompare (str, trustlevel_to_string (t))) {
 				return t;
 			}
 		}
@@ -605,6 +635,38 @@ namespace shaga {
 	uint8_t ttl_to_uint8 (const Chunk::TTL v)
 	{
 		return std::underlying_type<Chunk::TTL>::type (v);
+	}
+
+	Chunk::Channel bool_to_channel (const bool val)
+	{
+		if (true == val) {
+			return Chunk::Channel::PRIMARY;
+		}
+		else {
+			return Chunk::Channel::SECONDARY;
+		}
+	}
+
+	bool channel_to_bool (const Chunk::Channel channel)
+	{
+		switch (channel) {
+			case Chunk::Channel::PRIMARY:
+				return true;
+
+			case Chunk::Channel::SECONDARY:
+				return false;
+		}
+	}
+
+	std::string channel_to_string (const Chunk::Channel channel)
+	{
+		switch (channel) {
+			case Chunk::Channel::PRIMARY:
+				return "Primary";
+
+			case Chunk::Channel::SECONDARY:
+				return "Secondary";
+		}
 	}
 
 	CHUNKLIST chunkset_extract_type (const CHUNKSET &cs, const std::string &type)
@@ -820,5 +882,4 @@ namespace shaga {
 			}
 		});
 	}
-
 }

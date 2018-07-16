@@ -161,6 +161,9 @@ namespace shaga {
 
 		bool icompare (const std::string &a, const std::string &b);
 
+		std::string multiply (const std::string &what, const uint_fast32_t cnt);
+		std::string multiply (const std::string &what, const uint_fast32_t cnt, const std::string &postfix);
+
 		char * dirdup (const char *buf, const bool remove_trailing_slash = true);
 		char * strdup (const char *buf);
 

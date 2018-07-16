@@ -152,7 +152,6 @@ namespace shaga {
 			_conf.encode (out);
 		}
 		encode_message (plain, out, _key_id);
-		//printf ("encode %zu | %s | %s\n", out.size (), _conf.get_digest_text ().c_str (), _conf.get_crypto_text ().c_str ());
 	}
 
 	std::string ReData::encode (const std::string &plain)

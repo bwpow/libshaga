@@ -83,6 +83,7 @@ namespace shaga {
 				{"hmac-sha512", DIGEST::HMAC_SHA512},
 				{"hmac-sha-512", DIGEST::HMAC_SHA512},
 
+				{"siphash", DIGEST::SIPHASH24_64},
 				{"siphash24", DIGEST::SIPHASH24_64},
 				{"siphash24-64", DIGEST::SIPHASH24_64},
 				{"siphash-2-4", DIGEST::SIPHASH24_64},
@@ -110,6 +111,7 @@ namespace shaga {
 			const std::map <std::string, CRYPTO> CRYPTO_MAP = {
 				{"none", CRYPTO::NONE},
 
+				{"aes", CRYPTO::AES_128_CBC},
 				{"aes128", CRYPTO::AES_128_CBC},
 				{"aes-128", CRYPTO::AES_128_CBC},
 				{"aes-128-cbc", CRYPTO::AES_128_CBC},

@@ -457,7 +457,7 @@ namespace shaga {
 #ifdef SHAGA_FULL
 		const size_t sze = 32;
 		unsigned char output[sze];
-		mbedtls_sha256 (reinterpret_cast<const unsigned char *> (buf), len, output, 0);
+		::mbedtls_sha256 (reinterpret_cast<const unsigned char *> (buf), len, output, 0);
 		return std::string (reinterpret_cast<const char *> (output), sze);
 #else
 		(void) buf;
@@ -471,7 +471,7 @@ namespace shaga {
 #ifdef SHAGA_FULL
 		const size_t sze = 32;
 		unsigned char output[sze];
-		mbedtls_sha256 (buf, len, output, 0);
+		::mbedtls_sha256 (buf, len, output, 0);
 		return std::string (reinterpret_cast<const char *> (output), sze);
 #else
 		(void) buf;
@@ -485,7 +485,7 @@ namespace shaga {
 #ifdef SHAGA_FULL
 		const size_t sze = 64;
 		unsigned char output[sze];
-		mbedtls_sha512 (reinterpret_cast<const unsigned char *> (buf), len, output, 0);
+		::mbedtls_sha512 (reinterpret_cast<const unsigned char *> (buf), len, output, 0);
 		return std::string (reinterpret_cast<const char *> (output), sze);
 #else
 		(void) buf;
@@ -499,7 +499,7 @@ namespace shaga {
 #ifdef SHAGA_FULL
 		const size_t sze = 64;
 		unsigned char output[sze];
-		mbedtls_sha512 (buf, len, output, 0);
+		::mbedtls_sha512 (buf, len, output, 0);
 		return std::string (reinterpret_cast<const char *> (output), sze);
 #else
 		(void) buf;

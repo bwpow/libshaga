@@ -127,7 +127,7 @@ namespace shaga {
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = _get_digest_result_size (ReDataConfig::DIGEST::SHA1);
-		mbedtls_sha1 (reinterpret_cast<const unsigned char *> (plain.data ()), plain.size (), cache.output);
+		::mbedtls_sha1 (reinterpret_cast<const unsigned char *> (plain.data ()), plain.size (), cache.output);
 		return std::string (reinterpret_cast<const char *> (cache.output), sze);
 #else
 		(void) plain;
@@ -140,7 +140,7 @@ namespace shaga {
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = _get_digest_result_size (ReDataConfig::DIGEST::SHA256);
-		mbedtls_sha256 (reinterpret_cast<const unsigned char *> (plain.data ()), plain.size (), cache.output, 0);
+		::mbedtls_sha256 (reinterpret_cast<const unsigned char *> (plain.data ()), plain.size (), cache.output, 0);
 		return std::string (reinterpret_cast<const char *> (cache.output), sze);
 #else
 		(void) plain;
@@ -153,7 +153,7 @@ namespace shaga {
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = _get_digest_result_size (ReDataConfig::DIGEST::SHA512);
-		mbedtls_sha512 (reinterpret_cast<const unsigned char *> (plain.data ()), plain.size (), cache.output, 0);
+		::mbedtls_sha512 (reinterpret_cast<const unsigned char *> (plain.data ()), plain.size (), cache.output, 0);
 		return std::string (reinterpret_cast<const char *> (cache.output), sze);
 #else
 		(void) plain;
@@ -166,7 +166,7 @@ namespace shaga {
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = _get_digest_result_size (ReDataConfig::DIGEST::HMAC_RIPEMD160);
-		mbedtls_ripemd160 (reinterpret_cast<const unsigned char *> (plain.data ()), plain.size (), cache.output);
+		::mbedtls_ripemd160 (reinterpret_cast<const unsigned char *> (plain.data ()), plain.size (), cache.output);
 		return std::string (reinterpret_cast<const char *> (cache.output), sze);
 #else
 		(void) plain;

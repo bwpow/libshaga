@@ -46,8 +46,9 @@ namespace shaga {
 			} TRACERT_HOP;
 
 			enum class TrustLevel : uint32_t {
-				INTERNAL = 1,
+				INTERNAL = 0,
 				TRUSTED,
+				FRIEND,
 				UNTRUSTED,
 			};
 
@@ -77,6 +78,11 @@ namespace shaga {
 
 			static const TTL _TTL_first {TTL::TTL0};
 			static const TTL _TTL_last {TTL::TTL7};
+
+			enum class Channel : bool {
+				PRIMARY = true,
+				SECONDARY = false,
+			};
 
 			static const constexpr uint32_t key_type_min = ChKEY ("AAAA");
 			static const constexpr uint32_t key_type_max = ChKEY ("ZZZZ");
@@ -169,6 +175,21 @@ namespace shaga {
 			}
 
 			template<typename ... Types>
+			void _construct (const Channel channel, Types&& ... rest)
+			{
+				switch (channel) {
+					case Channel::PRIMARY:
+						_channel = true;
+						break;
+
+					case Channel::SECONDARY:
+						_channel = false;
+						break;
+				}
+				_construct (rest...);
+			}
+
+			template<typename ... Types>
 			void _construct (const ChunkMeta &m, Types&& ... rest)
 			{
 				meta = m;
@@ -203,8 +224,11 @@ namespace shaga {
 				_construct (rest...);
 			}
 
-			void set_channel (const bool enabled);
-			bool get_channel (void) const;
+			void set_channel (const bool is_primary);
+			void set_channel (const Channel channel);
+			bool is_primary_channel (void) const;
+			bool is_secondary_channel (void) const;
+			Channel get_channel (void) const;
 			uint_fast8_t get_channel_bitmask (void) const;
 
 			HWID get_source_hwid (void) const;
@@ -274,6 +298,10 @@ namespace shaga {
 
 	Chunk::TTL uint8_to_ttl (const uint8_t v);
 	uint8_t ttl_to_uint8 (const Chunk::TTL v);
+
+	Chunk::Channel bool_to_channel (const bool val);
+	bool channel_to_bool (const Chunk::Channel channel);
+	std::string channel_to_string (const Chunk::Channel channel);
 
 	CHUNKLIST chunkset_extract_type (const CHUNKSET &cs, const std::string &type);
 	size_t chunkset_count_type (const CHUNKSET &cs, const std::string &type);

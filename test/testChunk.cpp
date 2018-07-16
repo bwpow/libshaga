@@ -166,7 +166,7 @@ TEST (Chunk, channel)
 		v1.back ().set_channel (false);
 
 		v1.emplace_back (i, "ZZZZ");
-		v1.back ().set_channel (false);
+		v1.back ().set_channel (Chunk::Channel::SECONDARY);
 
 		v1.emplace_back (i, "AAAA");
 		if ((i % 2) == 0) {
@@ -177,7 +177,7 @@ TEST (Chunk, channel)
 		v1.emplace_back (i, "ZZZZ", "payload");
 		if ((i % 2) == 0) {
 			/* Channel == true is default */
-			v1.back ().set_channel (true);
+			v1.back ().set_channel (Chunk::Channel::PRIMARY);
 		}
 
 		v1.emplace_back (i, "TRAC");
@@ -204,20 +204,24 @@ TEST (Chunk, channel)
 
 	pos = 0;
 	for (size_t i = 0; i < sze; ++i) {
-		EXPECT_FALSE (v2[pos++].get_channel ());
-		EXPECT_FALSE (v2[pos++].get_channel ());
+		EXPECT_FALSE (v2[pos].is_primary_channel ());
+		EXPECT_TRUE (v2[pos++].is_secondary_channel ());
 
-		EXPECT_TRUE (v2[pos++].get_channel ());
-		EXPECT_TRUE (v2[pos++].get_channel ());
+		EXPECT_FALSE (v2[pos].is_primary_channel ());
+		EXPECT_TRUE (v2[pos++].is_secondary_channel ());
 
-		EXPECT_FALSE (v2[pos++].get_channel ());
-		EXPECT_TRUE (v2[pos++].get_channel ());
+		EXPECT_TRUE (v2[pos++].is_primary_channel ());
+		EXPECT_TRUE (v2[pos++].is_primary_channel ());
+
+		EXPECT_FALSE (v2[pos++].is_primary_channel ());
+		EXPECT_TRUE (v2[pos++].is_primary_channel ());
 	}
 	EXPECT_TRUE (pos == v2.size ());
 
 	for (size_t i = 0; i < v1.size (); ++i) {
 		EXPECT_TRUE (v1[i].get_source_hwid () == v2[i].get_source_hwid ());
 		EXPECT_TRUE (v1[i].get_num_type () == v2[i].get_num_type ());
+		EXPECT_TRUE (v1[i].get_channel_bitmask () == v2[i].get_channel_bitmask ());
 		EXPECT_TRUE (v1[i].get_channel () == v2[i].get_channel ());
 		EXPECT_TRUE (v1[i].get_payload () == v2[i].get_payload ());
 	}
