@@ -14,13 +14,70 @@ static const uint8_t STX = 0x45;
 static const uint8_t ETX = 0x4A;
 static const uint8_t NTX = 0x10;
 
-template<class T> static void _uartspsc_sizes_test (void)
+static const std::array<uint8_t,2> STX16 = {0x45, 0x55};
+
+template<class T> static void _uart8spsc_sizes_test (void)
 {
 	const size_t datasize = 1024;
 	const size_t testsize = datasize * 2;
 
-	UartEncodeSPSC<T> encodering (datasize, testsize + 1, STX, ETX, NTX);
-	UartDecodeSPSC<T> decodering (datasize, testsize + 1, STX, ETX, NTX);
+	Uart8EncodeSPSC<T> encodering (datasize, testsize + 1, STX, ETX, NTX);
+	Uart8DecodeSPSC<T> decodering (datasize, testsize + 1, STX, ETX, NTX);
+
+	uint8_t buffer[testsize];
+	for (size_t pos = 0; pos < testsize; ++pos) {
+		buffer[pos] = pos & 0xff;
+	}
+
+	/* Fill encodering with testsize of messages, sized one byte to testsize bytes */
+	for (size_t cursize = 1; cursize <= datasize; ++cursize) {
+		ASSERT_NO_THROW (encodering.push_buffer (buffer, 0, cursize));
+		ASSERT_NO_THROW (encodering.push_buffer (buffer, 1, cursize + 1));
+	}
+
+	/* Now push everything from encodering to decodering */
+	char tempbuffer[testsize];
+	size_t available = 0;
+	while (true) {
+		/* Test different available sizes */
+		++available;
+		if (available > testsize) {
+			available = 1;
+		}
+
+		available = encodering.fill_front_buffer (tempbuffer, testsize);
+		if (0 == available) {
+			/* No more data */
+			break;
+		}
+		decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, available);
+		ASSERT_NO_THROW (encodering.move_front_buffer (available));
+	}
+
+	/* Read back all messages and compare them */
+	std::string str;
+
+	for (size_t cursize = 1; cursize <= datasize; ++cursize) {
+		ASSERT_TRUE (decodering.pop_buffer (str));
+		ASSERT_TRUE (str.size () == cursize);
+		ASSERT_TRUE (::memcmp (buffer, str.data (), str.size ()) == 0);
+
+		ASSERT_TRUE (decodering.pop_buffer (str));
+		ASSERT_TRUE (str.size () == cursize);
+		ASSERT_TRUE (::memcmp (buffer + 1, str.data (), str.size ()) == 0);
+	}
+
+	/* Nothing more to read, should return false */
+	ASSERT_FALSE (decodering.pop_buffer (str));
+}
+
+template<class T> static void _uart16spsc_sizes_test (void)
+{
+	const size_t datasize = 1024;
+	const size_t testsize = datasize * 2;
+
+	Uart16EncodeSPSC<T> encodering (datasize, testsize + 1, STX16);
+	Uart16DecodeSPSC<T> decodering (datasize, testsize + 1, STX16);
 
 	uint8_t buffer[testsize];
 	for (size_t pos = 0; pos < testsize; ++pos) {
@@ -193,15 +250,15 @@ template<class T> static void _seqpacket_sizes_test (void)
 	ASSERT_FALSE (decodering.pop_buffer (str));
 }
 
-template<class T> static void _uartspsc_test (void)
+template<class T> static void _uart8spsc_test (void)
 {
 	const size_t datasize = 256;
 	const size_t sze = 256;
 	const size_t loops = 64;
 	const size_t totalsize = datasize * sze;
 
-	UartEncodeSPSC<T> encodering (datasize, sze + 1, STX, ETX, NTX);
-	UartDecodeSPSC<T> decodering (datasize, sze + 1, STX, ETX, NTX);
+	Uart8EncodeSPSC<T> encodering (datasize, sze + 1, STX, ETX, NTX);
+	Uart8DecodeSPSC<T> decodering (datasize, sze + 1, STX, ETX, NTX);
 
 	char tempbuffer[600];
 	size_t pos;
@@ -234,6 +291,96 @@ template<class T> static void _uartspsc_test (void)
 		decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, 7);
 
 		ASSERT_TRUE (decodering.get_err_count_reset () == 3);
+
+		/* Now lets fill tempbuffer with encoded data and push it to decodering */
+		pos = sze;
+		while (true) {
+			pos = (pos + 1) % sizeof (tempbuffer);
+			const size_t available = encodering.fill_front_buffer (tempbuffer, pos);
+			if (0 == available) {
+				if (0 == pos) {
+					/* We actually requested 0 bytes */
+					continue;
+				}
+				/* No more data */
+				break;
+			}
+
+			/* Push to decodering */
+			ASSERT_NO_THROW (decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, available));
+
+			/* Move read pointer */
+			ASSERT_NO_THROW (encodering.move_front_buffer (available));
+		}
+
+		ASSERT_TRUE (decodering.get_err_count_reset () == 0);
+
+		pos = 0;
+		while (true) {
+			std::string str;
+			if (decodering.pop_buffer (str) == false) {
+				break;
+			}
+
+			ASSERT_TRUE (::memcmp (buffer + pos, str.data (), str.size ()) == 0);
+
+			pos += str.size ();
+		}
+
+		ASSERT_TRUE (pos == totalsize);
+	}
+}
+
+template<class T> static void _uart16spsc_test (void)
+{
+	const size_t datasize = 4000;
+	const size_t sze = 128;
+	const size_t loops = 64;
+	const size_t totalsize = datasize * sze;
+
+	Uart16EncodeSPSC<T> encodering (datasize, sze + 1, STX16);
+	Uart16DecodeSPSC<T> decodering (datasize, sze + 1, STX16);
+
+	char tempbuffer[600];
+	size_t pos;
+
+	uint8_t buffer[totalsize];
+
+	for (pos = 0; pos < totalsize; ++pos) {
+		buffer[pos] = pos & 0xff;
+	}
+
+	for (size_t loop = 0; loop < loops; ++loop) {
+		decodering.has_crc16 ((loop % 2) == 0, (loop % 4) == 0);
+		encodering.has_crc16 ((loop % 2) == 0, (loop % 4) == 0);
+
+		for (pos = 0; pos < totalsize; pos += datasize) {
+			ASSERT_NO_THROW (encodering.push_buffer (buffer, pos, pos + datasize));
+		}
+
+		/* Ring should be full at this point */
+		ASSERT_THROW (encodering.push_buffer (buffer, 0, 1), CommonException);
+
+		if ((loop % 2) == 0) {
+			/* Insert bad message, this will generate error if CRC is used */
+			tempbuffer[0] = STX16[0];
+			tempbuffer[1] = STX16[1];
+			tempbuffer[2] = 0;
+			tempbuffer[3] = 0;
+			tempbuffer[4] = 0;
+			tempbuffer[5] = 0;
+			decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, 6);
+		}
+		else {
+			/* Insert message larger than allocated */
+			tempbuffer[0] = STX16[0];
+			tempbuffer[1] = STX16[1];
+			tempbuffer[2] = UINT8_MAX;
+			tempbuffer[3] = UINT8_MAX;
+			decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, 4);
+		}
+
+		ASSERT_TRUE (decodering.get_err_count_reset () == 1);
 
 		/* Now lets fill tempbuffer with encoded data and push it to decodering */
 		pos = sze;
@@ -400,20 +547,36 @@ static void _seqpacketspsc_test (void)
 	}
 }
 
-TEST (EncDecSPSC, uart_push_pop_prealloc)
+TEST (EncDecSPSC, uart8_push_pop_prealloc)
 {
-	_uartspsc_test<SPSCDataPreAlloc> ();
+	_uart8spsc_test<SPSCDataPreAlloc> ();
 }
 
-TEST (EncDecSPSC, uart_push_pop)
+TEST (EncDecSPSC, uart8_push_pop)
 {
-	_uartspsc_test<SPSCDataDynAlloc> ();
+	_uart8spsc_test<SPSCDataDynAlloc> ();
 }
 
-TEST (EncDecSPSC, uart_different_sizes)
+TEST (EncDecSPSC, uart8_different_sizes)
 {
-	_uartspsc_sizes_test<SPSCDataPreAlloc> ();
-	_uartspsc_sizes_test<SPSCDataDynAlloc> ();
+	_uart8spsc_sizes_test<SPSCDataPreAlloc> ();
+	_uart8spsc_sizes_test<SPSCDataDynAlloc> ();
+}
+
+TEST (EncDecSPSC, uart16_push_pop_prealloc)
+{
+	_uart16spsc_test<SPSCDataPreAlloc> ();
+}
+
+TEST (EncDecSPSC, uart16_push_pop)
+{
+	_uart16spsc_test<SPSCDataDynAlloc> ();
+}
+
+TEST (EncDecSPSC, uart16_different_sizes)
+{
+	_uart16spsc_sizes_test<SPSCDataPreAlloc> ();
+	_uart16spsc_sizes_test<SPSCDataDynAlloc> ();
 }
 
 TEST (EncDecSPSC, packet_push_pop_prealloc)

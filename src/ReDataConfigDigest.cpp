@@ -108,13 +108,13 @@ namespace shaga {
 	static inline std::string _calc_crc8 (const std::string &plain, ReDataConfig::DigestCache &cache)
 	{
 		(void) cache;
-		return BIN::from_uint8 (CRC::crc8 (plain.data (), plain.size ()));
+		return BIN::from_uint8 (CRC::crc8_dallas (plain.data (), plain.size ()));
 	}
 
 	static inline std::string _calc_crc32 (const std::string &plain, ReDataConfig::DigestCache &cache)
 	{
 		(void) cache;
-		return BIN::from_uint32 (CRC::crc32 (plain.data (), plain.size ()));
+		return BIN::from_uint32 (CRC::crc32c (plain.data (), plain.size ()));
 	}
 
 	static inline std::string _calc_crc64 (const std::string &plain, ReDataConfig::DigestCache &cache)

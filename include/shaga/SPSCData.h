@@ -26,6 +26,7 @@ namespace shaga {
 			virtual uint_fast32_t inc_size (void) = 0;
 			virtual uint_fast32_t set_size (const uint_fast32_t new_size) = 0;
 			virtual void dec_size (void) = 0;
+			virtual void dec2_size (void) = 0;
 			virtual void zero_size (void) = 0;
 			virtual void alloc (void) = 0;
 			virtual void alloc (const uint_fast32_t alloc_size) = 0;
@@ -84,6 +85,14 @@ namespace shaga {
 					cThrow ("Unable to decrease size");
 				}
 				_size--;
+			}
+
+			virtual void dec2_size (void) override
+			{
+				if (_size < 2) {
+					cThrow ("Unable to decrease size");
+				}
+				_size -= 2;
 			}
 
 			virtual void zero_size (void) override
@@ -149,6 +158,14 @@ namespace shaga {
 					cThrow ("Unable to decrease size");
 				}
 				_size--;
+			}
+
+			virtual void dec2_size (void) override
+			{
+				if (_size < 2) {
+					cThrow ("Unable to decrease size");
+				}
+				_size -= 2;
 			}
 
 			virtual void zero_size (void) override

@@ -31,13 +31,15 @@ namespace shaga {
 	ShFile::ShFile ()
 	{ }
 
-	ShFile::ShFile (const std::string &filename, const uint8_t mode, const mode_t mask) try
+	ShFile::ShFile (const std::string &filename, const uint8_t mode, const mode_t mask, const bool do_open) try
 	{
 		_filename.assign (filename);
 		_mode = mode;
 		_mask = mask;
 
-		open ();
+		if (true == do_open) {
+			open ();
+		}
 	}
 	catch (...) {
 		close ();
@@ -46,6 +48,16 @@ namespace shaga {
 	ShFile::~ShFile ()
 	{
 		close ();
+	}
+
+	void ShFile::set_callback (ShFileCallback callback)
+	{
+		_callback = callback;
+	}
+
+	void ShFile::unset_callback (void)
+	{
+		_callback = nullptr;
 	}
 
 	void ShFile::open (void)
@@ -123,6 +135,10 @@ namespace shaga {
 		if (_mode & mAPPEND) {
 			seek (0, SEEK::END);
 		}
+
+		if (nullptr != _callback) {
+			_callback (*this, CallbackAction::OPEN);
+		}
 	}
 
 	void ShFile::close (void) noexcept
@@ -134,6 +150,9 @@ namespace shaga {
 		}
 
 		if (_fd >= 0) {
+			if (nullptr != _callback) {
+				_callback (*this, CallbackAction::CLOSE);
+			}
 			::close (_fd);
 			_fd = -1;
 		}

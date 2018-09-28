@@ -256,10 +256,10 @@ namespace shaga {
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  UartDecodeSPSC  /////////////////////////////////////////////////////////////////////////////////////////////
+	//  Uart8DecodeSPSC  ////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	template<class T> class UartDecodeSPSC : public DecodeSPSC<T>
+	template<class T> class Uart8DecodeSPSC : public DecodeSPSC<T>
 	{
 		private:
 			const uint8_t _stx;
@@ -287,7 +287,7 @@ namespace shaga {
 			}
 
 		public:
-			UartDecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const uint8_t stx, const uint8_t etx, const uint8_t ntx) :
+			Uart8DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const uint8_t stx, const uint8_t etx, const uint8_t ntx) :
 				DecodeSPSC<T> (max_packet_size + 1, num_packets),
 				_stx (stx),
 				_etx (etx),
@@ -337,7 +337,7 @@ namespace shaga {
 					}
 					else {
 						if (true == _has_crc8 && this->_curdata->size () > 0) {
-							_crc8_val = _crc8_table[this->_curdata->buffer[this->_curdata->size () - 1] ^ _crc8_val];
+							_crc8_val = _crc8_dallas_table[this->_curdata->buffer[this->_curdata->size () - 1] ^ _crc8_val];
 						}
 
 						if (true == _escape_next_char) {
@@ -347,6 +347,139 @@ namespace shaga {
 						else {
 							this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset];
 						}
+					}
+				}
+			}
+
+			virtual void push_buffer (const std::string &buffer) override final
+			{
+				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
+			}
+	};
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Uart16DecodeSPSC  ///////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	template<class T> class Uart16DecodeSPSC : public DecodeSPSC<T>
+	{
+		private:
+			const std::array<uint8_t,2> _stx;
+
+			uint_fast8_t _got_stx {0};
+
+			bool _has_crc16 {false};
+			uint_fast16_t _crc16_val {0};
+			uint_fast16_t _crc16_startval {0};
+
+			uint_fast32_t _remaining_len {UINT32_MAX};
+
+			virtual bool check (void)
+			{
+				try {
+					if (true == _has_crc16) {
+						this->_curdata->dec2_size ();
+
+						if (0 != _crc16_val) {
+							/* CRC-16 failed */
+							this->nonfatal_error ("CRC-16 mismatch");
+							return false;
+						}
+					}
+
+					return true;
+				}
+				catch (...) {
+					this->nonfatal_error ("Check failed");
+					return false;
+				}
+			}
+
+		public:
+			Uart16DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const std::array<uint8_t,2> stx) :
+				DecodeSPSC<T> (max_packet_size + 2, num_packets),
+				_stx (stx)
+			{ }
+
+			virtual void has_crc16 (const bool enabled, const bool include_stx = false, const uint_fast16_t startval = UINT16_MAX) final
+			{
+				_has_crc16 = enabled;
+
+				if (false == include_stx) {
+					_crc16_startval = startval;
+				}
+				else {
+					uint_fast16_t crc16_val = startval;
+					crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[0])) & 0xff];
+					crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[1])) & 0xff];
+					_crc16_startval = crc16_val;
+				}
+			}
+
+			virtual void push_buffer (const uint8_t *buffer, uint_fast32_t offset, const uint_fast32_t len) override final
+			{
+				for (;offset < len; ++offset) {
+					if (0 == _got_stx) {
+						if (_stx[0] == buffer[offset]) {
+							_got_stx = 1;
+						}
+					}
+					else if (1 == _got_stx) {
+						if (_stx[1] == buffer[offset]) {
+							_got_stx = 2;
+						}
+						else {
+							/* Expected second STX character, return to the beginning */
+							_got_stx = 0;
+						}
+					}
+					else if (2 == _got_stx) {
+						/* Low length byte */
+						_remaining_len = buffer[offset];
+						_got_stx = 3;
+
+						_crc16_val = _crc16_startval;
+						_crc16_val = (_crc16_val >> 8) ^ _crc16_modbus_table[(_crc16_val ^ static_cast<uint_fast16_t> (buffer[offset])) & 0xff];
+					}
+					else if (3 == _got_stx) {
+						/* High length byte */
+						_remaining_len |= (buffer[offset] << 8);
+
+						if (_remaining_len > this->_max_packet_size) {
+							this->nonfatal_error ("Packet size larger than allocated size, skipping...");
+							_got_stx = 0;
+							_remaining_len = UINT32_MAX;
+						}
+						else {
+							_got_stx = 4;
+
+							_crc16_val = (_crc16_val >> 8) ^ _crc16_modbus_table[(_crc16_val ^ static_cast<uint_fast16_t> (buffer[offset])) & 0xff];
+
+							this->_curdata->zero_size ();
+							this->_curdata->alloc (_remaining_len);
+						}
+					}
+					else {
+						/* If we have at least 2 bytes already, use it for crc calculation. */
+						if (true == _has_crc16) {
+							_crc16_val = (_crc16_val >> 8) ^ _crc16_modbus_table[(_crc16_val ^ static_cast<uint_fast16_t> (buffer[offset])) & 0xff];
+						}
+
+						/* This is part of the message */
+						this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset];
+
+						if (_remaining_len > 0) {
+							_remaining_len --;
+						}
+					}
+
+					if (4 == _got_stx && 0 == _remaining_len) {
+						/* We got all data we expected */
+						if (true == this->check ()) {
+							this->push ();
+						}
+						_got_stx = 0;
+						_remaining_len = UINT32_MAX;
 					}
 				}
 			}
@@ -386,7 +519,7 @@ namespace shaga {
 			{
 				for (;offset < len; ++offset) {
 					if (_remaining_crc > 0) {
-						_crc8_val = _crc8_table[buffer[offset] ^ _crc8_val];
+						_crc8_val = _crc8_dallas_table[buffer[offset] ^ _crc8_val];
 						--_remaining_crc;
 
 						if (0 == _remaining_crc && _crc8_val != _crc8_expected) {

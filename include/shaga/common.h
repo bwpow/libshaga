@@ -111,6 +111,8 @@ All rights reserved.
 #include <random>
 #include <chrono>
 
+#include <sys/stat.h>
+
 #ifdef SHAGA_THREADING
 	#include <thread>
 	#include <mutex>
@@ -224,6 +226,7 @@ namespace shaga
 
 	/* Set in shaga.cpp to constant value depending on compile-time settings */
 	extern const bool _shaga_compiled_with_threading;
+	extern const bool _shaga_compiled_full;
 
 	/* Call from main to check if compile time settings match runtime settings */
 	inline void shaga_check_threading (void)
@@ -239,12 +242,28 @@ namespace shaga
 		#endif // SHAGA_THREADING
 	}
 
+	inline void shaga_check_version (void)
+	{
+		#if defined SHAGA_LITE
+			if (true == _shaga_compiled_full) {
+				cThrow ("Shaga library version mismatch, compiled as full and used as lite");
+			}
+		#elif defined SHAGA_FULL
+			if (false == _shaga_compiled_full) {
+				cThrow ("Shaga library version mismatch, compiled as lite and used as full");
+			}
+		#else
+			#error Unable to detect version of the library
+		#endif
+	}
+
 	#define LOG_REGISTER
 
 	#define SHAGA_MAIN(a) int main (int argc, char **argv) try { \
 		(void) argc; \
 		(void) argv; \
 		shaga_check_threading (); \
+		shaga_check_version (); \
 		BIN::endian_detect (); \
 		LOG_REGISTER; \
 		a \
@@ -409,8 +428,8 @@ namespace shaga
 
 	extern template class SPSC<std::string>;
 
-	extern template class UartEncodeSPSC<SPSCDataPreAlloc>;
-	extern template class UartDecodeSPSC<SPSCDataPreAlloc>;
+	extern template class Uart8EncodeSPSC<SPSCDataPreAlloc>;
+	extern template class Uart8DecodeSPSC<SPSCDataPreAlloc>;
 
 	extern template class PacketEncodeSPSC<SPSCDataDynAlloc>;
 	extern template class PacketDecodeSPSC<SPSCDataDynAlloc>;

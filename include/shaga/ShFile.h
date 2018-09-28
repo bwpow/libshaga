@@ -10,12 +10,17 @@ All rights reserved.
 
 #include "common.h"
 
-#include <sys/stat.h>
-
 namespace shaga {
 
 	class ShFile {
 		public:
+			enum class CallbackAction {
+				OPEN, /* Right after file is opened */
+				CLOSE /* Right before file is closed */
+			};
+			/* Reference of calling ShFile and action */
+			typedef std::function<void (ShFile &file, const ShFile::CallbackAction action)> ShFileCallback;
+
 			static const uint8_t mREAD    { 0b00'00'00'01 };
 			static const uint8_t mWRITE   { 0b00'00'00'10 };
 			static const uint8_t mAPPEND  { 0b00'00'01'00 };
@@ -24,6 +29,9 @@ namespace shaga {
 			static const uint8_t mTRUNC   { 0b00'10'00'00 };
 			static const uint8_t mEXCL    { 0b01'00'00'00 };
 
+			static const uint8_t mR {mREAD};
+			static const uint8_t mW {mWRITE | mTRUNC};
+			static const uint8_t mA {mWRITE | mAPPEND};
 			static const uint8_t mRW {mREAD | mWRITE};
 			static const uint8_t mBRANDNEW {mWRITE | mEXCL};
 
@@ -48,14 +56,19 @@ namespace shaga {
 			ssize_t _printf_buf_req_size {printf_buf_size_def};
 			ssize_t _printf_buf_cur_size {0};
 
+			ShFileCallback _callback {nullptr};
+
 		public:
-			ShFile (const std::string &filename, const uint8_t mode = mREAD, const mode_t mask = mask644);
+			ShFile (const std::string &filename, const uint8_t mode = mREAD, const mode_t mask = mask644, const bool do_open = true);
 			ShFile ();
 			~ShFile ();
 
 			/* Disable copy and assignment */
 			ShFile (const ShFile &) = delete;
 			ShFile& operator= (const ShFile &) = delete;
+
+			void set_callback (ShFileCallback callback);
+			void unset_callback (void);
 
 			void open (void);
 			void close (void) noexcept;

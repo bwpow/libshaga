@@ -31,9 +31,9 @@ namespace shaga {
 			};
 
 			enum class DIGEST {
-				CRC8,
-				CRC32,
-				CRC64,
+				CRC8, /* CRC-8 Dallas/Maxim */
+				CRC32, /* CRC-32-Castagnoli */
+				CRC64, /* CRC-64-Jones */
 
 				SHA1,
 				SHA256,

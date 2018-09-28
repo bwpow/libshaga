@@ -11,8 +11,6 @@ All rights reserved.
 	#include <glob.h>
 #endif // OS_WIN
 
-#include <sys/stat.h>
-
 namespace shaga {
 
 	std::string FS::realpath (const std::string &path, const bool strip_fname)
@@ -40,6 +38,16 @@ namespace shaga {
 #endif // OS_WIN
 	}
 
+	struct stat FS::file_stat (const std::string &fname)
+	{
+		struct stat st;
+		if (::stat (fname.c_str (), &st) != 0) {
+			cThrow ("Unable to get file stat of '%s'", fname.c_str ());
+		}
+
+		return st;
+	}
+
 	off64_t FS::file_size (const std::string &fname)
 	{
 		struct stat st;
@@ -48,6 +56,16 @@ namespace shaga {
 		}
 
 		return st.st_size;
+	}
+
+	time_t FS::file_mtime (const std::string &fname)
+	{
+		struct stat st;
+		if (::stat (fname.c_str (), &st) != 0) {
+			cThrow ("Unable to get file mtime of '%s'", fname.c_str ());
+		}
+
+		return st.st_mtime;
 	}
 
 	bool FS::is_dir (const std::string &dname)

@@ -183,7 +183,7 @@ namespace shaga {
 	 * code or tables extracted from it, as desired without restriction.
 	 * CRC polynomial 0xedb88320
 	 */
-	extern const uint_fast32_t _crc32_table[256] = {
+	extern const uint_fast32_t _crc32_zlib_table[256] = {
 		0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,	0xe963a535, 0x9e6495a3,
 		0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,	0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91,
 		0x1db71064, 0x6ab020f2,	0xf3b97148, 0x84be41de, 0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7,
@@ -254,8 +254,44 @@ namespace shaga {
 		0xafb010b1, 0xab710d06, 0xa6322bdf, 0xa2f33668,	0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4
 	};
 
+	/* Polynomial 0x11edc6f41 (https://tools.ietf.org/html/rfc3720#section-12.1) */
+	extern const uint32_t _crc32c_table[256] = {
+		0x00000000, 0xF26B8303, 0xE13B70F7, 0x1350F3F4, 0xC79A971F, 0x35F1141C, 0x26A1E7E8, 0xD4CA64EB,
+		0x8AD958CF, 0x78B2DBCC, 0x6BE22838, 0x9989AB3B, 0x4D43CFD0, 0xBF284CD3, 0xAC78BF27, 0x5E133C24,
+		0x105EC76F, 0xE235446C, 0xF165B798, 0x030E349B, 0xD7C45070, 0x25AFD373, 0x36FF2087, 0xC494A384,
+		0x9A879FA0, 0x68EC1CA3, 0x7BBCEF57, 0x89D76C54, 0x5D1D08BF, 0xAF768BBC, 0xBC267848, 0x4E4DFB4B,
+		0x20BD8EDE, 0xD2D60DDD, 0xC186FE29, 0x33ED7D2A, 0xE72719C1, 0x154C9AC2, 0x061C6936, 0xF477EA35,
+		0xAA64D611, 0x580F5512, 0x4B5FA6E6, 0xB93425E5, 0x6DFE410E, 0x9F95C20D, 0x8CC531F9, 0x7EAEB2FA,
+		0x30E349B1, 0xC288CAB2, 0xD1D83946, 0x23B3BA45, 0xF779DEAE, 0x05125DAD, 0x1642AE59, 0xE4292D5A,
+		0xBA3A117E, 0x4851927D, 0x5B016189, 0xA96AE28A, 0x7DA08661, 0x8FCB0562, 0x9C9BF696, 0x6EF07595,
+		0x417B1DBC, 0xB3109EBF, 0xA0406D4B, 0x522BEE48, 0x86E18AA3, 0x748A09A0, 0x67DAFA54, 0x95B17957,
+		0xCBA24573, 0x39C9C670, 0x2A993584, 0xD8F2B687, 0x0C38D26C, 0xFE53516F, 0xED03A29B, 0x1F682198,
+		0x5125DAD3, 0xA34E59D0, 0xB01EAA24, 0x42752927, 0x96BF4DCC, 0x64D4CECF, 0x77843D3B, 0x85EFBE38,
+		0xDBFC821C, 0x2997011F, 0x3AC7F2EB, 0xC8AC71E8, 0x1C661503, 0xEE0D9600, 0xFD5D65F4, 0x0F36E6F7,
+		0x61C69362, 0x93AD1061, 0x80FDE395, 0x72966096, 0xA65C047D, 0x5437877E, 0x4767748A, 0xB50CF789,
+		0xEB1FCBAD, 0x197448AE, 0x0A24BB5A, 0xF84F3859, 0x2C855CB2, 0xDEEEDFB1, 0xCDBE2C45, 0x3FD5AF46,
+		0x7198540D, 0x83F3D70E, 0x90A324FA, 0x62C8A7F9, 0xB602C312, 0x44694011, 0x5739B3E5, 0xA55230E6,
+		0xFB410CC2, 0x092A8FC1, 0x1A7A7C35, 0xE811FF36, 0x3CDB9BDD, 0xCEB018DE, 0xDDE0EB2A, 0x2F8B6829,
+		0x82F63B78, 0x709DB87B, 0x63CD4B8F, 0x91A6C88C, 0x456CAC67, 0xB7072F64, 0xA457DC90, 0x563C5F93,
+		0x082F63B7, 0xFA44E0B4, 0xE9141340, 0x1B7F9043, 0xCFB5F4A8, 0x3DDE77AB, 0x2E8E845F, 0xDCE5075C,
+		0x92A8FC17, 0x60C37F14, 0x73938CE0, 0x81F80FE3, 0x55326B08, 0xA759E80B, 0xB4091BFF, 0x466298FC,
+		0x1871A4D8, 0xEA1A27DB, 0xF94AD42F, 0x0B21572C, 0xDFEB33C7, 0x2D80B0C4, 0x3ED04330, 0xCCBBC033,
+		0xA24BB5A6, 0x502036A5, 0x4370C551, 0xB11B4652, 0x65D122B9, 0x97BAA1BA, 0x84EA524E, 0x7681D14D,
+		0x2892ED69, 0xDAF96E6A, 0xC9A99D9E, 0x3BC21E9D, 0xEF087A76, 0x1D63F975, 0x0E330A81, 0xFC588982,
+		0xB21572C9, 0x407EF1CA, 0x532E023E, 0xA145813D, 0x758FE5D6, 0x87E466D5, 0x94B49521, 0x66DF1622,
+		0x38CC2A06, 0xCAA7A905, 0xD9F75AF1, 0x2B9CD9F2, 0xFF56BD19, 0x0D3D3E1A, 0x1E6DCDEE, 0xEC064EED,
+		0xC38D26C4, 0x31E6A5C7, 0x22B65633, 0xD0DDD530, 0x0417B1DB, 0xF67C32D8, 0xE52CC12C, 0x1747422F,
+		0x49547E0B, 0xBB3FFD08, 0xA86F0EFC, 0x5A048DFF, 0x8ECEE914, 0x7CA56A17, 0x6FF599E3, 0x9D9E1AE0,
+		0xD3D3E1AB, 0x21B862A8, 0x32E8915C, 0xC083125F, 0x144976B4, 0xE622F5B7, 0xF5720643, 0x07198540,
+		0x590AB964, 0xAB613A67, 0xB831C993, 0x4A5A4A90, 0x9E902E7B, 0x6CFBAD78, 0x7FAB5E8C, 0x8DC0DD8F,
+		0xE330A81A, 0x115B2B19, 0x020BD8ED, 0xF0605BEE, 0x24AA3F05, 0xD6C1BC06, 0xC5914FF2, 0x37FACCF1,
+		0x69E9F0D5, 0x9B8273D6, 0x88D28022, 0x7AB90321, 0xAE7367CA, 0x5C18E4C9, 0x4F48173D, 0xBD23943E,
+		0xF36E6F75, 0x0105EC76, 0x12551F82, 0xE03E9C81, 0x34F4F86A, 0xC69F7B69, 0xD5CF889D, 0x27A40B9E,
+		0x79B737BA, 0x8BDCB4B9, 0x988C474D, 0x6AE7C44E, 0xBE2DA0A5, 0x4C4623A6, 0x5F16D052, 0xAD7D5351L
+	};
+
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  CRC-64  /////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  CRC-64 Jones  ///////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	uint64_t CRC::crc64 (const char *buf, const size_t len, const uint64_t startval)
@@ -286,20 +322,18 @@ namespace shaga {
 
 	size_t CRC::crc64_check (const std::string &plain, const uint64_t startval)
 	{
-		size_t offset = plain.size ();
-		if (offset < sizeof (uint64_t)) {
+		const size_t sze = plain.size ();
+		if (sze < sizeof (uint64_t)) {
 			cThrow ("CRC-64: String is too short");
 		}
-		const size_t endpos = (offset -= sizeof (uint64_t));
-		const uint64_t crc_a = crc64 (plain.data (), offset, startval);
-		const uint64_t crc_b = BIN::to_uint64 (plain, offset);
-		if (crc_a != crc_b) {
+		const uint64_t crc = crc64 (plain.data (), sze, startval);
+		if (crc64_magic != crc) {
 			cThrow ("CRC-64: String and signature does not match");
 		}
-		return endpos;
+		return (sze - sizeof (uint64_t));
 	}
 
-	void CRC::crc64_add (std::string &plain, const uint64_t startval)
+	void CRC::crc64_append (std::string &plain, const uint64_t startval)
 	{
 		const uint64_t crc = crc64 (plain.data (), plain.size (), startval);
 		BIN::from_uint64 (crc, plain);
@@ -309,50 +343,48 @@ namespace shaga {
 	//  CRC-32 zlib compatible  /////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint32_t CRC::crc32 (const char *buf, const size_t len, const uint32_t startval)
+	uint32_t CRC::crc32_zlib (const char *buf, const size_t len, const uint32_t startval)
 	{
 		uint_fast32_t val = startval ^ UINT32_MAX;
 
-		#define UPDC32(octet,crc) crc=(_crc32_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
+		#define UPDC32(octet,crc) crc=(_crc32_zlib_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
 			UPDC32 (static_cast<uint_fast32_t> (buf[pos]), val);
 		}
 		#undef UPDC32
 
-		return val ^ UINT32_MAX;
+		return (val ^ UINT32_MAX);
 	}
 
-	uint32_t CRC::crc32 (const uint8_t *buf, const size_t len, const uint32_t startval)
+	uint32_t CRC::crc32_zlib (const uint8_t *buf, const size_t len, const uint32_t startval)
 	{
 		uint_fast32_t val = startval ^ UINT32_MAX;
 
-		#define UPDC32(octet,crc) crc=(_crc32_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
+		#define UPDC32(octet,crc) crc=(_crc32_zlib_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
 			UPDC32 (static_cast<uint_fast32_t> (buf[pos]), val);
 		}
 		#undef UPDC32
 
-		return val ^ UINT32_MAX;
+		return (val ^ UINT32_MAX);
 	}
 
-	size_t CRC::crc32_check (const std::string &plain, const uint32_t startval)
+	size_t CRC::crc32_zlib_check (const std::string &plain, const uint32_t startval)
 	{
-		size_t offset = plain.size ();
-		if (offset < sizeof (uint32_t)) {
+		const size_t sze = plain.size ();
+		if (sze < sizeof (uint32_t)) {
 			cThrow ("CRC-32: String is too short");
 		}
-		const size_t endpos = (offset -= sizeof (uint32_t));
-		const uint32_t crc_a = crc32 (plain.data (), offset, startval);
-		const uint32_t crc_b = BIN::to_uint32 (plain, offset);
-		if (crc_a != crc_b) {
+		const uint32_t crc = crc32_zlib (plain.data (), sze, startval);
+		if (crc32_zlib_magic != crc) {
 			cThrow ("CRC-32: String and signature does not match");
 		}
-		return endpos;
+		return (sze - sizeof (uint32_t));
 	}
 
-	void CRC::crc32_add (std::string &plain, const uint32_t startval)
+	void CRC::crc32_zlib_append (std::string &plain, const uint32_t startval)
 	{
-		const uint32_t crc = crc32 (plain.data (), plain.size (), startval);
+		const uint32_t crc = crc32_zlib (plain.data (), plain.size (), startval);
 		BIN::from_uint32 (crc, plain);
 	}
 
@@ -368,6 +400,7 @@ namespace shaga {
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
 			UPDC32 (static_cast<uint_fast32_t> (buf[pos]), val);
 		}
+		#undef UPDC32
 
 		return val & UINT32_MAX;
 	}
@@ -380,77 +413,174 @@ namespace shaga {
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
 			UPDC32 (static_cast<uint_fast32_t> (buf[pos]), val);
 		}
+		#undef UPDC32
 
 		return val & UINT32_MAX;
 	}
 
 	size_t CRC::crc32_atmel_check (const std::string &plain, const uint32_t startval)
 	{
-		size_t offset = plain.size ();
-		if (offset < sizeof (uint32_t)) {
+		const size_t sze = plain.size ();
+		if (sze < sizeof (uint32_t)) {
 			cThrow ("CRC-32: String is too short");
 		}
-		const size_t endpos = (offset -= sizeof (uint32_t));
-		const uint32_t crc_a = crc32_atmel (plain.data (), offset, startval);
-		const uint32_t crc_b = BIN::to_uint32 (plain, offset);
-		if (crc_a != crc_b) {
+		size_t offset = sze - sizeof (uint32_t);
+		const uint32_t crc = crc32_atmel (plain.data (), offset, startval);
+		const uint32_t crc_data = BIN::to_uint32 (plain, offset);
+		if (crc_data != crc) {
 			cThrow ("CRC-32: String and signature does not match");
 		}
-		return endpos;
+		return (sze - sizeof (uint32_t));
 	}
 
-	void CRC::crc32_atmel_add (std::string &plain, const uint32_t startval)
+	void CRC::crc32_atmel_append (std::string &plain, const uint32_t startval)
 	{
 		const uint32_t crc = crc32_atmel (plain.data (), plain.size (), startval);
 		BIN::from_uint32 (crc, plain);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  CRC-8  //////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  CRC-32C /////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint8_t CRC::crc8 (const char *buf, const size_t len, const uint8_t startval)
+	uint32_t CRC::crc32c (const char *buf, const size_t len, const uint32_t startval)
+	{
+		uint_fast32_t val = startval ^ UINT32_MAX;
+
+		#define UPDC32(octet,crc) crc=(_crc32c_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
+		for (uint_fast32_t pos = 0; pos < len; ++pos) {
+			UPDC32 (static_cast<uint_fast32_t> (buf[pos]), val);
+		}
+		#undef UPDC32
+
+		return (val ^ UINT32_MAX);
+	}
+
+	uint32_t CRC::crc32c (const uint8_t *buf, const size_t len, const uint32_t startval)
+	{
+		uint_fast32_t val = startval ^ UINT32_MAX;
+
+		#define UPDC32(octet,crc) crc=(_crc32c_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
+		for (uint_fast32_t pos = 0; pos < len; ++pos) {
+			UPDC32 (static_cast<uint_fast32_t> (buf[pos]), val);
+		}
+		#undef UPDC32
+
+		return (val ^ UINT32_MAX);
+	}
+
+	size_t CRC::crc32c_check (const std::string &plain, const uint32_t startval)
+	{
+		const size_t sze = plain.size ();
+		if (sze < sizeof (uint32_t)) {
+			cThrow ("CRC-32: String is too short");
+		}
+		const uint32_t crc = crc32c (plain.data (), sze, startval);
+		if (crc32c_magic != crc) {
+			cThrow ("CRC-32: String and signature does not match");
+		}
+		return (sze - sizeof (uint32_t));
+	}
+
+	void CRC::crc32c_append (std::string &plain, const uint32_t startval)
+	{
+		const uint32_t crc = crc32c (plain.data (), plain.size (), startval);
+		BIN::from_uint32 (crc, plain);
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  CRC-16 Modbus  //////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	uint16_t CRC::crc16_modbus (const char *buf, const size_t len, const uint16_t startval)
+	{
+		uint_fast16_t val = startval;
+
+		for (uint_fast32_t pos = 0; pos < len; ++pos) {
+			val = (val >> 8) ^ _crc16_modbus_table[(val ^ static_cast<uint_fast16_t> (buf[pos])) & 0xff];
+		}
+
+		return val & UINT16_MAX;
+	}
+
+	uint16_t CRC::crc16_modbus (const uint8_t *buf, const size_t len, const uint16_t startval)
+	{
+		uint_fast16_t val = startval;
+
+		for (uint_fast32_t pos = 0; pos < len; ++pos) {
+			val = (val >> 8) ^ _crc16_modbus_table[(val ^ static_cast<uint_fast16_t> (buf[pos])) & 0xff];
+		}
+
+		return val & UINT16_MAX;
+	}
+
+	size_t CRC::crc16_modbus_check (const std::string &plain, const uint16_t startval)
+	{
+		const size_t sze = plain.size ();
+		if (sze < sizeof (uint16_t)) {
+			cThrow ("CRC-16: String is too short");
+		}
+		const uint16_t crc = crc16_modbus (plain.data (), sze, startval);
+		if (crc16_modbus_magic != crc) {
+			cThrow ("CRC-16: Signature does not match");
+		}
+		return (sze - sizeof (uint16_t));
+	}
+
+	void CRC::crc16_modbus_append (std::string &plain, const uint16_t startval)
+	{
+		const uint16_t crc = crc16_modbus (plain, startval);
+		BIN::from_uint16 (crc, plain);
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  CRC-8 Dallas/Maxim  /////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	uint8_t CRC::crc8_dallas (const char *buf, const size_t len, const uint8_t startval)
 	{
 		uint_fast8_t val = startval;
 
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			val = _crc8_table[(static_cast<uint_fast8_t> (buf[pos]) ^ val) & 0xFF];
+			val = _crc8_dallas_table[(static_cast<uint_fast8_t> (buf[pos]) ^ val) & 0xFF];
 		}
 
 		return val & UINT8_MAX;
 	}
 
-	uint8_t CRC::crc8 (const uint8_t *buf, const size_t len, const uint8_t startval)
+	uint8_t CRC::crc8_dallas (const uint8_t *buf, const size_t len, const uint8_t startval)
 	{
 		uint_fast8_t val = startval;
 
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			val = _crc8_table[(static_cast<uint_fast8_t> (buf[pos]) ^ val) & 0xFF];
+			val = _crc8_dallas_table[(static_cast<uint_fast8_t> (buf[pos]) ^ val) & 0xFF];
 		}
 
 		return val & UINT8_MAX;
 	}
 
-	size_t CRC::crc8_check (const std::string &plain, const uint8_t startval)
+	size_t CRC::crc8_dallas_check (const std::string &plain, const uint8_t startval)
 	{
-		size_t offset = plain.size ();
-		if (offset < sizeof (uint8_t)) {
-			cThrow ("CRC8: String is too short");
+		const size_t sze = plain.size ();
+		if (sze < sizeof (uint8_t)) {
+			cThrow ("CRC-8: String is too short");
 		}
-		const size_t endpos = (offset -= sizeof (uint8_t));
-		const uint8_t crc_a = crc8 (plain.data (), offset, startval);
-		const uint8_t crc_b = BIN::to_uint8 (plain, offset);
-		if (crc_a != crc_b) {
-			cThrow ("CRC-8: String and signature does not match");
+		const uint8_t crc = crc8_dallas (plain.data (), sze, startval);
+		if (crc8_dallas_magic != crc) {
+			cThrow ("CRC-8: Signature does not match");
 		}
-		return endpos;
+		return (sze - sizeof (uint8_t));
 	}
 
-	void CRC::crc8_add (std::string &plain, const uint8_t startval)
+	void CRC::crc8_dallas_append (std::string &plain, const uint8_t startval)
 	{
-		const uint8_t crc = crc8 (plain, startval);
+		const uint8_t crc = crc8_dallas (plain, startval);
 		BIN::from_uint8 (crc, plain);
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  SHA-256  ////////////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	std::string CRC::sha256 (const char *buf, const size_t len)
 	{
@@ -480,6 +610,10 @@ namespace shaga {
 #endif // SHAGA_FULL
 	}
 
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  SHA-512  ////////////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	std::string CRC::sha512 (const char *buf, const size_t len)
 	{
 #ifdef SHAGA_FULL
@@ -507,6 +641,10 @@ namespace shaga {
 		cThrow ("Digest is not supported in lite version");
 #endif // SHAGA_FULL
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  SipHash  ////////////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	namespace CRC {
 		#define SIPHASH_DATA _data

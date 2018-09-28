@@ -27,14 +27,25 @@ namespace shaga {
 		#pragma message "Endian: Runtime detection"
 	#endif
 
+	#if defined SHAGA_LITE
+		#pragma message "Version: LITE"
+		const bool _shaga_compiled_full {false};
+	#elif defined SHAGA_FULL
+		#pragma message "Version: FULL"
+		const bool _shaga_compiled_full {true};
+	#else
+		#error Unable to detect version of the library
+	#endif
+
+
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Most used templates  ////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	template class SPSC<std::string>;
 
-	template class UartEncodeSPSC<SPSCDataPreAlloc>;
-	template class UartDecodeSPSC<SPSCDataPreAlloc>;
+	template class Uart8EncodeSPSC<SPSCDataPreAlloc>;
+	template class Uart8DecodeSPSC<SPSCDataPreAlloc>;
 
 	template class PacketEncodeSPSC<SPSCDataDynAlloc>;
 	template class PacketDecodeSPSC<SPSCDataDynAlloc>;

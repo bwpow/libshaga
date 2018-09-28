@@ -441,11 +441,11 @@ namespace shaga {
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  UartEncodeSPSC  /////////////////////////////////////////////////////////////////////////////////////////////
+	//  Uart8EncodeSPSC  ////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	template<class T>
-	class UartEncodeSPSC : public ContStreamEncodeSPSC<T>
+	class Uart8EncodeSPSC : public ContStreamEncodeSPSC<T>
 	{
 		private:
 			const uint8_t _stx;
@@ -456,7 +456,7 @@ namespace shaga {
 
 		public:
 			/* Result can have every byte escaped (max_packet_size * 2) plus STX, ETX and escaped CRC (+4) */
-			UartEncodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const uint8_t stx, const uint8_t etx, const uint8_t ntx) :
+			Uart8EncodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const uint8_t stx, const uint8_t etx, const uint8_t ntx) :
 				ContStreamEncodeSPSC<T> ((max_packet_size * 2) + 4, num_packets),
 				_stx (stx),
 				_etx (etx),
@@ -477,7 +477,7 @@ namespace shaga {
 				this->_curdata->buffer[this->_curdata->inc_size ()] = _stx;
 
 				for (;offset < len; ++offset) {
-					crc8_val = _crc8_table[buffer[offset] ^ crc8_val];
+					crc8_val = _crc8_dallas_table[buffer[offset] ^ crc8_val];
 
 					if (_stx == buffer[offset] || _etx == buffer[offset] || _ntx == buffer[offset]) {
 						this->_curdata->buffer[this->_curdata->inc_size ()] = _ntx;
@@ -507,7 +507,87 @@ namespace shaga {
 			{
 				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
 			}
+	};
 
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Uart16EncodeSPSC  ///////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	template<class T>
+	class Uart16EncodeSPSC : public ContStreamEncodeSPSC<T>
+	{
+		private:
+			const std::array<uint8_t,2> _stx;
+
+			bool _has_crc16 {false};
+			uint_fast16_t _crc16_startval {0};
+
+		public:
+			/* Result can have max_packet_size plus STX (2 bytes) + LEN (2 bytes) + CRC (2 bytes) */
+			Uart16EncodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const std::array<uint8_t,2> stx) :
+				ContStreamEncodeSPSC<T> (max_packet_size + 6, num_packets),
+				_stx (stx)
+			{ }
+
+			virtual void has_crc16 (const bool enabled, const bool include_stx = false, const uint_fast16_t startval = UINT16_MAX) final
+			{
+				_has_crc16 = enabled;
+
+				if (false == include_stx) {
+					_crc16_startval = startval;
+				}
+				else {
+					uint_fast16_t crc16_val = startval;
+					crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[0])) & 0xff];
+					crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[1])) & 0xff];
+					_crc16_startval = crc16_val;
+				}
+			}
+
+			virtual void push_buffer (const uint8_t *buffer, uint_fast32_t offset, const uint_fast32_t len) override final
+			{
+				/* STX is not part of CRC-16 */
+				uint_fast16_t crc16_val = _crc16_startval;
+
+				const uint_fast32_t real_len = (len - offset) + (_has_crc16 ? 2 : 0);
+
+				this->_curdata->zero_size ();
+				this->_curdata->alloc (real_len + 4);
+
+				/* STX two bytes */
+				this->_curdata->buffer[this->_curdata->inc_size ()] = _stx[0];
+				this->_curdata->buffer[this->_curdata->inc_size ()] = _stx[1];
+
+				/* Length encoded in little endian */
+				this->_curdata->buffer[this->_curdata->inc_size ()] = real_len & 0xff;
+				this->_curdata->buffer[this->_curdata->inc_size ()] = (real_len >> 8) & 0xff;
+
+				if (true == _has_crc16) {
+					crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (this->_curdata->buffer[this->_curdata->size () - 2])) & 0xff];
+					crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (this->_curdata->buffer[this->_curdata->size () - 1])) & 0xff];
+				}
+
+				for (;offset < len; ++offset) {
+					if (true == _has_crc16) {
+						crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (buffer[offset])) & 0xff];
+					}
+
+					this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset];
+				}
+
+				if (true == _has_crc16) {
+					/* Always little endian */
+					this->_curdata->buffer[this->_curdata->inc_size ()] = crc16_val & 0xff;
+					this->_curdata->buffer[this->_curdata->inc_size ()] = (crc16_val >> 8) & 0xff;
+				}
+
+				this->push ();
+			}
+
+			virtual void push_buffer (const std::string &buffer) override final
+			{
+				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
+			}
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -557,7 +637,7 @@ namespace shaga {
 				::memcpy (this->_curdata->buffer, tbuf.data (), tbuf.size ());
 				::memcpy (this->_curdata->buffer + (tbuf.size ()), buffer + offset, sze);
 
-				this->_curdata->buffer[2] = CRC::crc8 (reinterpret_cast<const char *> (this->_curdata->buffer + 3), std::min (this->_curdata->size () - 3, _crc_max_len), _crc_start_val);
+				this->_curdata->buffer[2] = CRC::crc8_dallas (reinterpret_cast<const char *> (this->_curdata->buffer + 3), std::min (this->_curdata->size () - 3, _crc_max_len), _crc_start_val);
 
 				this->push ();
 			}

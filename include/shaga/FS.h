@@ -15,7 +15,9 @@ namespace shaga {
 
 		std::string realpath (const std::string &path, const bool strip_fname = false);
 
+		struct stat file_stat (const std::string &fname);
 		off64_t file_size (const std::string &fname);
+		time_t file_mtime (const std::string &fname);
 
 		bool is_dir (const std::string &dname);
 		bool is_file (const std::string &fname);
