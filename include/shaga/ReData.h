@@ -144,7 +144,7 @@ namespace shaga {
 
 			struct DigestCache {
 				unsigned char output[64];
-				DIGEST digest;
+				DIGEST digest {DIGEST::CRC32};
 				std::string key;
 				std::string ipad;
 				std::string opad;
@@ -160,8 +160,8 @@ namespace shaga {
 			};
 
 		private:
-			DIGEST _used_digest;
-			CRYPTO _used_crypto;
+			DIGEST _used_digest {DIGEST::CRC32};
+			CRYPTO _used_crypto {CRYPTO::NONE};
 
 			CryptoCache _cache_crypto;
 			DigestCache _cache_digest;
@@ -219,12 +219,21 @@ namespace shaga {
 	};
 
 	class ReData {
+		public:
+			typedef std::vector<uint_fast8_t> KEY_IDENT_VECTOR;
+
 		private:
 			ReDataConfig _conf;
 			COMMON_VECTOR _hmac_keys;
 			COMMON_VECTOR _crypto_keys;
-			bool _use_config_header;
-			size_t _key_id;
+
+			KEY_IDENT_VECTOR _key_idents;
+			std::unordered_map<uint_fast8_t, size_t> _key_ident_map;
+
+			bool _use_config_header {true};
+			bool _use_key_ident {false};
+			size_t _key_id {0};
+			uint_fast16_t _last_key_ident {UINT_FAST16_MAX};
 			std::string _work_msg;
 
 			void decode_message (const std::string &msg, const size_t offset, std::string &plain, const size_t key_id);
@@ -251,14 +260,23 @@ namespace shaga {
 			void set_hmac_key (const std::string &key);
 			void set_crypto_key (const std::string &key);
 
+			/* key_id == SIZE_MAX means keep current key_id */
 			void set_hmac_keys (const COMMON_VECTOR &keys, const size_t key_id = SIZE_MAX);
 			void set_crypto_keys (const COMMON_VECTOR &keys, const size_t key_id = SIZE_MAX);
+			void set_key_idents (const KEY_IDENT_VECTOR &idents, const size_t key_id = SIZE_MAX);
 
 			size_t get_key_id (void) const;
 			void set_key_id (const size_t id);
 
 			bool config_header_enabled (void) const;
 			void use_config_header (const bool enabled);
+
+			/* Decode normally loops through all keys until it finds one that works.
+			But if you have a lot of keys or want to skip this, enable key ident and set
+			different key ident for every key. It adds one byte to the message, but uses only
+			one decryption/digest check. */
+			bool key_ident_enabled (void) const;
+			void use_key_ident (const bool enabled);
 	};
 }
 
