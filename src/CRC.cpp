@@ -649,13 +649,13 @@ namespace shaga {
 	namespace CRC {
 		#define SIPHASH_DATA _data
 		#define SIPHASH_DATA_SIZE _sze
-		#define SIPHASH_PARAMS (const uint8_t *_data, const size_t _sze, const uint64_t siphash_k0, const uint64_t siphash_k1)
+		#define SIPHASH_PARAMS (const uint8_t *_data, const size_t _sze, const CRC::SipHash128_t &siphash_key)
 
 		#define SIPHASH_BEGIN_KEYS \
-			uint64_t vv0 = 0x736f6d6570736575ULL ^ siphash_k0;	\
-			uint64_t vv1 = 0x646f72616e646f6dULL ^ siphash_k1;	\
-			uint64_t vv2 = 0x6c7967656e657261ULL ^ siphash_k0;	\
-			uint64_t vv3 = 0x7465646279746573ULL ^ siphash_k1;
+			uint64_t vv0 = 0x736f6d6570736575ULL ^ siphash_key.first;	\
+			uint64_t vv1 = 0x646f72616e646f6dULL ^ siphash_key.second;	\
+			uint64_t vv2 = 0x6c7967656e657261ULL ^ siphash_key.first;	\
+			uint64_t vv3 = 0x7465646279746573ULL ^ siphash_key.second;
 
 		#include "internal_siphash.h"
 
@@ -665,13 +665,13 @@ namespace shaga {
 		#undef SIPHASH_DATA
 	};
 
-	std::pair<uint64_t, uint64_t> CRC::siphash_extract_key (const std::string &key)
+	CRC::SipHash128_t CRC::siphash_extract_key (const std::string &key)
 	{
 		if (key.size () != 16) {
 			cThrow ("SipHash key must be exactly 16 bytes (128 bit) long");
 		}
 
-		std::pair<uint64_t, uint64_t> out;
+		CRC::SipHash128_t out;
 
 		out.first = _siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data ()));
 		out.second = _siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data () + 8));
@@ -679,44 +679,64 @@ namespace shaga {
 		return out;
 	}
 
-	uint64_t CRC::siphash24 (const char *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
+	uint64_t CRC::siphash24 (const char *buf, const size_t len, const CRC::SipHash128_t &key)
 	{
-		return _calc_siphash24 (reinterpret_cast<const uint8_t *> (buf), len, key.first, key.second);
+		return _calc_siphash24 (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	uint64_t CRC::siphash24 (const uint8_t *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
+	uint64_t CRC::siphash24 (const uint8_t *buf, const size_t len, const CRC::SipHash128_t &key)
 	{
-		return _calc_siphash24 (buf, len, key.first, key.second);
+		return _calc_siphash24 (buf, len, key);
 	}
 
-	uint64_t CRC::siphash48 (const char *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
+	uint64_t CRC::siphash48 (const char *buf, const size_t len, const CRC::SipHash128_t &key)
 	{
-		return _calc_siphash48 (reinterpret_cast<const uint8_t *> (buf), len, key.first, key.second);
+		return _calc_siphash48 (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	uint64_t CRC::siphash48 (const uint8_t *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
+	uint64_t CRC::siphash48 (const uint8_t *buf, const size_t len, const CRC::SipHash128_t &key)
 	{
-		return _calc_siphash48 (buf, len, key.first, key.second);
+		return _calc_siphash48 (buf, len, key);
 	}
 
-	std::string CRC::siphash24_128 (const char *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
+	std::string CRC::siphash24_128 (const char *buf, const size_t len, const CRC::SipHash128_t &key)
 	{
-		return _calc_siphash24_128 (reinterpret_cast<const uint8_t *> (buf), len, key.first, key.second);
+		return _calc_siphash24_128 (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	std::string CRC::siphash24_128 (const uint8_t *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
+	std::string CRC::siphash24_128 (const uint8_t *buf, const size_t len, const CRC::SipHash128_t &key)
 	{
-		return _calc_siphash24_128 (buf, len, key.first, key.second);
+		return _calc_siphash24_128 (buf, len, key);
 	}
 
-	std::string CRC::siphash48_128 (const char *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
+	std::string CRC::siphash48_128 (const char *buf, const size_t len, const CRC::SipHash128_t &key)
 	{
-		return _calc_siphash48_128 (reinterpret_cast<const uint8_t *> (buf), len, key.first, key.second);
+		return _calc_siphash48_128 (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	std::string CRC::siphash48_128 (const uint8_t *buf, const size_t len, const std::pair<uint64_t, uint64_t> &key)
+	std::string CRC::siphash48_128 (const uint8_t *buf, const size_t len, const CRC::SipHash128_t &key)
 	{
-		return _calc_siphash48_128 (buf, len, key.first, key.second);
+		return _calc_siphash48_128 (buf, len, key);
+	}
+
+	CRC::SipHash128_t CRC::siphash24_128t (const char *buf, const size_t len, const CRC::SipHash128_t &key)
+	{
+		return _calc_siphash24_128t (reinterpret_cast<const uint8_t *> (buf), len, key);
+	}
+
+	CRC::SipHash128_t CRC::siphash24_128t (const uint8_t *buf, const size_t len, const CRC::SipHash128_t &key)
+	{
+		return _calc_siphash24_128t (buf, len, key);
+	}
+
+	CRC::SipHash128_t CRC::siphash48_128t (const char *buf, const size_t len, const CRC::SipHash128_t &key)
+	{
+		return _calc_siphash48_128t (reinterpret_cast<const uint8_t *> (buf), len, key);
+	}
+
+	CRC::SipHash128_t CRC::siphash48_128t (const uint8_t *buf, const size_t len, const CRC::SipHash128_t &key)
+	{
+		return _calc_siphash48_128t (buf, len, key);
 	}
 
 };
