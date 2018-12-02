@@ -44,6 +44,8 @@ namespace shaga {
 		if (_work_msg.compare (0, digest_size, tdigest) != 0) {
 			cThrow ("Digest check failed");
 		}
+
+		_last_decode_was_mixed = key_mixed;
 	}
 
 	void ReData::encode_message (const std::string &plain, std::string &msg, const size_t key_id, const bool key_mixed)
@@ -111,6 +113,7 @@ namespace shaga {
 		_conf.reset ();
 		_use_config_header = true;
 		_use_key_ident = false;
+		_last_decode_was_mixed = false;
 
 		if (true == also_reset_keys) {
 			_key_id = 0;
@@ -379,7 +382,7 @@ namespace shaga {
 		}
 	}
 
-	void ReData::sex_mix_key (const std::string &mix)
+	void ReData::set_mix_key (const std::string &mix)
 	{
 		_mix_key_enabled = true;
 		_mix_key.assign (mix);
@@ -393,6 +396,11 @@ namespace shaga {
 		_mix_key.resize (0);
 		_hmac_keys_mixed.clear ();
 		_crypto_keys_mixed.clear ();
+	}
+
+	bool ReData::get_last_decode_was_mixed (void) const
+	{
+		return _last_decode_was_mixed;
 	}
 
 	COMMON_VECTOR ReData::get_mixed_hmac_keys (void) const

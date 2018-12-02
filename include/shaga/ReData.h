@@ -250,6 +250,7 @@ namespace shaga {
 
 			std::string _mix_key;
 			bool _mix_key_enabled {false};
+			bool _last_decode_was_mixed {false};
 
 			void decode_message (const std::string &msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed);
 			void encode_message (const std::string &plain, std::string &msg, const size_t key_id, const bool key_mixed);
@@ -286,9 +287,11 @@ namespace shaga {
 
 			/* Key mixing is implemented using SHAKE256 of SHA-3 family by combining normal key + mix */
 			/* Enable use of mix key. Empty mix key is also allowed */
-			void sex_mix_key (const std::string &mix);
+			void set_mix_key (const std::string &mix);
 			/* Stop using mix key */
 			void clear_mix_key (void);
+			/* Returns true if last successfull decode was using mixed keys, false if normal keys */
+			bool get_last_decode_was_mixed (void) const;
 
 			/* Get vectors of mixed keys */
 			COMMON_VECTOR get_mixed_hmac_keys (void) const;

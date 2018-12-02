@@ -82,20 +82,23 @@ static void _redata_test (const shaga::ReDataConfig &config, const bool use_head
 
 		if (true == use_mix) {
 			const std::string mix = _redata_make_string (16, i);
-			rd1.sex_mix_key (mix);
-			rd2.sex_mix_key (mix);
+			rd1.set_mix_key (mix);
+			rd2.set_mix_key (mix);
 
 			ASSERT_NO_THROW (rd1.encode (plain, msg, true));
 			ASSERT_THROW (rd2.decode (msg, plain2, nullptr, ReData::MixKeysUse::ONLY_NORMAL), CommonException);
 
 			ASSERT_NO_THROW (rd2.decode (msg, plain2, nullptr, ReData::MixKeysUse::BOTH_MIXED_FIRST));
 			EXPECT_TRUE (plain.compare (plain2) == 0);
+			EXPECT_TRUE (rd2.get_last_decode_was_mixed ());
 
 			ASSERT_NO_THROW (rd2.decode (msg, plain2, nullptr, ReData::MixKeysUse::BOTH_NORMAL_FIRST));
 			EXPECT_TRUE (plain.compare (plain2) == 0);
+			EXPECT_TRUE (rd2.get_last_decode_was_mixed ());
 
 			ASSERT_NO_THROW (rd2.decode (msg, plain2, nullptr, ReData::MixKeysUse::ONLY_MIXED));
 			EXPECT_TRUE (plain.compare (plain2) == 0);
+			EXPECT_TRUE (rd2.get_last_decode_was_mixed ());
 		}
 		else {
 			rd1.clear_mix_key ();
@@ -108,12 +111,15 @@ static void _redata_test (const shaga::ReDataConfig &config, const bool use_head
 
 			ASSERT_NO_THROW (rd2.decode (msg, plain2, nullptr, ReData::MixKeysUse::BOTH_MIXED_FIRST));
 			EXPECT_TRUE (plain.compare (plain2) == 0);
+			EXPECT_FALSE (rd2.get_last_decode_was_mixed ());
 
 			ASSERT_NO_THROW (rd2.decode (msg, plain2, nullptr, ReData::MixKeysUse::BOTH_NORMAL_FIRST));
 			EXPECT_TRUE (plain.compare (plain2) == 0);
+			EXPECT_FALSE (rd2.get_last_decode_was_mixed ());
 
 			ASSERT_NO_THROW (rd2.decode (msg, plain2, nullptr, ReData::MixKeysUse::ONLY_NORMAL));
 			EXPECT_TRUE (plain.compare (plain2) == 0);
+			EXPECT_FALSE (rd2.get_last_decode_was_mixed ());
 		}
 
 		/* Expect first or the last key minus rd1.key_id has to be used, depending on whether encryption and HMAC is used */
