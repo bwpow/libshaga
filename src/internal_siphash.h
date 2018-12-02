@@ -41,23 +41,25 @@ static inline uint64_t _siphash_to_uint64 (const uint8_t *data)
 	return v;
 }
 
-#define ROTL(x, b) (((x) << (b)) | ((x) >> (64 - (b))))
+#ifndef ROTL64
+	#define ROTL64(x, b) (((x) << (b)) | ((x) >> (64 - (b))))
+#endif // ROTL64
 
 #define SIPHASH_ROUND \
 	vv0 += vv1;												\
 	vv2 += vv3;												\
-	vv1 = ROTL (vv1, 13ULL);								\
-	vv3 = ROTL (vv3, 16ULL);								\
+	vv1 = ROTL64 (vv1, 13ULL);								\
+	vv3 = ROTL64 (vv3, 16ULL);								\
 	vv1 ^= vv0;												\
 	vv3 ^= vv2;												\
-	vv0 = ROTL (vv0, 32ULL);								\
+	vv0 = ROTL64 (vv0, 32ULL);								\
 	vv2 += vv1;												\
 	vv0 += vv3;												\
-	vv1 = ROTL (vv1, 17ULL);								\
-	vv3 = ROTL (vv3, 21ULL);								\
+	vv1 = ROTL64 (vv1, 17ULL);								\
+	vv3 = ROTL64 (vv3, 21ULL);								\
 	vv1 ^= vv2;												\
 	vv3 ^= vv0;												\
-	vv2 = ROTL (vv2, 32ULL);
+	vv2 = ROTL64 (vv2, 32ULL);
 
 #define SIPHASH_LAST \
 	val = static_cast<uint64_t> (SIPHASH_DATA_SIZE & 0xff) << 56;	\

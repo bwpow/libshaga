@@ -220,15 +220,27 @@ namespace shaga {
 
 	class ReData {
 		public:
-			typedef std::vector<uint_fast8_t> KEY_IDENT_VECTOR;
+			typedef uint_fast8_t KEY_IDENT;
+			typedef std::vector<KEY_IDENT> KEY_IDENT_VECTOR;
+
+			enum class MixKeysUse {
+				ONLY_NORMAL, /* Use only un-mixed keys */
+				ONLY_MIXED, /* Use only mixed keys */
+				BOTH_NORMAL_FIRST, /* Use bot mixed and un-mixed keys, try un-mixed first */
+				BOTH_MIXED_FIRST /* Use bot mixed and un-mixed keys, try mixed first */
+			};
 
 		private:
 			ReDataConfig _conf;
+
 			COMMON_VECTOR _hmac_keys;
 			COMMON_VECTOR _crypto_keys;
 
+			COMMON_VECTOR _hmac_keys_mixed;
+			COMMON_VECTOR _crypto_keys_mixed;
+
 			KEY_IDENT_VECTOR _key_idents;
-			std::unordered_map<uint_fast8_t, size_t> _key_ident_map;
+			std::unordered_map<KEY_IDENT, size_t> _key_ident_map;
 
 			bool _use_config_header {true};
 			bool _use_key_ident {false};
@@ -236,8 +248,13 @@ namespace shaga {
 			uint_fast16_t _last_key_ident {UINT_FAST16_MAX};
 			std::string _work_msg;
 
-			void decode_message (const std::string &msg, const size_t offset, std::string &plain, const size_t key_id);
-			void encode_message (const std::string &plain, std::string &msg, const size_t key_id);
+			std::string _mix_key;
+			bool _mix_key_enabled {false};
+
+			void decode_message (const std::string &msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed);
+			void encode_message (const std::string &plain, std::string &msg, const size_t key_id, const bool key_mixed);
+
+			void mix_keys (const COMMON_VECTOR &keys, COMMON_VECTOR &out) const;
 
 		public:
 			ReData ();
@@ -246,11 +263,13 @@ namespace shaga {
 
 			void reset (const bool also_reset_keys);
 
-			void decode (const std::string &msg, size_t &offset, std::string &out, std::function<bool(const ReDataConfig &)> check_callback = nullptr);
-			void decode (const std::string &msg, std::string &out, std::function<bool(const ReDataConfig &)> check_callback = nullptr);
+			/* Output is stored in 'out', which is always truncated, even when decode fails */
+			void decode (const std::string &msg, size_t &offset, std::string &out, std::function<bool(const ReDataConfig &)> check_callback = nullptr, const MixKeysUse use = MixKeysUse::ONLY_NORMAL);
+			void decode (const std::string &msg, std::string &out, std::function<bool(const ReDataConfig &)> check_callback = nullptr, const MixKeysUse use = MixKeysUse::ONLY_NORMAL);
 
-			void encode (const std::string &plain, std::string &out);
-			std::string encode (const std::string &plain);
+			/* Output is appended to 'out' only when encode succeeds, otherwise 'out' is untouched */
+			void encode (const std::string &plain, std::string &out, const bool use_mixed = false);
+			std::string encode (const std::string &plain, const bool use_mixed = false);
 
 			ReDataConfig get_config (void) const;
 			void set_config (const ReDataConfig &conf);
@@ -264,6 +283,16 @@ namespace shaga {
 			void set_hmac_keys (const COMMON_VECTOR &keys, const size_t key_id = SIZE_MAX);
 			void set_crypto_keys (const COMMON_VECTOR &keys, const size_t key_id = SIZE_MAX);
 			void set_key_idents (const KEY_IDENT_VECTOR &idents, const size_t key_id = SIZE_MAX);
+
+			/* Key mixing is implemented using SHAKE256 of SHA-3 family by combining normal key + mix */
+			/* Enable use of mix key. Empty mix key is also allowed */
+			void sex_mix_key (const std::string &mix);
+			/* Stop using mix key */
+			void clear_mix_key (void);
+
+			/* Get vectors of mixed keys */
+			COMMON_VECTOR get_mixed_hmac_keys (void) const;
+			COMMON_VECTOR get_mixed_crypto_keys (void) const;
 
 			size_t get_key_id (void) const;
 			void set_key_id (const size_t id);

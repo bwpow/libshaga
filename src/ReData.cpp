@@ -12,16 +12,17 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	#include "internal_shake256.h"
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void ReData::decode_message (const std::string &msg, const size_t offset, std::string &plain, const size_t key_id)
+	void ReData::decode_message (const std::string &msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed)
 	{
 		if (_conf.get_crypto () != ReDataConfig::CRYPTO::NONE) {
 			/* No need to clear _work_msg, because calc_crypto_dec will clear it for us */
-			_conf.calc_crypto_dec (msg, offset, _work_msg, _crypto_keys.at (key_id));
+			_conf.calc_crypto_dec (msg, offset, _work_msg, (true == key_mixed) ? _crypto_keys_mixed.at (key_id) : _crypto_keys.at (key_id));
 		}
 		else {
 			/* No encryption, just copy the data */
@@ -37,7 +38,7 @@ namespace shaga {
 		plain.assign (_work_msg.substr (digest_size));
 
 		/* Calculate digest from plain data */
-		const std::string tdigest = _conf.calc_digest (plain, _hmac_keys.at (key_id));
+		const std::string tdigest = _conf.calc_digest (plain, (true == key_mixed) ? _hmac_keys_mixed.at (key_id) : _hmac_keys.at (key_id));
 
 		/* Compare digest from message with calculated digest */
 		if (_work_msg.compare (0, digest_size, tdigest) != 0) {
@@ -45,18 +46,44 @@ namespace shaga {
 		}
 	}
 
-	void ReData::encode_message (const std::string &plain, std::string &msg, const size_t key_id)
+	void ReData::encode_message (const std::string &plain, std::string &msg, const size_t key_id, const bool key_mixed)
 	{
 		/* This function is appending data to msg */
 		if (_conf.get_crypto () != ReDataConfig::CRYPTO::NONE) {
 			/* Compute digest and append plain data after digest to _work_msg */
-			_work_msg.assign (_conf.calc_digest (plain, _hmac_keys.at (key_id)) + plain);
+			_work_msg.assign (_conf.calc_digest (plain, (true == key_mixed) ? _hmac_keys_mixed.at (key_id) : _hmac_keys.at (key_id)));
+			_work_msg.append (plain);
 			/* Encrypt everything in _work_msg and append to msg */
-			_conf.calc_crypto_enc (_work_msg, msg, _crypto_keys.at (key_id));
+			_conf.calc_crypto_enc (_work_msg, msg, (true == key_mixed) ? _crypto_keys_mixed.at (key_id) : _crypto_keys.at (key_id));
 		}
 		else {
 			/* Compute digest and append plain data after digest and append everything to msg */
-			msg.append (_conf.calc_digest (plain, _hmac_keys.at (key_id)) + plain);
+			msg.append (_conf.calc_digest (plain, (true == key_mixed) ? _hmac_keys_mixed.at (key_id) : _hmac_keys.at (key_id)));
+			msg.append (plain);
+		}
+	}
+
+	void ReData::mix_keys (const COMMON_VECTOR &keys, COMMON_VECTOR &out) const
+	{
+		out.clear ();
+
+		if (false == _mix_key_enabled) {
+			/* No mix key, nothing to do */
+			return;
+		}
+
+		out.reserve (keys.size ());
+		_shake256_ctx_t ctx;
+
+		for (const std::string &str : keys) {
+			_shake256_init (&ctx);
+			_shake256_update (&ctx, str);
+			_shake256_update (&ctx, _mix_key);
+			_shake256_xof (&ctx);
+
+			std::string temp;
+			_shake256_out (&ctx, temp, str.size ());
+			out.push_back (std::move (temp));
 		}
 	}
 
@@ -98,11 +125,18 @@ namespace shaga {
 
 			_key_idents.clear ();
 			_key_ident_map.clear ();
+
+			_mix_key_enabled = false;
+			_mix_key.clear ();
+			_hmac_keys_mixed.clear ();
+			_crypto_keys_mixed.clear ();
 		}
 	}
 
-	void ReData::decode (const std::string &msg, size_t &offset, std::string &out, std::function<bool(const ReDataConfig &)> check_callback)
+	void ReData::decode (const std::string &msg, size_t &offset, std::string &out, std::function<bool(const ReDataConfig &)> check_callback, const MixKeysUse use)
 	{
+		const size_t orig_offset = offset;
+
 		try {
 			if (true == _use_config_header) {
 				_conf.decode (msg, offset);
@@ -114,78 +148,144 @@ namespace shaga {
 				}
 			}
 
-			if (true == _use_key_ident) {
-				const uint_fast8_t ident = BIN::to_uint8 (msg, offset);
+			const uint_fast8_t ident = (true == _use_key_ident) ? BIN::to_uint8 (msg, offset) : 0;
 
-				/* Check, if we already have cached key_id */
-				if (ident != _last_key_ident) {
-					/* We don't, so we need to find it in map */
-					auto res = _key_ident_map.find (ident);
-					if (res == _key_ident_map.end ()) {
-						cThrow ("Key ident not found");
+			auto _decode = [&](const bool use_mixed) -> void {
+				if (true == _use_key_ident) {
+					/* Check, if we already have cached key_id */
+					if (ident != _last_key_ident) {
+						/* We don't, so we need to find it in map */
+						auto res = _key_ident_map.find (ident);
+						if (res == _key_ident_map.end ()) {
+							cThrow ("Key ident not found");
+						}
+
+						decode_message (msg, offset, out, res->second, use_mixed);
+
+						/* If it didn't throw exception, decode is successfull, so cache key_id and ident */
+						_key_id = res->second;
+						_last_key_ident = ident;
 					}
-
-					decode_message (msg, offset, out, res->second);
-
-					/* If it didn't throw exception, decode is successfull, so cache key_id and ident */
-					_key_id = res->second;
-					_last_key_ident = ident;
+					else {
+						/* We have cached key_id, so just use it */
+						decode_message (msg, offset, out, _key_id, use_mixed);
+					}
 				}
 				else {
-					/* We have cached key_id, so just use it */
-					decode_message (msg, offset, out, _key_id);
-				}
-			}
-			else {
-				/* We don't know the key_id, so check all stored keys, starting with the last successfull key_id */
-				const size_t len = std::max (_hmac_keys.size (), _crypto_keys.size ());
-				for (size_t i = 0; i < len; ++i) {
-					try {
-						decode_message (msg, offset, out, (i + _key_id) % len);
-						/* If it didn't throw exception, decode is successfull */
-						_key_id = (i + _key_id) % len;
-						break;
-					}
-					catch (...) {
-						if ((i + 1) >= len) {
-							/* This is the last possible key, so rethrow away */
-							throw;
+					/* We don't know the key_id, so check all stored keys, starting with the last successfull key_id */
+					const size_t len = std::max (_hmac_keys.size (), _crypto_keys.size ());
+					for (size_t i = 0; i < len; ++i) {
+						try {
+							decode_message (msg, offset, out, (i + _key_id) % len, use_mixed);
+							/* If it didn't throw exception, decode is successfull */
+							_key_id = (i + _key_id) % len;
+							break;
+						}
+						catch (...) {
+							if ((i + 1) >= len) {
+								/* This is the last possible key, so rethrow away */
+								throw;
+							}
 						}
 					}
 				}
+			};
+
+			if (false == _mix_key_enabled) {
+				switch (use) {
+					case MixKeysUse::ONLY_NORMAL:
+					case MixKeysUse::BOTH_NORMAL_FIRST:
+					case MixKeysUse::BOTH_MIXED_FIRST:
+						_decode (false);
+						break;
+
+					case MixKeysUse::ONLY_MIXED:
+						cThrow ("Mix key is not set");
+				}
 			}
+			else {
+				switch (use) {
+					case MixKeysUse::ONLY_NORMAL:
+						_decode (false);
+						break;
+
+					case MixKeysUse::ONLY_MIXED:
+						_decode (true);
+						break;
+
+					case MixKeysUse::BOTH_NORMAL_FIRST:
+						try {
+							_decode (false);
+						}
+						catch (...) {
+							_decode (true);
+						}
+						break;
+
+					case MixKeysUse::BOTH_MIXED_FIRST:
+						try {
+							_decode (true);
+						}
+						catch (...) {
+							_decode (false);
+						}
+						break;
+				}
+			}
+
+			/* Message was decoded, move offset to the end of msg */
+			offset = msg.size ();
 		}
 		catch (const std::exception &e) {
+			/* Fail, truncate out and return offset to original value */
+			out.resize (0);
+			offset = orig_offset;
 			cThrow ("Unable to decode message: %s", e.what());
+		}
+		catch (...) {
+			/* Fail, truncate out and return offset to original value */
+			out.resize (0);
+			offset = orig_offset;
+			throw;
 		}
 	}
 
-	void ReData::decode (const std::string &msg, std::string &out, std::function<bool(const ReDataConfig &)> check_callback)
+	void ReData::decode (const std::string &msg, std::string &out, std::function<bool(const ReDataConfig &)> check_callback, const MixKeysUse use)
 	{
 		size_t offset = 0;
-		decode (msg, offset, out, check_callback);
+		decode (msg, offset, out, check_callback, use);
 	}
 
-	void ReData::encode (const std::string &plain, std::string &out)
+	void ReData::encode (const std::string &plain, std::string &out, const bool use_mixed)
 	{
+		const size_t original_size = out.size ();
 		try {
+			if (true == use_mixed && false == _mix_key_enabled) {
+				cThrow ("Mix key is not set");
+			}
+
 			if (true == _use_config_header) {
 				_conf.encode (out);
 			}
 			if (true == _use_key_ident) {
 				BIN::from_uint8 (_key_idents.at (_key_id), out);
 			}
-			encode_message (plain, out, _key_id);
+			encode_message (plain, out, _key_id, use_mixed);
 		}
 		catch (const std::exception &e) {
+			out.resize (original_size);
 			cThrow ("Unable to encode message: %s", e.what());
+		}
+		catch (...) {
+			out.resize (original_size);
+			throw;
 		}
 	}
 
-	std::string ReData::encode (const std::string &plain)
+	std::string ReData::encode (const std::string &plain, const bool use_mixed)
 	{
 		std::string out;
-		encode (plain, out);
+		encode (plain, out, use_mixed);
 		return out;
 	}
 
@@ -216,6 +316,7 @@ namespace shaga {
 		_hmac_keys.push_back (key);
 		_key_id = 0;
 		_last_key_ident = UINT_FAST16_MAX;
+		mix_keys (_hmac_keys, _hmac_keys_mixed);
 	}
 
 	void ReData::set_crypto_key (const std::string &key)
@@ -224,6 +325,7 @@ namespace shaga {
 		_crypto_keys.push_back (key);
 		_key_id = 0;
 		_last_key_ident = UINT_FAST16_MAX;
+		mix_keys (_crypto_keys, _crypto_keys_mixed);
 	}
 
 	void ReData::set_hmac_keys (const COMMON_VECTOR &keys, const size_t key_id)
@@ -237,6 +339,8 @@ namespace shaga {
 			_key_id = key_id;
 			_last_key_ident = UINT_FAST16_MAX;
 		}
+
+		mix_keys (_hmac_keys, _hmac_keys_mixed);
 	}
 
 	void ReData::set_crypto_keys (const COMMON_VECTOR &keys, const size_t key_id)
@@ -250,6 +354,8 @@ namespace shaga {
 			_key_id = key_id;
 			_last_key_ident = UINT_FAST16_MAX;
 		}
+
+		mix_keys (_crypto_keys, _crypto_keys_mixed);
 	}
 
 	void ReData::set_key_idents (const KEY_IDENT_VECTOR &idents, const size_t key_id)
@@ -271,6 +377,32 @@ namespace shaga {
 			_key_id = key_id;
 			_last_key_ident = UINT_FAST16_MAX;
 		}
+	}
+
+	void ReData::sex_mix_key (const std::string &mix)
+	{
+		_mix_key_enabled = true;
+		_mix_key.assign (mix);
+		mix_keys (_hmac_keys, _hmac_keys_mixed);
+		mix_keys (_crypto_keys, _crypto_keys_mixed);
+	}
+
+	void ReData::clear_mix_key (void)
+	{
+		_mix_key_enabled = false;
+		_mix_key.resize (0);
+		_hmac_keys_mixed.clear ();
+		_crypto_keys_mixed.clear ();
+	}
+
+	COMMON_VECTOR ReData::get_mixed_hmac_keys (void) const
+	{
+		return _hmac_keys_mixed;
+	}
+
+	COMMON_VECTOR ReData::get_mixed_crypto_keys (void) const
+	{
+		return _crypto_keys_mixed;
 	}
 
 	size_t ReData::get_key_id (void) const
