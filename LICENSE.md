@@ -83,9 +83,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------
-File "src/internal_siphash.h" contains code under following license:
-File "src/ReDataConfigDigest.cpp" contains code under following license:
-File "test/testSipHash.cpp" contains code under following license:
+Files "src/internal_siphash.h" and "test/testSipHash.cpp" contain code
+under following license:
 ------------------------------------------------------------------------
 SipHash reference C implementation
 

@@ -10,11 +10,6 @@ All rights reserved.
 
 #include "common.h"
 
-#ifdef SHAGA_FULL
-	#include <mbedtls/aes.h>
-	#include <mbedtls/cipher.h>
-#endif // SHAGA_FULL
-
 #ifndef MBEDTLS_MAX_IV_LENGTH
 	#define MBEDTLS_MAX_IV_LENGTH 0
 #endif // MBEDTLS_MAX_IV_LENGTH

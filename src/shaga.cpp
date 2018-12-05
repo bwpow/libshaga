@@ -47,6 +47,9 @@ namespace shaga {
 	template class Uart8EncodeSPSC<SPSCDataPreAlloc>;
 	template class Uart8DecodeSPSC<SPSCDataPreAlloc>;
 
+	template class Uart16EncodeSPSC<SPSCDataPreAlloc>;
+	template class Uart16DecodeSPSC<SPSCDataPreAlloc>;
+
 	template class PacketEncodeSPSC<SPSCDataDynAlloc>;
 	template class PacketDecodeSPSC<SPSCDataDynAlloc>;
 

@@ -12,33 +12,32 @@ All rights reserved.
 
 #ifdef SHAGA_FULL
 
-#include <mbedtls/entropy.h>
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/pk.h>
-#include <mbedtls/md_internal.h>
-
 namespace shaga {
 
 	class DiSig {
 		private:
-			typedef struct {
-				mbedtls_pk_context ctx;
-				std::string name;
-			} DEC_CTX_ENTRY;
+			struct DEC_CTX_ENTRY {
+				mbedtls_pk_context _ctx;
+				const std::string _name;
+
+				DEC_CTX_ENTRY (const std::string &key, const std::string &name);
+				~DEC_CTX_ENTRY ();
+			};
 
 			mbedtls_pk_context _enc_ctx;
 			std::list<DEC_CTX_ENTRY> _dec_ctx_list;
-			mbedtls_entropy_context _entropy;
-			mbedtls_ctr_drbg_context _ctr_drbg;
+			unsigned char _output_buf[16'000];
 
+			static void check_error (const int err);
+			static void can_do (mbedtls_pk_context &ctx);
 
-			void check_error (const int err) const;
-			void can_do (mbedtls_pk_context &ctx) const;
 			void dump_to_file (const std::string &fname, const unsigned char *buf) const;
+			void dump_to_file (const std::string &fname, const std::string &buf) const;
+
 			void check_hash (const mbedtls_md_type_t md_alg, const std::string &hsh) const;
 
 		public:
-			explicit DiSig (const std::string &seed);
+			explicit DiSig ();
 			~DiSig ();
 
 			void set_encryption_key (const std::string &key, const std::string &pass);
@@ -62,6 +61,8 @@ namespace shaga {
 
 			void generate_new_key (const std::string &curve_type);
 	};
+
+	int random_for_mbedtls (void *p_rng, unsigned char *output, size_t output_len);
 }
 
 #endif // SHAGA_FULL

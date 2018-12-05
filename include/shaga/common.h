@@ -125,6 +125,38 @@ All rights reserved.
 	#include <unistd.h>
 #endif // OS_LINUX
 
+#ifdef SHAGA_FULL
+	/* Used in ReData and CRC */
+	#include <mbedtls/cipher.h>
+	#include <mbedtls/aes.h>
+
+	#include <mbedtls/ripemd160.h>
+	#include <mbedtls/sha1.h>
+	#include <mbedtls/sha256.h>
+	#include <mbedtls/sha512.h>
+
+	/* Used in DiSig */
+	#include <mbedtls/pk.h>
+	#include <mbedtls/md_internal.h>
+
+	#include <mbedtls/error.h>
+
+	#if !defined(MBEDTLS_CIPHER_MODE_CBC) || \
+		!defined(MBEDTLS_AES_C) || \
+		!defined(MBEDTLS_RIPEMD160_C) || \
+		!defined(MBEDTLS_SHA1_C) || \
+		!defined(MBEDTLS_SHA256_C) || \
+		!defined(MBEDTLS_SHA512_C) || \
+		!defined(MBEDTLS_MD_C) || \
+		!defined(MBEDTLS_ECP_C) || \
+		!defined(MBEDTLS_PK_C) || \
+		!defined(MBEDTLS_ERROR_C) || \
+		!defined(MBEDTLS_VERSION_C)
+		#error Missing required component in mbed TLS
+	#endif
+
+#endif // SHAGA_FULL
+
 #ifndef INT64_C
 	#define INT64_C(c) (c ## LL)
 #endif
@@ -389,12 +421,20 @@ namespace shaga
 	//  Static asserts  /////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	static_assert (('Z' - 'A') == 25, "Expected 26 letters between 'A' and 'Z'");
+	static_assert (('Z' - 'A' + 1) == 26, "Expected 26 letters between (and including) 'A' and 'Z'");
+
 	static_assert (8 == CHAR_BIT, "Expected char to be 8 bits");
 	static_assert (1 == sizeof (char), "Expected char to be 8 bits");
+
+	static_assert (1 == sizeof (uint8_t), "Expected uint8_t to be 8 bits");
 	static_assert (2 == sizeof (uint16_t), "Expected uint16_t to be 16 bits");
 	static_assert (4 == sizeof (uint32_t), "Expected uint32_t to be 32 bits");
 	static_assert (8 == sizeof (uint64_t), "Expected uint64_t to be 64 bits");
+
+	static_assert (1 <= sizeof (uint_fast8_t), "Expected uint_fast8_t to be at least 8 bits");
+	static_assert (2 <= sizeof (uint_fast16_t), "Expected uint_fast16_t to be at least 16 bits");
+	static_assert (4 <= sizeof (uint_fast32_t), "Expected uint_fast32_t to be at least 32 bits");
+	static_assert (8 <= sizeof (uint_fast64_t), "Expected uint_fast64_t to be at least 64 bits");
 
 	/*** Chunk ***/
 	static_assert (std::underlying_type<Chunk::Priority>::type (Chunk::_Priority_first) < std::underlying_type<Chunk::Priority>::type (Chunk::_Priority_last),
@@ -409,18 +449,31 @@ namespace shaga
 	static_assert (std::underlying_type<Chunk::TrustLevel>::type (Chunk::_TrustLevel_last) <= (Chunk::key_trust_mask >> Chunk::key_trust_shift),
 		"Chunk::TrustLevel must fit into bitmask");
 
-	static_assert (BIN::check_bit_coverage (UINT32_MAX, Chunk::key_type_mask, Chunk::key_is_tracert_mask, Chunk::key_trust_mask,
-					Chunk::key_prio_mask, Chunk::key_ttl_mask, Chunk::key_has_payload_mask, Chunk::key_has_dest_mask,
-					Chunk::key_channel_mask, Chunk::key_reserved_mask, Chunk::key_highbit_mask), "Chunk key don't add up or overlap");
+	static_assert (BIN::check_bit_coverage (UINT32_MAX,
+		Chunk::key_type_mask,
+		Chunk::key_is_tracert_mask,
+		Chunk::key_trust_mask,
+		Chunk::key_prio_mask,
+		Chunk::key_ttl_mask,
+		Chunk::key_has_payload_mask,
+		Chunk::key_has_dest_mask,
+		Chunk::key_channel_mask,
+		Chunk::key_reserved_mask,
+		Chunk::key_highbit_mask),
+		"Chunk key don't add up or overlap");
 
-	static_assert ((Chunk::key_type_min < Chunk::key_type_max) && (Chunk::key_type_max <= Chunk::key_type_mask), "Chunk type key doesn't fit mask");
+	static_assert ((Chunk::key_type_min < Chunk::key_type_max) && (Chunk::key_type_max <= Chunk::key_type_mask),
+		"Chunk type key doesn't fit mask");
 
-	static_assert ((Chunk::key_tracert_hop_shift >= 16) && ((Chunk::key_is_tracert_mask & 0xffff) == 0), "Tracert hop shift and mask must be defined in high 16-bits");
+	static_assert ((Chunk::key_tracert_hop_shift >= 16) && ((Chunk::key_is_tracert_mask & 0xffff) == 0),
+		"Tracert hop shift and mask must be defined in high 16-bits");
 
 	/*** ChunkMeta ***/
-	static_assert ((ChunkMeta::key_type_min < ChunkMeta::key_type_max) && (ChunkMeta::key_type_max <= ChunkMeta::key_type_mask), "Chunkmeta type key doesn't fit mask");
+	static_assert ((ChunkMeta::key_type_min < ChunkMeta::key_type_max) && (ChunkMeta::key_type_max <= ChunkMeta::key_type_mask),
+		"Chunkmeta type key doesn't fit mask");
 
-	static_assert (ChunkMeta::key_repeat_mask == (ChunkMeta::key_repeat_byte << 8), "ChunkMeta key repeat byte and mask does not match");
+	static_assert (ChunkMeta::key_repeat_mask == (ChunkMeta::key_repeat_byte << 8),
+		"ChunkMeta key repeat byte and mask does not match");
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Most used templates  ////////////////////////////////////////////////////////////////////////////////////////
@@ -430,6 +483,9 @@ namespace shaga
 
 	extern template class Uart8EncodeSPSC<SPSCDataPreAlloc>;
 	extern template class Uart8DecodeSPSC<SPSCDataPreAlloc>;
+
+	extern template class Uart16EncodeSPSC<SPSCDataPreAlloc>;
+	extern template class Uart16DecodeSPSC<SPSCDataPreAlloc>;
 
 	extern template class PacketEncodeSPSC<SPSCDataDynAlloc>;
 	extern template class PacketDecodeSPSC<SPSCDataDynAlloc>;

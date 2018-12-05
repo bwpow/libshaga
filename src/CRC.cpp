@@ -7,11 +7,6 @@ All rights reserved.
 *******************************************************************************/
 #include "shaga/common.h"
 
-#ifdef SHAGA_FULL
-	#include <mbedtls/sha256.h>
-	#include <mbedtls/sha512.h>
-#endif // SHAGA_FULL
-
 namespace shaga {
 
 	/* Bit reverse table is used for CRC-32 Atmel compatible algorithm */

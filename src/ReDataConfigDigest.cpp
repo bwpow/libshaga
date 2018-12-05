@@ -7,13 +7,6 @@ All rights reserved.
 *******************************************************************************/
 #include "shaga/common.h"
 
-#ifdef SHAGA_FULL
-	#include <mbedtls/ripemd160.h>
-	#include <mbedtls/sha1.h>
-	#include <mbedtls/sha256.h>
-	#include <mbedtls/sha512.h>
-#endif // SHAGA_FULL
-
 namespace shaga {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////

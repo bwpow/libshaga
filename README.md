@@ -36,7 +36,7 @@ I am also planning to add documentation in doxygen format and cmake building pro
 
 ## Help needed
 If you are willing to help with documentation, unit tests or building process, please, fork this library. Any help is appreciated.
-The goal is to be able to compile library using any C++14 compiler. Right now, I am using gcc5 only during development.
+The goal is to be able to compile library using any C++14 compiler. Right now, I am using gcc7 only during development.
 
 ## Name
 Name of the library comes from my favorite band [Shadow Gallery]( https://en.wikipedia.org/wiki/Shadow_Gallery).

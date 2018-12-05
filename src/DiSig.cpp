@@ -9,19 +9,17 @@ All rights reserved.
 
 #ifdef SHAGA_FULL
 
-#include <mbedtls/error.h>
-
 namespace shaga {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	#ifdef SHAGA_THREADING
+	static std::mutex _random_for_mbedtls_mutex;
+	#endif // SHAGA_THREADING
 
-	void DiSig::check_error (const int err) const
+	void DiSig::check_error (const int err)
 	{
 		if (err != 0) {
 			char buf[256];
@@ -31,17 +29,48 @@ namespace shaga {
 		}
 	}
 
-	void DiSig::can_do (mbedtls_pk_context &ctx) const
+	void DiSig::can_do (mbedtls_pk_context &ctx)
 	{
 		if (::mbedtls_pk_can_do (&ctx, MBEDTLS_PK_ECDSA) != 1) {
 			cThrow ("DiSig error: Key is not suitable for ECDSA");
 		}
 	}
 
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	DiSig::DEC_CTX_ENTRY::DEC_CTX_ENTRY (const std::string &key, const std::string &name) try : _name (name)
+	{
+		::mbedtls_pk_init  (&_ctx);
+
+		std::string pubkey = BIN::from_base64 (key, true);
+		pubkey.append (1, '\0');
+
+		int ret = ::mbedtls_pk_parse_public_key (&_ctx, reinterpret_cast<const unsigned char *> (pubkey.data ()), pubkey.size ());
+		DiSig::check_error (ret);
+
+		DiSig::can_do (_ctx);
+	}
+	catch (...) {
+		::mbedtls_pk_free (&_ctx);
+	}
+
+	DiSig::DEC_CTX_ENTRY::~DEC_CTX_ENTRY ()
+	{
+		::mbedtls_pk_free (&_ctx);
+	}
+
 	void DiSig::dump_to_file (const std::string &fname, const unsigned char *buf) const
 	{
 		ShFile file (fname, ShFile::mWRITE | ShFile::mTRUNC);
 		file.write (reinterpret_cast<const char *> (buf));
+	}
+
+	void DiSig::dump_to_file (const std::string &fname, const std::string &buf) const
+	{
+		ShFile file (fname, ShFile::mWRITE | ShFile::mTRUNC);
+		file.write (buf);
 	}
 
 	void DiSig::check_hash (const mbedtls_md_type_t md_alg, const std::string &hsh) const
@@ -60,22 +89,15 @@ namespace shaga {
 	//  Public class methods  ///////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	DiSig::DiSig (const std::string &seed)
+	DiSig::DiSig ()
 	{
-		::mbedtls_entropy_init (&_entropy);
-		::mbedtls_ctr_drbg_init (&_ctr_drbg);
 		::mbedtls_pk_init (&_enc_ctx);
-
-		int ret = ::mbedtls_ctr_drbg_seed (&_ctr_drbg, mbedtls_entropy_func, &_entropy, reinterpret_cast<const unsigned char *> (seed.data()), seed.size ());
-		check_error (ret);
 	}
 
 	DiSig::~DiSig ()
 	{
+		_dec_ctx_list.clear ();
 		::mbedtls_pk_free (&_enc_ctx);
-		::mbedtls_ctr_drbg_free (&_ctr_drbg);
-		::mbedtls_entropy_free (&_entropy);
-		reset_decryption_keys ();
 	}
 
 	void DiSig::set_encryption_key (const std::string &key, const std::string &pass)
@@ -116,74 +138,52 @@ namespace shaga {
 
 	void DiSig::save_encryption_keypair (const std::string &fname_priv, const std::string &fname_pub)
 	{
-		unsigned char output_buf[16000];
 		int ret;
 
-		::memset (output_buf, 0, sizeof (output_buf));
-		ret = mbedtls_pk_write_key_pem (&_enc_ctx, output_buf, sizeof (output_buf) - 1);
+		::memset (_output_buf, 0, sizeof (_output_buf));
+		ret = mbedtls_pk_write_key_pem (&_enc_ctx, _output_buf, sizeof (_output_buf) - 1);
 		check_error (ret);
-		dump_to_file (fname_priv, output_buf);
+		dump_to_file (fname_priv, _output_buf);
 
-		::memset (output_buf, 0, sizeof (output_buf));
-		ret = mbedtls_pk_write_pubkey_pem (&_enc_ctx, output_buf, sizeof (output_buf) - 1);
+		::memset (_output_buf, 0, sizeof (_output_buf));
+		ret = mbedtls_pk_write_pubkey_pem (&_enc_ctx, _output_buf, sizeof (_output_buf) - 1);
 		check_error (ret);
-		dump_to_file (fname_pub, reinterpret_cast<const unsigned char *> (BIN::to_base64 (std::string (reinterpret_cast<const char *> (output_buf)), true).c_str ()));
+		dump_to_file (fname_pub, BIN::to_base64 (std::string (reinterpret_cast<const char *> (_output_buf)), true));
 	}
 
 	std::string DiSig::get_encryption_key (void)
 	{
-		unsigned char output_buf[16000];
-		int ret;
-
-		::memset (output_buf, 0, sizeof (output_buf));
-		ret = ::mbedtls_pk_write_key_pem (&_enc_ctx, output_buf, sizeof (output_buf) - 1);
+		::memset (_output_buf, 0, sizeof (_output_buf));
+		int ret = ::mbedtls_pk_write_key_pem (&_enc_ctx, _output_buf, sizeof (_output_buf) - 1);
 		check_error (ret);
 
-		return std::string (reinterpret_cast<const char *> (output_buf));
+		return std::string (reinterpret_cast<const char *> (_output_buf));
 	}
 
 	std::string DiSig::get_encryption_pubkey (void)
 	{
-		unsigned char output_buf[16000];
-		int ret;
-
-		::memset (output_buf, 0, sizeof (output_buf));
-		ret = ::mbedtls_pk_write_pubkey_pem (&_enc_ctx, output_buf, sizeof (output_buf) - 1);
+		::memset (_output_buf, 0, sizeof (_output_buf));
+		int ret = ::mbedtls_pk_write_pubkey_pem (&_enc_ctx, _output_buf, sizeof (_output_buf) - 1);
 		check_error (ret);
 
-		return BIN::to_base64 (std::string (reinterpret_cast<const char *> (output_buf)), true);
+		return BIN::to_base64 (std::string (reinterpret_cast<const char *> (_output_buf)), true);
 	}
 
 	void DiSig::add_decryption_key (const std::string &key, const std::string &name)
 	{
-		DEC_CTX_ENTRY entry;
-
-		::mbedtls_pk_init  (&(entry.ctx));
-
-		const std::string pubkey = BIN::from_base64 (key, true);
-		int ret = ::mbedtls_pk_parse_public_key (&(entry.ctx), reinterpret_cast<const unsigned char *> (pubkey.data ()), pubkey.size () + 1);
-		check_error (ret);
-
-		can_do (entry.ctx);
-
-		entry.name.assign (name);
-
-		_dec_ctx_list.push_back (std::move (entry));
+		_dec_ctx_list.emplace_back (key, name);
 	}
 
 	void DiSig::add_decryption_key (const std::string &key)
 	{
-		add_decryption_key (key, "deckey" + STR::from_int (_dec_ctx_list.size ()));
+		const std::string name = "deckey" + STR::from_int (_dec_ctx_list.size ());
+		_dec_ctx_list.emplace_back (key, name);
 	}
 
 	void DiSig::reset_decryption_keys (void)
 	{
-		for (auto &entry : _dec_ctx_list) {
-			::mbedtls_pk_free (&(entry.ctx));
-		}
 		_dec_ctx_list.clear ();
 	}
-
 
 	std::string DiSig::sign (const mbedtls_md_type_t md_alg, const std::string &hsh)
 	{
@@ -191,7 +191,7 @@ namespace shaga {
 
 		unsigned char sgn[MBEDTLS_MPI_MAX_SIZE];
 		size_t sgn_len = 0;
-		int ret =  ::mbedtls_pk_sign (&_enc_ctx, md_alg, reinterpret_cast<const unsigned char *> (hsh.data ()), hsh.size (), sgn, &sgn_len, mbedtls_ctr_drbg_random, &_ctr_drbg);
+		int ret =  ::mbedtls_pk_sign (&_enc_ctx, md_alg, reinterpret_cast<const unsigned char *> (hsh.data ()), hsh.size (), sgn, &sgn_len, random_for_mbedtls, nullptr);
 		check_error (ret);
 
 		return std::string (reinterpret_cast<const char *> (sgn), sgn_len);
@@ -204,9 +204,9 @@ namespace shaga {
 		int ret;
 
 		for(DEC_CTX_ENTRY &entry : _dec_ctx_list) {
-			ret = ::mbedtls_pk_verify (&(entry.ctx), md_alg, reinterpret_cast<const unsigned char *> (hsh.data ()), hsh.size (), reinterpret_cast<const unsigned char *> (sgn.data ()), sgn.size ());
+			ret = ::mbedtls_pk_verify (&(entry._ctx), md_alg, reinterpret_cast<const unsigned char *> (hsh.data ()), hsh.size (), reinterpret_cast<const unsigned char *> (sgn.data ()), sgn.size ());
 			if (0 == ret) {
-				key_name.assign (entry.name);
+				key_name.assign (entry._name);
 				return true;
 			}
 		}
@@ -228,7 +228,7 @@ namespace shaga {
 		ret = ::mbedtls_pk_setup (&_enc_ctx, ::mbedtls_pk_info_from_type (MBEDTLS_PK_ECKEY));
 		check_error (ret);
 
-		ret = ::mbedtls_ecp_gen_key (curve_info->grp_id, ::mbedtls_pk_ec (_enc_ctx), mbedtls_ctr_drbg_random, &_ctr_drbg);
+		ret = ::mbedtls_ecp_gen_key (curve_info->grp_id, ::mbedtls_pk_ec (_enc_ctx), random_for_mbedtls, nullptr);
 		check_error (ret);
 	}
 
@@ -236,6 +236,25 @@ namespace shaga {
 	//  Global functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	/* This is a random generator suitable for mbedtls functions using mt19937 from C++ std library */
+	int random_for_mbedtls (void *p_rng, unsigned char *output, size_t output_len)
+	{
+		#ifdef SHAGA_THREADING
+		std::lock_guard<std::mutex> lock (_random_for_mbedtls_mutex);
+		#endif // SHAGA_THREADING
+
+		(void) p_rng;
+
+		static std::random_device rd;
+		static std::mt19937 mte (rd ());
+		static std::uniform_int_distribution<unsigned char> dist (0x00, 0xff);
+
+		std::generate_n (output, output_len, [&] (void) -> unsigned char {
+			return dist(mte);
+		});
+
+		return 0;
+	}
 }
 
 #endif // SHAGA_FULL
