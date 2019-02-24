@@ -44,6 +44,9 @@ namespace shaga {
 		_used_digest = conf._used_digest;
 
 		_cache_digest = conf._cache_digest;
+
+		_user_iv = conf._user_iv;
+		_user_iv_enabled = conf._user_iv_enabled;
 	}
 
 	ReDataConfig::ReDataConfig (ReDataConfig &&conf)
@@ -52,6 +55,9 @@ namespace shaga {
 		_used_digest = std::move (conf._used_digest);
 
 		_cache_digest = std::move (conf._cache_digest);
+
+		_user_iv = std::move (conf._user_iv);
+		_user_iv_enabled = std::move (conf._user_iv_enabled);
 	}
 
 	ReDataConfig& ReDataConfig::operator= (const ReDataConfig &conf)
@@ -60,6 +66,9 @@ namespace shaga {
 		_used_digest = conf._used_digest;
 
 		_cache_digest = conf._cache_digest;
+
+		_user_iv = conf._user_iv;
+		_user_iv_enabled = conf._user_iv_enabled;
 
 		return *this;
 	}
@@ -71,6 +80,9 @@ namespace shaga {
 
 		_cache_digest = std::move (conf._cache_digest);
 
+		_user_iv = std::move (conf._user_iv);
+		_user_iv_enabled = std::move (conf._user_iv_enabled);
+
 		return *this;
 	}
 
@@ -81,6 +93,9 @@ namespace shaga {
 #ifdef SHAGA_FULL
 		_cache_digest.digest = _used_digest;
 #endif // SHAGA_FULL
+
+		_user_iv.clear ();
+		_user_iv_enabled = false;
 	}
 
 	void ReDataConfig::decode (const std::string &msg, size_t &offset)

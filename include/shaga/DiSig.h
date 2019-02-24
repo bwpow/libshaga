@@ -35,6 +35,7 @@ namespace shaga {
 					~DEC_CTX_ENTRY ();
 			};
 
+			randutils::mt19937_rng _rng;
 			mbedtls_pk_context _enc_ctx;
 			std::list<DEC_CTX_ENTRY> _dec_ctx_list;
 			unsigned char _output_buf[16'000];
@@ -90,8 +91,6 @@ namespace shaga {
 			void generate_new_key (const std::string &curve_type);
 	};
 
-	/* This is a random generator suitable for mbedtls functions using mt19937 from C++ std library */
-	int random_for_mbedtls (void *p_rng, unsigned char *output, size_t output_len);
 }
 
 #endif // SHAGA_FULL

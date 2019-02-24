@@ -266,7 +266,6 @@ namespace shaga {
 			if (true == use_mixed && false == _mix_key_enabled) {
 				cThrow ("Mix key is not set");
 			}
-
 			if (true == _use_config_header) {
 				_conf.encode (out);
 			}

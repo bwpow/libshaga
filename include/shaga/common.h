@@ -323,6 +323,9 @@ namespace shaga
 	uint64_t get_realtime_usec (void);
 }
 
+#include "aho_corasick.h"
+#include "randutils.h"
+
 #include "hwid.h"
 #include "CRC.h"
 #include "STR.h"
@@ -347,7 +350,6 @@ namespace shaga
 #include "EncodeSPSC.h"
 #include "DecodeSPSC.h"
 #include "DiSig.h"
-#include "aho_corasick.h"
 
 namespace shaga
 {

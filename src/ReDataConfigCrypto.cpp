@@ -71,7 +71,9 @@ namespace shaga {
 		}
 
 		#ifdef SHAGA_THREADING
-			std::call_once(cache._aes_init_flag, [&cache]()->void { mbedtls_aes_init (&cache._aes_ctx); });
+			std::call_once (cache._aes_init_flag, [&]()-> void {
+				mbedtls_aes_init (&cache._aes_ctx);
+			});
 		#else
 			if (std::exchange (cache._aes_init_flag, true) == false) {
 				mbedtls_aes_init (&cache._aes_ctx);
@@ -84,7 +86,9 @@ namespace shaga {
 
 		const size_t orig_out_size = out.size ();
 		out.resize (orig_out_size + msg_size);
-		if (mbedtls_aes_crypt_cbc (&cache._aes_ctx, (true == enc) ? MBEDTLS_AES_ENCRYPT : MBEDTLS_AES_DECRYPT, msg_size, iv_data, reinterpret_cast<const unsigned char *> (msg), reinterpret_cast<unsigned char *> (&out[0]) + orig_out_size) != 0) {
+		if (mbedtls_aes_crypt_cbc (&cache._aes_ctx, (true == enc) ? MBEDTLS_AES_ENCRYPT : MBEDTLS_AES_DECRYPT, msg_size, iv_data,
+			reinterpret_cast<const unsigned char *> (msg), reinterpret_cast<unsigned char *> (&out[orig_out_size])) != 0)
+		{
 			cThrow ("Wrong crypto message size");
 		}
 
@@ -124,9 +128,7 @@ namespace shaga {
 	static inline void _random_string (unsigned char *str, const size_t sze, ReDataConfig::CryptoCache &cache)
 	{
 #ifdef SHAGA_FULL
-		for (size_t i = 0; i < sze; ++i) {
-			str[i] = static_cast<unsigned char> (cache._rand_dist (cache._rand_rng));
-		}
+		cache._rng.generate_n<uint8_t> (str, sze, 0x00, 0xff);
 #else
 		(void) str;
 		(void) sze;
@@ -140,25 +142,28 @@ namespace shaga {
 		return (numToRound + multiple - 1) & ~(multiple - 1);
 	}
 
-	static inline void _pad_to_blocksize (std::string &str, const size_t block_size, ReDataConfig::CryptoCache &cache)
+	static inline void _pad_to_blocksize (std::string &str, const size_t block_size)
 	{
 #ifdef SHAGA_FULL
 		/* Store original data size before any modification */
 		const size_t orig_size = str.size ();
 
 		/* Find nearest greater size divisible by block_size. Add 3 bytes at the end that will be used to store original size */
-		const size_t new_size = _round_up_pow2 (str.size () + 3, block_size);
+		const size_t new_size = _round_up_pow2 (orig_size + 3, block_size);
 
 		/* Add needed padding and reserve enough memory for the 3 additional bytes */
 		str.reserve (new_size);
-		str.resize (new_size - 3, static_cast<char> (cache._rand_dist (cache._rand_rng)));
+		str.resize (new_size - 3);
+
+		/* Pad with data */
+		std::iota (str.begin () + orig_size, str.end (), 0x33);
+		//cache._rng.generate<uint8_t> (str.begin () + orig_size, str.end (), 0x00, 0xff);
 
 		/* Append last 3 bytes with 24-bit little endian encoded original data size */
 		BIN::from_uint24 (orig_size, str);
 #else
 		(void) str;
 		(void) block_size;
-		(void) cache;
 		cThrow ("Cryptography is not supported in lite version");
 #endif // SHAGA_FULL
 	}
@@ -174,11 +179,10 @@ namespace shaga {
 	void ReDataConfig::calc_crypto_enc (std::string &plain, std::string &out, const std::string &key)
 	{
 		/* This function is appending data to out, because header might already be present */
-
 		const size_t key_size = _get_crypto_key_size (_used_crypto);
 
 		if (0 == key_size) {
-			out.append (plain);
+			cThrow ("No crypto algorithm selected");
 		}
 		else if (key_size != key.size ()) {
 			cThrow ("Wrong crypto key size. Expected %" PRIu32 " bytes, got %" PRIu32 " bytes.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
@@ -192,14 +196,23 @@ namespace shaga {
 			const size_t block_size = _get_crypto_block_size (_used_crypto);
 			CRYPTO_FUNC func = _get_crypto_calc_function (_used_crypto);
 
-			/* Create random IV */
-			_random_string (_temp_iv, iv_size, _cache_crypto);
+			if (false == _user_iv_enabled) {
+				/* Create random IV */
+				_random_string (_temp_iv, iv_size, _cache_crypto);
+			}
+			else {
+				/* Use user defined IV */
+				if (_user_iv.size () != iv_size) {
+					cThrow ("User defined IV size does not match encryption IV size");
+				}
+				::memcpy (_temp_iv, _user_iv.data (), _user_iv.size ());
+			}
 
 			/* Add IV to output */
 			out.append (reinterpret_cast<const char *> (_temp_iv), iv_size);
 
 			/* Add padding to plain data to match block size */
-			_pad_to_blocksize (plain, block_size, _cache_crypto);
+			_pad_to_blocksize (plain, block_size);
 
 			func (out, plain.data (), plain.size (), _temp_iv, iv_size, key, true, _cache_crypto);
 		}
@@ -208,11 +221,10 @@ namespace shaga {
 	void ReDataConfig::calc_crypto_dec (const std::string &msg, size_t offset, std::string &out, const std::string &key)
 	{
 		/* This function is replacing data in out */
-
 		const size_t key_size = _get_crypto_key_size (_used_crypto);
 
 		if (0 == key_size) {
-			out.assign (msg.substr (offset));
+			cThrow ("No crypto algorithm selected");
 		}
 		else if (key_size != key.size ()) {
 			cThrow ("Wrong crypto key size. Expected %" PRIu32 " bytes, got %" PRIu32 " bytes.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
@@ -243,10 +255,17 @@ namespace shaga {
 			/* Move offset to the beginning of the encrypted data */
 			offset += iv_size;
 
+			/* Check if the rest of the data has correct size */
+			size_t decrypted_size = msg.size () - offset;
+			if (0 == decrypted_size || (decrypted_size % block_size) != 0) {
+				/* Decrypted size cannot be zero and it must be multiplication of block_size */
+				cThrow ("Decryption not possible, data not multiply of block size");
+			}
+
 			/* Clear out */
 			out.resize (0);
 
-			size_t decrypted_size = func (out, msg.data () + offset, msg.size () - offset, _temp_iv, iv_size, key, false, _cache_crypto);
+			decrypted_size = func (out, msg.data () + offset, decrypted_size, _temp_iv, iv_size, key, false, _cache_crypto);
 			if (0 == decrypted_size || (decrypted_size % block_size) != 0) {
 				/* Decrypted size cannot be zero and it must be multiplication of block_size */
 				cThrow ("Decryption failed");
@@ -286,4 +305,15 @@ namespace shaga {
 		return _get_crypto_key_size (_used_crypto) * 8 >= limit;
 	}
 
+	void ReDataConfig::set_user_iv (const std::string &iv)
+	{
+		_user_iv_enabled = true;
+		_user_iv.assign (iv);
+	}
+
+	void ReDataConfig::unset_user_iv (void)
+	{
+		_user_iv_enabled = false;
+		_user_iv.clear ();
+	}
 }

@@ -11,7 +11,7 @@ All rights reserved.
 #include "common.h"
 
 #ifndef MBEDTLS_MAX_IV_LENGTH
-	#define MBEDTLS_MAX_IV_LENGTH 0
+	#define MBEDTLS_MAX_IV_LENGTH 1
 #endif // MBEDTLS_MAX_IV_LENGTH
 
 namespace shaga {
@@ -118,18 +118,16 @@ namespace shaga {
 
 #ifdef SHAGA_FULL
 			struct CryptoCache {
-				std::random_device _rand_rd;
-				std::default_random_engine _rand_rng;
-				std::uniform_int_distribution<int> _rand_dist;
-
+				randutils::mt19937_rng _rng;
 				mbedtls_aes_context _aes_ctx;
+
 				#ifdef SHAGA_THREADING
-					std::once_flag _aes_init_flag;
+				std::once_flag _aes_init_flag;
 				#else
-					bool _aes_init_flag {false};
+				bool _aes_init_flag {false};
 				#endif // SHAGA_THREADING
 
-				CryptoCache () : _rand_rng(_rand_rd ()), _rand_dist (0, UINT8_MAX) {}
+				CryptoCache () {}
 				CryptoCache (const CryptoCache &) = delete;
 				CryptoCache (CryptoCache &&) = delete;
 			};
@@ -162,6 +160,9 @@ namespace shaga {
 			DigestCache _cache_digest;
 
 			unsigned char _temp_iv[MBEDTLS_MAX_IV_LENGTH];
+
+			std::string _user_iv;
+			bool _user_iv_enabled{false};
 
 		public:
 			ReDataConfig ();
@@ -211,6 +212,9 @@ namespace shaga {
 
 			bool has_crypto (void) const;
 			bool has_crypto_size_at_least_bits (const size_t limit) const;
+
+			void set_user_iv (const std::string &iv);
+			void unset_user_iv (void);
 	};
 
 	class ReData {

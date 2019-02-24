@@ -15,13 +15,16 @@ namespace shaga {
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	static std::random_device _mbedtls_rd;
-	static std::mt19937 _mbedtls_mte (_mbedtls_rd ());
-	static std::uniform_int_distribution<unsigned char> _mbedtls_dist (0x00, 0xff);
-
-	#ifdef SHAGA_THREADING
-	static std::mutex _random_for_mbedtls_mutex;
-	#endif // SHAGA_THREADING
+	/* This is a random generator suitable for mbedtls functions using mt19937 from C++ std library */
+	static int _random_for_mbedtls (void *p_rng, unsigned char *output, size_t output_len)
+	{
+		if (nullptr == p_rng) {
+			cThrow ("DiSig error: Null pointer in random");
+		}
+		randutils::mt19937_rng *_rng = reinterpret_cast<randutils::mt19937_rng *> (p_rng);
+		_rng->generate_n<uint8_t> (output, output_len, 0x00, 0xff);
+		return 0;
+	}
 
 	void DiSig::check_error (const int err, const bool allow_positive)
 	{
@@ -400,7 +403,7 @@ namespace shaga {
 
 		unsigned char sgn[MBEDTLS_MPI_MAX_SIZE];
 		size_t sgn_len = 0;
-		const int ret =  ::mbedtls_pk_sign (&_enc_ctx, md_alg, reinterpret_cast<const unsigned char *> (hsh.data ()), hsh.size (), sgn, &sgn_len, random_for_mbedtls, nullptr);
+		const int ret =  ::mbedtls_pk_sign (&_enc_ctx, md_alg, reinterpret_cast<const unsigned char *> (hsh.data ()), hsh.size (), sgn, &sgn_len, _random_for_mbedtls, &_rng);
 		check_error (ret);
 
 		return std::string (reinterpret_cast<const char *> (sgn), sgn_len);
@@ -437,29 +440,13 @@ namespace shaga {
 		ret = ::mbedtls_pk_setup (&_enc_ctx, ::mbedtls_pk_info_from_type (MBEDTLS_PK_ECKEY));
 		check_error (ret);
 
-		ret = ::mbedtls_ecp_gen_key (curve_info->grp_id, ::mbedtls_pk_ec (_enc_ctx), random_for_mbedtls, nullptr);
+		ret = ::mbedtls_ecp_gen_key (curve_info->grp_id, ::mbedtls_pk_ec (_enc_ctx), _random_for_mbedtls, &_rng);
 		check_error (ret);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Global functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	/* This is a random generator suitable for mbedtls functions using mt19937 from C++ std library */
-	int random_for_mbedtls (void *p_rng, unsigned char *output, size_t output_len)
-	{
-		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_random_for_mbedtls_mutex);
-		#endif // SHAGA_THREADING
-
-		(void) p_rng;
-
-		std::generate_n (output, output_len, [&] (void) -> unsigned char {
-			return _mbedtls_dist(_mbedtls_mte);
-		});
-
-		return 0;
-	}
 }
 
 #endif // SHAGA_FULL
