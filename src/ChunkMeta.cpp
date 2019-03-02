@@ -404,7 +404,7 @@ namespace shaga {
 
 			_check_key_validity (next_key);
 
-			size_t len = BIN::to_size (s, offset);
+			const size_t len = BIN::to_size (s, offset);
 			_data.insert (std::make_pair (next_key, s.substr (offset, len)));
 			offset += len;
 			if (offset > s.size ()) {

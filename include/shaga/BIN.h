@@ -78,17 +78,17 @@ namespace shaga {
 		/* hex */
 		uint8_t byte_from_hex (const uint8_t b_high, const uint8_t b_low);
 		uint8_t hex_from_byte (const uint8_t b, const bool high);
-		size_t to_hex (const std::string &from, std::string &to);
+		size_t to_hex (const std::string &from, std::string &append_to);
 		std::string to_hex (const std::string &from);
-		size_t from_hex (const std::string &from, std::string &to);
+		size_t from_hex (const std::string &from, std::string &append_to);
 		std::string from_hex (const std::string &from);
 
 		/* base64 */
 		uint8_t byte_from_b64 (const uint8_t c, const bool use_alt = false);
 		uint8_t b64_from_byte (const uint8_t b, const bool use_alt = false);
-		size_t to_base64 (const std::string &from, std::string &to, const bool use_alt = false);
+		size_t to_base64 (const std::string &from, std::string &append_to, const bool use_alt = false);
 		std::string to_base64 (const std::string &from, const bool use_alt = false);
-		size_t from_base64 (const std::string &from, std::string &to, const bool use_alt = false);
+		size_t from_base64 (const std::string &from, std::string &append_to, const bool use_alt = false);
 		std::string from_base64 (const std::string &from, const bool use_alt = false);
 
 		/* big endian */

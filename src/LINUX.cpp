@@ -22,7 +22,7 @@ namespace shaga {
 		}
 
 		struct epoll_event e;
-		memset (&e, 0, sizeof (e));
+		::memset (&e, 0, sizeof (e));
 		e.events = ev;
 		e.data.fd = sock;
 
@@ -45,7 +45,7 @@ namespace shaga {
 		}
 
 		struct epoll_event e;
-		memset (&e, 0, sizeof (e));
+		::memset (&e, 0, sizeof (e));
 		e.events = ev;
 		e.data.fd = sock;
 
@@ -71,7 +71,7 @@ namespace shaga {
 	{
 		bool ok = false;
 
-		long bufsize = sysconf (_SC_GETPW_R_SIZE_MAX);
+		long bufsize = ::sysconf (_SC_GETPW_R_SIZE_MAX);
 		if (bufsize == -1) {
 			bufsize = 16384;
 		}
@@ -109,7 +109,7 @@ namespace shaga {
 	{
 		bool ok = false;
 
-		long bufsize = sysconf (_SC_GETGR_R_SIZE_MAX);
+		long bufsize = ::sysconf (_SC_GETGR_R_SIZE_MAX);
 		if (bufsize == -1) {
 			bufsize = 16384;
 		}

@@ -16,9 +16,8 @@ ST_CPPFLAGS= \
 	-fPIC \
 	-Wall \
 	-Wextra \
-	-Wno-noexcept-type \
 	-O3 \
-	-std=c++14 \
+	-std=c++17 \
 	-march=native
 
 MT_LIBS=-pthread $(ST_LIBS)

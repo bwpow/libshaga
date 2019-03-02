@@ -207,17 +207,17 @@ namespace shaga {
 		return _hex_from_byte (b, high);
 	}
 
-	size_t BIN::to_hex (const std::string &from, std::string &to)
+	size_t BIN::to_hex (const std::string &from, std::string &append_to)
 	{
-		const size_t start_size = to.size ();
-		to.reserve (to.size () + (from.size () << 1));
+		const size_t start_size = append_to.size ();
+		append_to.reserve (append_to.size () + (from.size () << 1));
 
 		for (std::string::const_iterator iter = from.begin (); iter != from.end (); ++iter) {
-			to.push_back (_hex_from_byte (*iter, true));
-			to.push_back (_hex_from_byte (*iter, false));
+			append_to.push_back (_hex_from_byte (*iter, true));
+			append_to.push_back (_hex_from_byte (*iter, false));
 		}
 
-		return to.size () - start_size;
+		return append_to.size () - start_size;
 	}
 
 	std::string BIN::to_hex (const std::string &from)
@@ -227,10 +227,10 @@ namespace shaga {
 		return out;
 	}
 
-	size_t BIN::from_hex (const std::string &from, std::string &to)
+	size_t BIN::from_hex (const std::string &from, std::string &append_to)
 	{
-		const size_t start_size = to.size ();
-		to.reserve (to.size () + (from.size () >> 1));
+		const size_t start_size = append_to.size ();
+		append_to.reserve (append_to.size () + (from.size () >> 1));
 
 		for (std::string::const_iterator iter = from.cbegin (); iter != from.cend (); ++iter) {
 			const uint8_t b_high = *iter;
@@ -240,10 +240,10 @@ namespace shaga {
 			}
 			const uint8_t b_low = *iter;
 
-			to.push_back (_byte_from_hex (b_high, b_low));
+			append_to.push_back (_byte_from_hex (b_high, b_low));
 		}
 
-		return to.size () - start_size;
+		return append_to.size () - start_size;
 	}
 
 	std::string BIN::from_hex (const std::string &from)
@@ -263,14 +263,14 @@ namespace shaga {
 		static inline uint8_t _byte_from_b64 (const uint8_t c, const bool use_alt)
 		{
 			if (use_alt) {
-				for (uint8_t i = 0; i < 64; i++) {
+				for (uint_fast8_t i = 0; i < 64; i++) {
 					if (_b_alt64_table[i] == c) {
 						return i;
 					}
 				}
 			}
 			else {
-				for (uint8_t i = 0; i < 64; i++) {
+				for (uint_fast8_t i = 0; i < 64; i++) {
 					if (_b_64_table[i] == c) {
 						return i;
 					}
@@ -301,11 +301,11 @@ namespace shaga {
 		return _b64_from_byte (b, use_alt);
 	}
 
-	size_t BIN::to_base64 (const std::string &from, std::string &to, const bool use_alt)
+	size_t BIN::to_base64 (const std::string &from, std::string &append_to, const bool use_alt)
 	{
-		to.reserve (to.size () + (from.size () << 1));
+		append_to.reserve (append_to.size () + (from.size () << 1));
 
-		const size_t start_size = to.size ();
+		const size_t start_size = append_to.size ();
 		std::string::const_iterator fromp = from.cbegin ();
 		uint8_t cbyte;
 		uint8_t obyte;
@@ -315,18 +315,18 @@ namespace shaga {
 
 		for (; len >= 3; len -= 3) {
 			cbyte = (uint8_t) * (fromp++);
-			to.push_back (_b64_from_byte (cbyte >> 2, use_alt));
+			append_to.push_back (_b64_from_byte (cbyte >> 2, use_alt));
 			obyte = (cbyte << 4) & 0x30; /* 0011 0000 */
 
 			cbyte = (uint8_t) * (fromp++);
 			obyte |= (cbyte >> 4); /* 0000 1111 */
-			to.push_back (_b64_from_byte (obyte, use_alt));
+			append_to.push_back (_b64_from_byte (obyte, use_alt));
 			obyte = (cbyte << 2) & 0x3C; /* 0011 1100 */
 
 			cbyte = (uint8_t) * (fromp++);
 			obyte |= (cbyte >> 6); /* 0000 0011 */
-			to.push_back (_b64_from_byte (obyte, use_alt));
-			to.push_back (_b64_from_byte (cbyte & 0x3F, use_alt)); /* 0011 1111 */
+			append_to.push_back (_b64_from_byte (obyte, use_alt));
+			append_to.push_back (_b64_from_byte (cbyte & 0x3F, use_alt)); /* 0011 1111 */
 		}
 
 		if (len) {
@@ -339,24 +339,24 @@ namespace shaga {
 			end[2] = 0;
 
 			cbyte = end[0];
-			to.push_back (_b64_from_byte (cbyte >> 2, use_alt));
+			append_to.push_back (_b64_from_byte (cbyte >> 2, use_alt));
 			obyte = (cbyte << 4) & 0x30; /* 0011 0000 */
 
 			cbyte = end[1];
 			obyte |= (cbyte >> 4);
-			to.push_back (_b64_from_byte (obyte, use_alt));
+			append_to.push_back (_b64_from_byte (obyte, use_alt));
 			obyte = (cbyte << 2) & 0x3C; /* 0011 1100 */
 
 			if (len) {
-				to.push_back (_b64_from_byte (obyte, use_alt));
+				append_to.push_back (_b64_from_byte (obyte, use_alt));
 			} else {
-				to.push_back (pad);
+				append_to.push_back (pad);
 			}
 
-			to.push_back (pad);
+			append_to.push_back (pad);
 		}
 
-		return to.size () - start_size;
+		return append_to.size () - start_size;
 	}
 
 	std::string BIN::to_base64 (const std::string &from, const bool use_alt)
@@ -366,66 +366,72 @@ namespace shaga {
 		return out;
 	}
 
-	size_t BIN::from_base64 (const std::string &from, std::string &to, const bool use_alt)
+	size_t BIN::from_base64 (const std::string &from, std::string &append_to, const bool use_alt)
 	{
-		to.reserve (to.size () + (from.size () >> 1));
+		append_to.reserve (append_to.size () + (from.size () >> 1));
+		const size_t start_size = append_to.size ();
 
-		const size_t start_size = to.size ();
-		std::string::const_iterator fromp = from.cbegin ();
-		uint8_t cbyte;
-		uint8_t obyte;
-		int padding = 0;
-		size_t len = from.size ();
-		const uint8_t pad = use_alt ? _b_alt64_pad : _b_64_pad;
+		try {
+			std::string::const_iterator fromp = from.cbegin ();
+			uint8_t cbyte;
+			uint8_t obyte;
+			int padding = 0;
+			size_t len = from.size ();
+			const uint8_t pad = use_alt ? _b_alt64_pad : _b_64_pad;
 
-		for (; len >= 4; len -= 4) {
-			if ( (cbyte = (uint8_t) * (fromp++)) == pad) {
-				cbyte = 0;
-			} else {
-				cbyte = _byte_from_b64 (cbyte, use_alt);
+			for (; len >= 4; len -= 4) {
+				if ( (cbyte = (uint8_t) * (fromp++)) == pad) {
+					cbyte = 0;
+				} else {
+					cbyte = _byte_from_b64 (cbyte, use_alt);
+				}
+				obyte = cbyte << 2; /* 1111 1100 */
+
+				if ( (cbyte = (uint8_t) * (fromp++)) == pad) {
+					cbyte = 0;
+				} else {
+					cbyte = _byte_from_b64 (cbyte, use_alt);
+				}
+				obyte |= cbyte >> 4; /* 0000 0011 */
+
+				append_to.push_back (obyte);
+
+				obyte = cbyte << 4; /* 1111 0000 */
+				if ( (cbyte = (uint8_t) * (fromp++)) == pad) {
+					cbyte = 0;
+					padding++;
+				} else {
+					padding = 0;
+					cbyte = _byte_from_b64 (cbyte, use_alt);
+				}
+				obyte |= cbyte >> 2; /* 0000 1111 */
+
+				append_to.push_back (obyte);
+
+				obyte = cbyte << 6; /* 1100 0000 */
+				if ( (cbyte = (uint8_t) * (fromp++)) == pad) {
+					cbyte = 0;
+					padding++;
+				} else {
+					padding = 0;
+					cbyte = _byte_from_b64 (cbyte, use_alt);
+				}
+				obyte |= cbyte; /* 0011 1111 */
+
+				append_to.push_back (obyte);
 			}
-			obyte = cbyte << 2; /* 1111 1100 */
 
-			if ( (cbyte = (uint8_t) * (fromp++)) == pad) {
-				cbyte = 0;
-			} else {
-				cbyte = _byte_from_b64 (cbyte, use_alt);
+			if (len || fromp != from.end ()) {
+				cThrow ("Malformed data");
 			}
-			obyte |= cbyte >> 4; /* 0000 0011 */
 
-			to.push_back (obyte);
-
-			obyte = cbyte << 4; /* 1111 0000 */
-			if ( (cbyte = (uint8_t) * (fromp++)) == pad) {
-				cbyte = 0;
-				padding++;
-			} else {
-				padding = 0;
-				cbyte = _byte_from_b64 (cbyte, use_alt);
-			}
-			obyte |= cbyte >> 2; /* 0000 1111 */
-
-			to.push_back (obyte);
-
-			obyte = cbyte << 6; /* 1100 0000 */
-			if ( (cbyte = (uint8_t) * (fromp++)) == pad) {
-				cbyte = 0;
-				padding++;
-			} else {
-				padding = 0;
-				cbyte = _byte_from_b64 (cbyte, use_alt);
-			}
-			obyte |= cbyte; /* 0011 1111 */
-
-			to.push_back (obyte);
+			append_to.erase (append_to.size () - padding, std::string::npos);
 		}
-
-		if (len || fromp != from.end ()) {
-			cThrow ("Malformed data");
+		catch (...) {
+			append_to.resize (start_size);
+			throw;
 		}
-
-		to.erase (to.size () - padding, std::string::npos);
-		return to.size () - start_size;
+		return append_to.size () - start_size;
 	}
 
 	std::string BIN::from_base64 (const std::string &from, const bool use_alt)

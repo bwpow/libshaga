@@ -29,6 +29,7 @@
 
 /* Retreived from: https://gist.github.com/imneme/540829265469e673d045 */
 /* Date: 2019-02-23 */
+/* Modified by Samuel Kupka */
 
 #ifndef HEAD_shaga_randutils
 #define HEAD_shaga_randutils
@@ -176,22 +177,12 @@ inline int64_t _counter_code (void)
 	#endif
 #endif
 
-#if defined(RANDUTILS_GETPID)
-	// Already defined externally
-#elif defined(_WIN64) || defined(_WIN32)
+#if defined(OS_WIN)
 	#include <process.h>
 	#define RANDUTILS_GETPID _getpid()
-#elif defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
+#elif defined(OS_LINUX) || defined(OS_MAC)
 	#include <unistd.h>
 	#define RANDUTILS_GETPID getpid()
-#else
-	#define RANDUTILS_GETPID 0
-#endif
-
-#if __cpp_constexpr >= 201304L
-	#define RANDUTILS_GENERALIZED_CONSTEXPR constexpr
-#else
-	#define RANDUTILS_GENERALIZED_CONSTEXPR
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -268,18 +259,17 @@ struct seed_seq_fe {
 		typedef IntRep result_type;
 
 	private:
-		static constexpr uint32_t INIT_A = 0x43b0d7e5;
-		static constexpr uint32_t MULT_A = 0x931e8875;
+		static const constexpr uint32_t INIT_A = 0x43b0d7e5;
+		static const constexpr uint32_t MULT_A = 0x931e8875;
 
-		static constexpr uint32_t INIT_B = 0x8b51f9dd;
-		static constexpr uint32_t MULT_B = 0x58f38ded;
+		static const constexpr uint32_t INIT_B = 0x8b51f9dd;
+		static const constexpr uint32_t MULT_B = 0x58f38ded;
 
-		static constexpr uint32_t MIX_MULT_L = 0xca01f9dd;
-		static constexpr uint32_t MIX_MULT_R = 0x4973f715;
-		static constexpr uint32_t XSHIFT = sizeof(IntRep)*8/2;
+		static const constexpr uint32_t MIX_MULT_L = 0xca01f9dd;
+		static const constexpr uint32_t MIX_MULT_R = 0x4973f715;
+		static const constexpr uint32_t XSHIFT = sizeof (IntRep) * 8 / 2;
 
-		RANDUTILS_GENERALIZED_CONSTEXPR
-		static IntRep fast_exp (IntRep x, IntRep power)
+		constexpr static IntRep fast_exp (IntRep x, IntRep power)
 		{
 			IntRep result = IntRep (1);
 			IntRep multiplier = x;
@@ -295,29 +285,29 @@ struct seed_seq_fe {
 		std::array<IntRep, count> mixer_;
 
 		template <typename InputIter>
-		void mix_entropy(InputIter begin, InputIter end);
+		void mix_entropy (InputIter begin, InputIter end);
 
 	public:
-		seed_seq_fe(const seed_seq_fe&) = delete;
-		void operator=(const seed_seq_fe&) = delete;
+		seed_seq_fe (const seed_seq_fe&) = delete;
+		void operator= (const seed_seq_fe&) = delete;
 
 		template <typename T>
-		seed_seq_fe(std::initializer_list<T> init)
+		seed_seq_fe (std::initializer_list<T> init)
 		{
-			seed(init.begin(), init.end());
+			seed (init.begin (), init.end ());
 		}
 
 		template <typename InputIter>
-		seed_seq_fe(InputIter begin, InputIter end)
+		seed_seq_fe (InputIter begin, InputIter end)
 		{
-			seed(begin, end);
+			seed (begin, end);
 		}
 
 		// generating functions
 		template <typename RandomAccessIterator>
-		void generate(RandomAccessIterator first, RandomAccessIterator last) const;
+		void generate (RandomAccessIterator first, RandomAccessIterator last) const;
 
-		static constexpr size_t size()
+		static constexpr size_t size (void)
 		{
 			return count;
 		}
@@ -326,17 +316,17 @@ struct seed_seq_fe {
 		void param (OutputIterator dest) const;
 
 		template <typename InputIter>
-		void seed(InputIter begin, InputIter end)
+		void seed (InputIter begin, InputIter end)
 		{
-			mix_entropy(begin, end);
+			mix_entropy (begin, end);
 			// For very small sizes, we do some additional mixing.  For normal
 			// sizes, this loop never performs any iterations.
 			for (size_t i = 1; i < mix_rounds; ++i) {
-				stir();
+				stir ();
 			}
 		}
 
-		seed_seq_fe& stir ()
+		seed_seq_fe& stir (void)
 		{
 			mix_entropy (mixer_.begin (), mixer_.end ());
 			return *this;
@@ -491,7 +481,7 @@ class auto_seeded : public SeedSeq
 		using default_seeds = std::array<uint32_t, 11>;
 
 		template <typename T>
-		static uint32_t crushto32 (const T value)
+		static uint32_t _crushto32 (const T value)
 		{
 			if (sizeof(T) <= 4) {
 				return static_cast<uint32_t> (value);
@@ -507,7 +497,7 @@ class auto_seeded : public SeedSeq
 		static uint32_t _hash (T&& value)
 		{
 			//return crushto32 (std::hash<typename std::decay<T>::type>{} (std::forward<T> (value)));
-			return crushto32 (std::hash<typename std::remove_reference<typename std::remove_cv<T>::type>::type>{} (std::forward<T> (value)));
+			return _crushto32 (std::hash<typename std::remove_reference<typename std::remove_cv<T>::type>::type>{} (std::forward<T> (value)));
 		}
 
 		static constexpr uint32_t _fnv (const uint32_t hsh, const char* pos)
@@ -515,7 +505,7 @@ class auto_seeded : public SeedSeq
 			return (*pos) == '\0' ? hsh : _fnv ((hsh * 16777619U) ^ (*pos), pos + 1);
 		}
 
-		default_seeds local_entropy ()
+		default_seeds local_entropy (void)
 		{
 			// This is a constant that changes every time we compile the code
 			const constexpr uint32_t compile_stamp = _fnv (2166136261U, __DATE__ __TIME__ __FILE__);
@@ -523,7 +513,7 @@ class auto_seeded : public SeedSeq
 			// Some people think you shouldn't use the random device much because
 			// on some platforms it could be expensive to call or "use up" vital
 			// system-wide entropy, so we just call it once.
-			static uint32_t random_int = std::random_device{}();
+			const uint32_t random_int = std::random_device{}();
 
 			// The heap can vary from run to run as well.
 			void* malloc_addr = ::malloc (sizeof (int));
@@ -532,10 +522,6 @@ class auto_seeded : public SeedSeq
 			}
 			const auto a_heap  = _hash (malloc_addr);
 			const auto a_stack = _hash (&malloc_addr);
-
-			// Every call, we increment our random int.  We don't care about race
-			// conditons.  The more, the merrier.
-			random_int += 0xedf19156;
 
 			// Classic seed, the time.  It ought to change, especially since
 			// this is (hopefully) nanosecond resolution time.
@@ -564,23 +550,23 @@ class auto_seeded : public SeedSeq
 			// to ASLR, on Linux it might not unless we compile with -fPIC -pic.
 			// Need the cast because it's an overloaded
 			// function and we need to pick the right one.
-			const auto self_func = _hash (static_cast<uint32_t (*)(uint64_t)> (&auto_seeded::crushto32));
+			const auto self_func = _hash (static_cast<uint32_t (*)(uint64_t)> (&auto_seeded::_crushto32));
 
 			// Hash of the ID of a type.  May or may not vary, depending on
 			// implementation.
 			#if __cpp_rtti || __GXX_RTTI
-			const auto type_id = crushto32 (typeid (*this).hash_code ());
+			const auto type_id = _crushto32 (typeid (*this).hash_code ());
 			#else
 			const uint32_t type_id {0};
 			#endif
 
 			// Platform-specific entropy
-			const auto pid = crushto32 (RANDUTILS_GETPID);
-			const auto cpu = crushto32 (RANDUTILS_CPU_ENTROPY);
+			const auto pid = _crushto32 (RANDUTILS_GETPID);
+			const auto cpu = _crushto32 (RANDUTILS_CPU_ENTROPY);
 
 			return {{
 				random_int,
-				crushto32 (hitime) ^ compile_stamp,
+				_crushto32 (hitime) ^ compile_stamp,
 				a_stack,
 				a_heap,
 				self_data,
@@ -593,11 +579,114 @@ class auto_seeded : public SeedSeq
 			}};
 		}
 
+	public:
+		using SeedSeq::SeedSeq;
+		using base_seed_seq = SeedSeq;
+
+		auto_seeded (default_seeds seeds) : SeedSeq (seeds.begin (), seeds.end ())
+		{ }
+
+		auto_seeded () : auto_seeded (local_entropy ())
+		{ }
+
+		const base_seed_seq& base (void) const
+		{
+			return *this;
+		}
+
+		base_seed_seq& base (void)
+		{
+			return *this;
+		}
+};
+
+/*
+ * randutils::auto_seeded
+ *
+ *   Similar to auto_seeded, but using more random bytes from system.
+ */
+
+template <typename SeedSeq>
+class auto_seeded_r : public SeedSeq
+{
+	private:
+		using default_seeds = std::array<uint32_t, 11>;
+
+		template <typename T>
+		static uint32_t _crushto32 (const T value)
+		{
+			if (sizeof(T) <= 4) {
+				return static_cast<uint32_t> (value);
+			}
+			else {
+				uint64_t result = static_cast<uint64_t> (value);
+				result *= 0xbc2ad017d719504d;
+				return static_cast<uint32_t> (result ^ (result >> 32));
+			}
+		}
+
+		template <typename T>
+		static uint32_t _hash (T&& value)
+		{
+			return _crushto32 (std::hash<typename std::remove_reference<typename std::remove_cv<T>::type>::type>{} (std::forward<T> (value)));
+		}
+
+		default_seeds local_entropy (void)
+		{
+			#ifdef OS_LINUX
+			std::random_device rd ("/dev/random");
+			#else
+			std::random_device rd;
+			#endif // OS_LINUX
+
+			void* malloc_addr = ::malloc (sizeof (int));
+			if (nullptr != malloc_addr) {
+				::free (malloc_addr);
+			}
+			const auto a_heap  = _hash (malloc_addr);
+			const auto a_stack = _hash (&malloc_addr);
+			const auto hitime = std::chrono::high_resolution_clock::now ().time_since_epoch ().count ();
+			const auto self_data = _hash (this);
+			const auto exit_func = _hash (&_Exit);
+
+			#if __cpp_rtti || __GXX_RTTI
+			const auto type_id = _crushto32 (typeid (*this).hash_code ());
+			#else
+			const uint32_t type_id {0};
+			#endif
+
+			const auto pid = _crushto32 (RANDUTILS_GETPID);
+			const auto cpu = _crushto32 (RANDUTILS_CPU_ENTROPY);
+
+			const uint32_t random_int1 = rd ();
+			const uint32_t random_int2 = rd ();
+			const uint32_t random_int3 = rd ();
+			const uint32_t random_int4 = rd ();
+
+			return {{
+				random_int1,
+				random_int2,
+				a_stack,
+				a_heap,
+				self_data,
+				random_int3,
+				exit_func,
+				random_int4,
+				type_id ^ _crushto32 (hitime),
+				pid,
+				cpu
+			}};
+		}
 
 	public:
 		using SeedSeq::SeedSeq;
-
 		using base_seed_seq = SeedSeq;
+
+		auto_seeded_r (default_seeds seeds) : SeedSeq (seeds.begin (), seeds.end ())
+		{ }
+
+		auto_seeded_r () : auto_seeded_r (local_entropy())
+		{ }
 
 		const base_seed_seq& base () const
 		{
@@ -608,16 +697,13 @@ class auto_seeded : public SeedSeq
 		{
 			return *this;
 		}
-
-		auto_seeded (default_seeds seeds) : SeedSeq(seeds.begin(), seeds.end())
-		{ }
-
-		auto_seeded () : auto_seeded(local_entropy())
-		{ }
 };
 
 using auto_seed_128 = auto_seeded<seed_seq_fe128>;
 using auto_seed_256 = auto_seeded<seed_seq_fe256>;
+
+using auto_seed_128_r = auto_seeded_r<seed_seq_fe128>;
+using auto_seed_256_r = auto_seeded_r<seed_seq_fe256>;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -847,6 +933,9 @@ class random_generator
 
 using default_rng = random_generator<std::default_random_engine>;
 using mt19937_rng = random_generator<std::mt19937>;
+
+using default_r_rng = random_generator<std::default_random_engine, auto_seed_256_r>;
+using mt19937_r_rng = random_generator<std::mt19937, auto_seed_256_r>;
 
 }
 

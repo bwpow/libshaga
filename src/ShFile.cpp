@@ -158,7 +158,7 @@ namespace shaga {
 		}
 	}
 
-	void ShFile::sync (const bool also_metadata)
+	void ShFile::sync ([[maybe_unused]] const bool also_metadata)
 	{
 #ifndef OS_WIN
 		if (true == also_metadata) {
@@ -171,8 +171,6 @@ namespace shaga {
 				cThrow ("Sync error in file '%s': %s", _filename.c_str (), strerror (errno));
 			}
 		}
-#else
-		(void) also_metadata;
 #endif // OS_WIN
 	}
 
@@ -226,11 +224,11 @@ namespace shaga {
 		}
 
 		/* Note: Since C++11, std::string::data memory must be continuous */
-		/* Note: Since C++17, std::string::data memory won't be const */
+		/* Note: Since C++17, std::string::data memory isn't const */
 		#ifdef OS_WIN
-			const int ret = ::read (_fd, &data[0], static_cast<unsigned int> (len));
+			const int ret = ::read (_fd, data.data (), static_cast<unsigned int> (len));
 		#else
-			const ssize_t ret = ::read (_fd, &data[0], len);
+			const ssize_t ret = ::read (_fd, data.data (), len);
 		#endif // OS_WIN
 		if (ret < 0) {
 			cThrow ("Error reading from file '%s': %s", _filename.c_str (), strerror (errno));

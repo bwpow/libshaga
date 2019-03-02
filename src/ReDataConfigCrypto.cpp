@@ -87,7 +87,7 @@ namespace shaga {
 		const size_t orig_out_size = out.size ();
 		out.resize (orig_out_size + msg_size);
 		if (mbedtls_aes_crypt_cbc (&cache._aes_ctx, (true == enc) ? MBEDTLS_AES_ENCRYPT : MBEDTLS_AES_DECRYPT, msg_size, iv_data,
-			reinterpret_cast<const unsigned char *> (msg), reinterpret_cast<unsigned char *> (&out[orig_out_size])) != 0)
+			reinterpret_cast<const unsigned char *> (msg), reinterpret_cast<unsigned char *> (out.data () + orig_out_size)) != 0)
 		{
 			cThrow ("Wrong crypto message size");
 		}

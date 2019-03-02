@@ -221,8 +221,8 @@ TEST (STR, int64)
 
 TEST (STR, split_join)
 {
-	const std::string original = ",Aa,Bb,Cc,:Dd,:Ee,:::,Zz,";
-	const std::string joined = "Aa,Bb,Cc,Dd,Ee,Zz";
+	const std::string original {",Aa,Bb,Cc,:Dd,:Ee,:::,Zz,"};
+	const std::string joined {"Aa,Bb,Cc,Dd,Ee,Zz"};
 	const std::string nothing = "";
 	const std::string delimiters = ",:";
 	const std::string delimiter = ",";
@@ -230,9 +230,9 @@ TEST (STR, split_join)
 	COMMON_DEQUE d;
 	COMMON_LIST l;
 
-	v = STR::split_to_vector (original, delimiters);
-	d = STR::split_to_deque (original, delimiters);
-	l = STR::split_to_list (original, delimiters);
+	v = STR::split<COMMON_VECTOR> (original, delimiters);
+	d = STR::split<COMMON_DEQUE> (original, delimiters);
+	l = STR::split<COMMON_LIST> (original, delimiters);
 
 	EXPECT_TRUE (v.size () == 6);
 	EXPECT_TRUE (d.size () == 6);

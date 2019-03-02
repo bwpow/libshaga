@@ -35,7 +35,7 @@ namespace shaga {
 					~DEC_CTX_ENTRY ();
 			};
 
-			randutils::mt19937_rng _rng;
+			randutils::mt19937_r_rng _rng;
 			mbedtls_pk_context _enc_ctx;
 			std::list<DEC_CTX_ENTRY> _dec_ctx_list;
 			unsigned char _output_buf[16'000];

@@ -281,6 +281,7 @@ namespace shaga {
 			for (auto &e : v) {
 				process_entry (e);
 			}
+
 			if (true == _next_entry_is_param) {
 				cThrow ("Option '%s' is missing parameter", v.back().c_str ());
 			}
@@ -310,6 +311,7 @@ namespace shaga {
 						break;
 				}
 			}
+
 			/* Chechk using special checker functions */
 			for (const auto &e : _entries) {
 				if (e.checker != nullptr) {

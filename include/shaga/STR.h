@@ -57,7 +57,7 @@ namespace shaga {
 			return ss.str ();
 		}
 
-		void split (const std::string &what, const std::string &delimiter, std::function<void (const std::string &)> f);
+		void split (const std::string &what, const std::string &delimiter, std::function<void (const std::string &)> func);
 
 		template <typename T>
 		void split (T &out, const std::string &what, const std::string &delimiter)
@@ -65,9 +65,13 @@ namespace shaga {
 			split (what, delimiter, [&out](const std::string &tok) { out.push_back (tok); });
 		}
 
-		COMMON_VECTOR split_to_vector (const std::string &what, const std::string &delimiter);
-		COMMON_DEQUE split_to_deque (const std::string &what, const std::string &delimiter);
-		COMMON_LIST split_to_list (const std::string &what, const std::string &delimiter);
+		template <typename T>
+		T split (const std::string &what, const std::string &delimiter)
+		{
+			T out;
+			split (what, delimiter, [&out](const std::string &tok) { out.push_back (tok); });
+			return out;
+		}
 
 		template <typename T>
 		void join (std::string &out, const T &input, const std::string &delimiter)

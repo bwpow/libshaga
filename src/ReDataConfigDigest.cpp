@@ -322,9 +322,8 @@ namespace shaga {
 				_cache_digest.digest = _used_digest;
 				_cache_digest.key.assign (key);
 
-				size_t offset = 0;
-				_cache_digest.siphash_k0 = BIN::to_uint64 (key, offset);
-				_cache_digest.siphash_k1 = BIN::to_uint64 (key, offset);
+				BIN::_to_uint64 (_cache_digest.siphash_k0, key.data ());
+				BIN::_to_uint64 (_cache_digest.siphash_k1, key.data () + sizeof (uint64_t));
 			}
 
 			return hfunc (plain, _cache_digest);

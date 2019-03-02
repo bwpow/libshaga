@@ -23,8 +23,8 @@ namespace shaga {
 		va_list cpy;
 		::va_copy (cpy, ap);
 		/* Note: Since C++11, std::string::data memory must be continuous */
-		/* Note: Since C++17, std::string::data memory won't be const */
-		const int l = ::vsnprintf (&str[0], str.size (), fmt, cpy);
+		/* Note: Since C++17, std::string::data memory isn't const */
+		const int l = ::vsnprintf (str.data (), str.size (), fmt, cpy);
 		::va_end (cpy);
 
 		if (l < static_cast<int> (str.size ())) {
@@ -32,7 +32,7 @@ namespace shaga {
 		}
 		else {
 			str.resize (l + 1);
-			::vsnprintf (&str[0], str.size (), fmt, ap);
+			::vsnprintf (str.data (), str.size (), fmt, ap);
 			str.resize (l);
 		}
 	}
@@ -173,7 +173,6 @@ namespace shaga {
 				}
 			}
 
-
 			if (std::numeric_limits<T>::is_signed == false && true == is_negative) {
 				/* This is not a signed type, but the parsed integer is negative */
 				cThrow ("Out of range");
@@ -193,7 +192,7 @@ namespace shaga {
 				result = -out;
 			}
 			else {
-				int64_t nout = -static_cast<int64_t> (out);
+				const int64_t nout = -static_cast<int64_t> (out);
 				if (nout < static_cast<int64_t> (std::numeric_limits<T>::min ())) {
 					cThrow ("Out of range");
 				}
@@ -206,9 +205,8 @@ namespace shaga {
 		}
 	}
 
-	bool STR::to_bool (const std::string &s, const int base)
+	bool STR::to_bool (const std::string &s, [[maybe_unused]] const int base)
 	{
-		(void) base;
 		if (icompare (s, "true") == true || icompare (s, "on") == true || icompare (s, "yes") == true || s == "1") {
 			return true;
 		}
@@ -292,27 +290,6 @@ namespace shaga {
 			// If at end, use start=maxSize.  Else use start=end+delimiter.
 			start = ( (end > (std::string::npos - 1)) ? std::string::npos : end + 1);
 		}
-	}
-
-	COMMON_VECTOR STR::split_to_vector (const std::string &what, const std::string &delimiter)
-	{
-		COMMON_VECTOR out;
-		split (out, what, delimiter);
-		return out;
-	}
-
-	COMMON_DEQUE STR::split_to_deque (const std::string &what, const std::string &delimiter)
-	{
-		COMMON_DEQUE out;
-		split (out, what, delimiter);
-		return out;
-	}
-
-	COMMON_LIST STR::split_to_list (const std::string &what, const std::string &delimiter)
-	{
-		COMMON_LIST out;
-		split (out, what, delimiter);
-		return out;
 	}
 
 	void STR::format_time (std::string &out, const time_t theTime, const bool local, const bool for_filename)

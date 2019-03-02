@@ -291,7 +291,6 @@ namespace shaga {
 		return out;
 	}
 
-
 	ReDataConfig ReData::get_config (void) const
 	{
 		return _conf;
@@ -368,8 +367,10 @@ namespace shaga {
 
 		size_t i = 0;
 		for (const uint_fast8_t id : idents) {
-			auto res = _key_ident_map.insert (std::make_pair (id, i));
-			if (false == res.second) {
+			const auto [iter, success] = _key_ident_map.insert (std::make_pair (id, i));
+			(void) iter;
+
+			if (false == success) {
 				cThrow ("Duplicated key ident");
 			}
 			++i;

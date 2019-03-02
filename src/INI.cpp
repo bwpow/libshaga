@@ -24,10 +24,10 @@ namespace shaga {
 
 	bool operator== (const INI_KEY &a, const INI_KEY &b)
 	{
-		return a.section == b.section && a.line == b.line;
+		return (a.section == b.section) && (a.line == b.line);
 	}
 
-	#define FOR_SECTION(iter, section) for (INI_MAP::iterator iter = begin_of_section (_map, section); iter != _map.end () && is_same_section (iter->first, section); ++iter)
+	//#define FOR_SECTION(iter, section) for (INI_MAP::iterator iter = begin_of_section (_map, section); iter != _map.end () && is_same_section (iter->first, section); ++iter)
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
@@ -199,7 +199,7 @@ namespace shaga {
 		}
 
 		if (true == refer) {
-			COMMON_VECTOR refval = STR::split_to_vector (line_val, "/");
+			COMMON_VECTOR refval = STR::split<COMMON_VECTOR> (line_val, "/");
 
 			INI_KEY key;
 			if (refval.size () == 1) {

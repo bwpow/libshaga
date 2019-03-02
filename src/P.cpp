@@ -20,8 +20,8 @@ namespace shaga {
 	namespace P {
 		static volatile bool _disabled_permanently {false};
 
-		static const int _buffer_size {4096};
-		static const off64_t _bytes_per_mb {1024 * 1024};
+		static const size_t _buffer_size {4'096};
+		static const off64_t _bytes_per_mb {1'024 * 1'024};
 
 		static volatile bool _enabled {false};
 		static char _printf_buf[_buffer_size];
@@ -49,7 +49,8 @@ namespace shaga {
 		static enum class _DirLogEnum {
 			FILE,
 			SYSLOG,
-			STDOUT
+			STDOUT,
+			STDERR
 		} _dir_log_enum = _DirLogEnum::FILE;
 
 		static ShFile _printf_file;
@@ -110,6 +111,9 @@ namespace shaga {
 			else if (STR::icompare (_dir_log, "-") == true || STR::icompare (_dir_log, "stdout") == true) {
 				_dir_log_enum = _DirLogEnum::STDOUT;
 			}
+			else if (STR::icompare (_dir_log, "stderr") == true) {
+				_dir_log_enum = _DirLogEnum::STDERR;
+			}
 			else {
 				_dir_log_enum = _DirLogEnum::FILE;
 			}
@@ -148,7 +152,7 @@ namespace shaga {
 
 		{
 			const uint64_t rt = (true == _printf_ms) ? get_realtime_msec () : 0;
-			const time_t theTime = (rt > 0) ? (rt / 1000) : get_realtime_sec ();
+			const time_t theTime = (rt > 0) ? (rt / 1'000) : get_realtime_sec ();
 
 			::memset (&local_tm, 0, sizeof (local_tm));
 			::localtime_r (&theTime, &local_tm);
@@ -190,9 +194,14 @@ namespace shaga {
 			::fputc ('\n', stdout);
 			::fflush (stdout);
 		}
+		else if (_DirLogEnum::STDERR == _dir_log_enum) {
+			::fputs (_printf_time, stderr);
+			::fputs (_printf_buf, stderr);
+			::fputc ('\n', stderr);
+			::fflush (stderr);
+		}
 		else {
 			::snprintf (_printf_fname, sizeof (_printf_fname), "%s/%s_%04d-%02d-%02d.log", _dir_log.c_str (), _name_log.c_str (), local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday);
-
 
 			_printf_entries.push_back (std::string ());
 

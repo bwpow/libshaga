@@ -166,7 +166,7 @@ All rights reserved.
 #endif
 
 /* Detect endian */
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64)
 	#define BYTE_ORDER __LITTLE_ENDIAN
 #elif !defined BYTE_ORDER
 	#include <endian.h>

@@ -102,7 +102,7 @@ namespace shaga {
 	{
 		size_t mv = offset;
 		try {
-			const uint8_t opts = msg.at (mv); mv++;
+			const uint8_t opts = msg.at (mv); ++mv;
 
 			if ((opts & 0x80) != 0x80) {
 				cThrow ("Malformed data");

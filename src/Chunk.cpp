@@ -542,15 +542,13 @@ namespace shaga {
 		return c;
 	}
 
-	Chunk::TrustLevel begin (Chunk::TrustLevel r)
+	Chunk::TrustLevel begin ([[maybe_unused]] Chunk::TrustLevel r)
 	{
-		(void) r;
 		return Chunk::_TrustLevel_first;
 	}
 
-	Chunk::TrustLevel end (Chunk::TrustLevel r)
+	Chunk::TrustLevel end ([[maybe_unused]] Chunk::TrustLevel r)
 	{
-		(void) r;
 		Chunk::TrustLevel l = Chunk::_TrustLevel_last;
 		return ++l;
 	}
@@ -811,7 +809,6 @@ namespace shaga {
 		}
 	}
 
-
 	void chunkset_to_bin (CHUNKSET &cs, std::string &out, const size_t max_size, const Chunk::Priority max_priority, const bool thr)
 	{
 		size_t sze = 0;
@@ -826,8 +823,8 @@ namespace shaga {
 			temp.resize (0);
 			iter->to_bin (temp);
 			if (max_size > 0 && (temp.size () + sze) > max_size) {
-				if (thr == true) {
-					if (cnt == 0) {
+				if (true == thr) {
+					if (0 == cnt) {
 						cThrow ("Unable to add first chunk.");
 					}
 					if (iter->get_prio () == Chunk::Priority::pCRITICAL || iter->get_prio () == Chunk::Priority::pMANDATORY) {
@@ -876,7 +873,8 @@ namespace shaga {
 
 	void chunklist_change_source_hwid (CHUNKLIST &lst, const HWID new_source_hwid, const bool replace_only_zero)
 	{
-		for_each (lst.begin (), lst.end (), [new_source_hwid, replace_only_zero](Chunk &chunk) {
+		/* When execution is properly implemented, add std::execution::par here */
+		std::for_each (lst.begin (), lst.end (), [new_source_hwid, replace_only_zero](Chunk &chunk) {
 			if (false == replace_only_zero || 0 == chunk._hwid_source) {
 				chunk._hwid_source = new_source_hwid;
 			}
