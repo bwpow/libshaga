@@ -163,7 +163,7 @@ namespace shaga {
 					switch (stage) {
 						case Stage::START_SPACES:
 						case Stage::DIGITS:
-							_to_uint_process_char (out, static_cast <const uint8_t> (*iter), static_cast<const uint64_t> (base));
+							_to_uint_process_char (out, static_cast <uint8_t> (*iter), static_cast<uint64_t> (base));
 							stage = Stage::DIGITS;
 							break;
 

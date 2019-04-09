@@ -145,7 +145,7 @@ static void _shake256_update (_shake256_ctx_t *c, const std::string &data)
 {
 	int j = c->pt;
 	for (size_t i = 0; i < data.size (); i++) {
-		c->st.b[j++] ^= static_cast<const uint8_t> (data[i]);
+		c->st.b[j++] ^= static_cast<uint8_t> (data[i]);
 		if (j >= c->rsiz) {
 			_sha3_keccakf(c->st.q);
 			j = 0;

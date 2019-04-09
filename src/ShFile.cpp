@@ -208,7 +208,7 @@ namespace shaga {
 
 	void ShFile::write (const uint8_t val)
 	{
-		const char buf[1] = { static_cast<const char> (val) };
+		const char buf[1] = { static_cast<char> (val) };
 		write (buf, 1);
 	}
 

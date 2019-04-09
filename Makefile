@@ -1,17 +1,17 @@
-GPP=g++
-AR=ar
-RM=rm
-CP=cp
-MKDIR=@mkdir -p
+GPP ?= g++
+AR ?= ar
+RM ?= rm
+CP ?= cp
+MKDIR ?= @mkdir -p
 
-DESTINCLUDE=/usr/local/include/
-DESTLIB=/usr/local/lib/
+DESTINCLUDE ?= /usr/local/include/
+DESTLIB ?= /usr/local/lib/
 
-ST_LIBS= \
+ST_LIBS = \
 	-lrt \
 	-lmbedcrypto
 
-ST_CPPFLAGS= \
+ST_CPPFLAGS = \
 	-pipe \
 	-fPIC \
 	-Wall \
@@ -20,8 +20,8 @@ ST_CPPFLAGS= \
 	-std=c++17 \
 	-march=native
 
-MT_LIBS=-pthread $(ST_LIBS)
-MT_CPPFLAGS=-pthread $(ST_CPPFLAGS)
+MT_LIBS = -pthread $(ST_LIBS)
+MT_CPPFLAGS = -pthread $(ST_CPPFLAGS)
 
 LIBDIR = lib
 OBJDIR = obj
