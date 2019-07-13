@@ -10,43 +10,51 @@ All rights reserved.
 
 #include "common.h"
 
-namespace shaga {
-	namespace FS {
+namespace shaga::FS {
+	std::string realpath (const std::string_view path, const bool strip_fname = false);
 
-		std::string realpath (const std::string &path, const bool strip_fname = false);
+	struct stat file_stat (const std::string_view fname);
 
-		struct stat file_stat (const std::string &fname);
-		off64_t file_size (const std::string &fname);
-		time_t file_mtime (const std::string &fname);
+	off64_t file_size (const std::string_view fname);
 
-		bool is_dir (const std::string &dname);
-		bool is_file (const std::string &fname);
-		bool mkdir (const std::string &dname);
+	time_t file_mtime (const std::string_view fname);
 
-		void glob (const std::string &pattern, std::function<void (const std::string &)> f);
+	bool is_dir (const std::string_view dname);
 
-		template <typename T>
-		void glob (const std::string &pattern, T &out)
-		{
-			glob (pattern, [&out](const std::string &entry) { out.push_back (entry); });
-		}
+	bool is_file (const std::string_view fname);
 
-		COMMON_LIST glob_to_list (const std::string &pattern);
-		COMMON_VECTOR glob_to_vector (const std::string &pattern);
-		COMMON_DEQUE glob_to_deque (const std::string &pattern);
+	bool mkdir (const std::string_view dname);
 
-		void read_file (const std::string &fname, std::function<void (const std::string &)> f);
+	void glob (const std::string_view pattern, std::function<void (const std::string_view)> f);
 
-		template <typename T>
-		void read_file (const std::string &fname, T &out)
-		{
-			read_file (fname, [&out](const std::string &line) { out.push_back (line); });
-		}
+	template <typename T>
+	void glob (const std::string_view pattern, T &out)
+	{
+		glob (pattern, [&out](const std::string_view entry) { out.emplace_back (entry); });
+	}
 
-		COMMON_LIST read_file_to_list (const std::string &fname);
-		COMMON_VECTOR read_file_to_vector (const std::string &fname);
-		COMMON_DEQUE read_file_to_deque (const std::string &fname);
+	template <typename T>
+	auto glob (const std::string_view pattern) -> T
+	{
+		T out;
+		glob (pattern, [&out](const std::string_view entry) { out.emplace_back (entry); });
+		return out;
+	}
 
+	void read_file (const std::string_view fname, std::function<void (const std::string_view)> callback);
+
+	template <typename T>
+	void read_file (const std::string_view fname, T &out)
+	{
+		read_file (fname, [&out](const std::string_view line) { out.emplace_back (line); });
+	}
+
+	template <typename T>
+	auto read_file (const std::string_view fname) -> T
+	{
+		T out;
+		read_file (fname, [&out](const std::string_view line) { out.emplace_back (line); });
+		return out;
 	}
 }
 

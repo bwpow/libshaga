@@ -8,7 +8,6 @@ All rights reserved.
 #include "shaga/common.h"
 
 namespace shaga {
-
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,7 +40,7 @@ namespace shaga {
 		return s;
 	}
 
-	ArgTable::Entries::iterator ArgTable::find_entry_by_key (const std::string &key_long, const char key_short)
+	ArgTable::Entries::iterator ArgTable::find_entry_by_key (const std::string_view key_long, const char key_short)
 	{
 		for (Entries::iterator iter = _entries.begin (); iter != _entries.end (); ++iter) {
 			if (key_long.empty () == false && iter->key_long.compare (key_long) == 0) {
@@ -55,23 +54,23 @@ namespace shaga {
 		if (key_long.empty () == true) {
 			cThrow ("Unknown option '-%c'", key_short);
 		}
-		cThrow ("Unknown option '--%s'", key_long.c_str ());
+		cThrow ("Unknown option '--%s'", ~key_long);
 	}
 
-	void ArgTable::process_entry (Entry &e, const std::string &var)
+	void ArgTable::process_entry (Entry &e, const std::string_view var)
 	{
 		if (var.empty () == true) {
 			e.vars.push_back (STR::from_int (true));
 		}
 		else {
-			e.vars.push_back (var);
+			e.vars.emplace_back (var);
 		}
 
 		_actual_entry = _entries.end ();
 		_next_entry_is_param = false;
 	}
 
-	void ArgTable::process_entry (const std::string &data)
+	void ArgTable::process_entry (const std::string_view data)
 	{
 		if (true == _next_entry_is_param) {
 			if (_actual_entry == _entries.end ()) {
@@ -86,14 +85,14 @@ namespace shaga {
 				/* There is no '=', so let's check if there should be parameter */
 				_actual_entry = find_entry_by_key (data.substr (2), 0);
 				if (true == _actual_entry->has_param) {
-					cThrow ("Option '%s' is missing parameter", data.c_str ());
+					cThrow ("Option '%s' is missing parameter", ~data);
 				}
 				process_entry (*_actual_entry, "");
 			}
 			else {
 				_actual_entry = find_entry_by_key (data.substr (2, pos - 2), 0);
 				if (false == _actual_entry->has_param) {
-					cThrow ("Option '%s' shouldn't have parameter", data.c_str ());
+					cThrow ("Option '%s' shouldn't have parameter", ~data);
 				}
 				process_entry (*_actual_entry, data.substr (pos + 1));
 			}
@@ -117,7 +116,7 @@ namespace shaga {
 			}
 		}
 		else {
-			cThrow ("Unknown option '%s'", data.c_str ());
+			cThrow ("Unknown option '%s'", ~data);
 		}
 	}
 
@@ -129,12 +128,12 @@ namespace shaga {
 	{
 	}
 
-	ArgTable::ArgTable (const std::string &argv0) :
+	ArgTable::ArgTable (const std::string_view argv0) :
 		_argv0 (argv0)
 	{
 	}
 
-	void ArgTable::set_argv0 (const std::string &str)
+	void ArgTable::set_argv0 (const std::string_view str)
 	{
 		_argv0.assign (str);
 	}
@@ -226,11 +225,11 @@ namespace shaga {
 	}
 
 
-	ArgTable & ArgTable::add (const std::string &key_long, const char key_short, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string &help, const std::string &param_type, std::function <bool (const std::string &)> checker)
+	ArgTable & ArgTable::add (const std::string_view key_long, const char key_short, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string_view help, const std::string_view param_type, CheckerCallback checker)
 	{
 		for (const auto &e : _entries) {
 			if (e.key_long.empty () == false && key_long == e.key_long) {
-				cThrow ("Option '--%s' is duplicated", key_long.c_str ());
+				cThrow ("Option '--%s' is duplicated", ~key_long);
 			}
 			if (e.key_short != 0 && key_short == e.key_short) {
 				cThrow ("Option '-%c' is duplicated", key_short);
@@ -257,12 +256,12 @@ namespace shaga {
 		return *this;
 	}
 
-	ArgTable & ArgTable::add (const std::string &key_long, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string &help, const std::string &param_type, std::function <bool (const std::string &)> checker)
+	ArgTable & ArgTable::add (const std::string_view key_long, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string_view help, const std::string_view param_type, CheckerCallback checker)
 	{
 		return add (key_long, '\0', incidence, has_param, help, param_type, checker);
 	}
 
-	ArgTable & ArgTable::add (const char key_short, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string &help, const std::string &param_type, std::function <bool (const std::string &)> checker)
+	ArgTable & ArgTable::add (const char key_short, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string_view help, const std::string_view param_type, CheckerCallback checker)
 	{
 		return add ("", key_short, incidence, has_param, help, param_type, checker);
 	}
@@ -283,7 +282,7 @@ namespace shaga {
 			}
 
 			if (true == _next_entry_is_param) {
-				cThrow ("Option '%s' is missing parameter", v.back().c_str ());
+				cThrow ("Option '%s' is missing parameter", ~v.back());
 			}
 
 			/* Check for correct incidence */
@@ -294,19 +293,19 @@ namespace shaga {
 
 					case INCIDENCE::ZERO_OR_ONE:
 						if (e.vars.size () > 1) {
-							cThrow ("Option '%s' must be used at most once", e.get_str ().c_str ());
+							cThrow ("Option '%s' must be used at most once", ~e.get_str ());
 						}
 						break;
 
 					case INCIDENCE::ONE:
 						if (e.vars.size () != 1) {
-							cThrow ("Option '%s' must be used exactly once", e.get_str ().c_str ());
+							cThrow ("Option '%s' must be used exactly once", ~e.get_str ());
 						}
 						break;
 
 					case INCIDENCE::AT_LEAST_ONE:
 						if (e.vars.size () < 1) {
-							cThrow ("Option '%s' must be used at least once", e.get_str ().c_str ());
+							cThrow ("Option '%s' must be used at least once", ~e.get_str ());
 						}
 						break;
 				}
@@ -317,7 +316,7 @@ namespace shaga {
 				if (e.checker != nullptr) {
 					for (const auto &v : e.vars) {
 						if (e.checker (v) == false) {
-							cThrow ("Parameter '%s' is not valid for option '%s'", v.c_str (), e.get_str ().c_str ());
+							cThrow ("Parameter '%s' is not valid for option '%s'", ~v, ~e.get_str ());
 						}
 					}
 				}
@@ -350,12 +349,12 @@ namespace shaga {
 		return true;
 	}
 
-	INI ArgTable::export_ini (const std::string &section) const
+	INI ArgTable::export_ini (const std::string_view section) const
 	{
 		std::string s;
 
 		if (section.empty () == false) {
-			s.append ("[" + section + "]\n");
+			s.append ("[" + std::string (section) + "]\n");
 		}
 
 		for (const auto &e : _entries) {

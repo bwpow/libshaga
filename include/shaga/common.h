@@ -8,8 +8,8 @@ All rights reserved.
 #ifndef HEAD_shaga_common
 #define HEAD_shaga_common
 
-#if (!defined (__cplusplus)) || (__cplusplus < 201402L)
-	#error At least C++14 compiler required.
+#if (!defined (__cplusplus)) || (__cplusplus < 201703L)
+	#error At least C++17 compiler required.
 #endif
 
 #if (defined(Q_CC_GNU) && Q_CC_GNU >= 408) || (defined(Q_CC_CLANG) && Q_CC_CLANG >= 302)
@@ -48,7 +48,7 @@ All rights reserved.
 #undef OS_LINUX
 #undef OS_MAC
 
-#if defined (_WIN32) || defined (__MINGW32__) || defined (__CYGWIN__)
+#if defined (_WIN32) || defined (_WIN64) || defined (__MINGW32__) || defined (__MINGW64__) || defined (__CYGWIN__)
 
 	#define OS_WIN
 
@@ -166,10 +166,10 @@ All rights reserved.
 #endif
 
 /* Detect endian */
-#if defined(_WIN32) || defined(_WIN64)
-	#define BYTE_ORDER __LITTLE_ENDIAN
-#elif !defined BYTE_ORDER
+#if __has_include(<endian.h>)
 	#include <endian.h>
+#elif defined(_WIN32) || defined(_WIN64)
+	#define BYTE_ORDER __LITTLE_ENDIAN
 #endif
 
 #ifndef LITTLE_ENDIAN
@@ -218,14 +218,20 @@ All rights reserved.
 
 namespace shaga
 {
-	typedef std::vector< std::string > COMMON_VECTOR;
-	typedef std::map< std::string, std::string > COMMON_MAP;
-	typedef std::multimap< std::string, std::string > COMMON_MULTIMAP;
-	typedef std::set< std::string > COMMON_SET;
-	typedef std::list< std::string > COMMON_LIST;
-	typedef std::deque< std::string > COMMON_DEQUE;
+	typedef std::map <std::string, std::string> COMMON_MAP;
+	typedef std::multimap <std::string, std::string> COMMON_MULTIMAP;
+
+	typedef std::vector <std::string> COMMON_VECTOR;
+	typedef std::set <std::string> COMMON_SET;
+	typedef std::list <std::string> COMMON_LIST;
+	typedef std::deque <std::string> COMMON_DEQUE;
 
 	typedef std::vector <COMMON_VECTOR> COMMON_COMMON_VECTOR;
+
+	typedef std::vector <std::string_view> VIEW_VECTOR;
+	typedef std::set <std::string_view> VIEW_SET;
+	typedef std::list <std::string_view> VIEW_LIST;
+	typedef std::deque <std::string_view> VIEW_DEQUE;
 
 	class CommonException: public std::exception
 	{
@@ -354,7 +360,7 @@ namespace shaga
 namespace shaga
 {
 	template <typename T>
-	void container_from_bin (T &out, const std::string &buf, size_t &offset)
+	void container_from_bin (T &out, const std::string_view buf, size_t &offset)
 	{
 		out.clear ();
 
@@ -372,7 +378,7 @@ namespace shaga
 	}
 
 	template <typename T>
-	void container_from_bin (T &out, const std::string &buf)
+	void container_from_bin (T &out, const std::string_view buf)
 	{
 		size_t offset = 0;
 		container_from_bin (out, buf, offset);
@@ -383,7 +389,7 @@ namespace shaga
 	}
 
 	template <typename T>
-	void container_from_ini (T &out, const shaga::INI &ini, const std::string &section, const std::string &key)
+	void container_from_ini (T &out, const shaga::INI &ini, const std::string_view section, const std::string_view key)
 	{
 		out.clear ();
 
@@ -409,7 +415,7 @@ namespace shaga
 	}
 
 	template <typename T>
-	void container_to_ini (const T &input, shaga::INI &ini, const std::string &section, const std::string &key)
+	void container_to_ini (const T &input, shaga::INI &ini, const std::string_view section, const std::string_view key)
 	{
 		if (input.empty () == true) {
 			return;

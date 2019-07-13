@@ -14,7 +14,6 @@ All rights reserved.
 #include <grp.h>
 
 namespace shaga {
-
 	void LINUX::add_to_epoll (int sock, const uint32_t ev, int epoll_fd, const bool should_modify_if_exists)
 	{
 		if (sock < 0) {
@@ -67,7 +66,7 @@ namespace shaga {
 		}
 	}
 
-	SHAGA_NODISCARD bool LINUX::login_to_uid (const std::string &text, uid_t &uid)
+	SHAGA_NODISCARD bool LINUX::login_to_uid (const std::string_view text, uid_t &uid)
 	{
 		bool ok = false;
 
@@ -85,7 +84,7 @@ namespace shaga {
 			struct passwd pwd;
 			struct passwd *result;
 
-			int ret = getpwnam_r (text.c_str (), &pwd, buf, bufsize, &result);
+			int ret = getpwnam_r (~text, &pwd, buf, bufsize, &result);
 			if (ret == 0) {
 				if (result != nullptr) {
 					uid = static_cast<int> (pwd.pw_uid);
@@ -105,7 +104,7 @@ namespace shaga {
 		return ok;
 	}
 
-	SHAGA_NODISCARD bool LINUX::group_to_gid (const std::string &text, gid_t &gid)
+	SHAGA_NODISCARD bool LINUX::group_to_gid (const std::string_view text, gid_t &gid)
 	{
 		bool ok = false;
 
@@ -123,7 +122,7 @@ namespace shaga {
 			struct group grp;
 			struct group *result;
 
-			int ret = getgrnam_r (text.c_str (), &grp, buf, bufsize, &result);
+			int ret = getgrnam_r (~text, &grp, buf, bufsize, &result);
 			if (ret == 0) {
 				if (result != nullptr) {
 					gid = static_cast<int> (grp.gr_gid);
@@ -142,6 +141,5 @@ namespace shaga {
 
 		return ok;
 	}
-
 }
 #endif // OS_LINUX

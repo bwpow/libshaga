@@ -13,7 +13,6 @@ All rights reserved.
 #ifdef SHAGA_THREADING
 
 namespace shaga {
-
 	class Semaphore
 	{
 		private:
@@ -85,7 +84,7 @@ namespace shaga {
 				return _cv.native_handle();
 			}
 	};
-
 }
+
 #endif // SHAGA_THREADING
 #endif // HEAD_shaga_Semaphore

@@ -13,18 +13,17 @@ All rights reserved.
 #ifndef OS_WIN
 
 namespace shaga {
-
 	void signal_handler (int sgn);
 	void signal_register_handlers (const bool ignore_pipe = false, const bool ignore_hup = false);
+}
 
-	namespace UNIX {
-		std::string get_hostname (const bool to_lowercase = false, const char specchar = '\0');
-		pid_t daemonize (const std::string &pidfile);
+namespace shaga::UNIX {
+	std::string get_hostname (const bool to_lowercase = false, const char specchar = '\0');
+	pid_t daemonize (const std::string_view pidfile);
 
-		void renice (const int prio);
-		void renice (std::shared_ptr<shaga::INI> ini);
-		void renice (const shaga::INI *ini);
-	}
+	void renice (const int prio);
+	void renice (std::shared_ptr<shaga::INI> ini);
+	void renice (const shaga::INI *ini);
 }
 
 #endif // OS_WIN

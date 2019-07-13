@@ -10,8 +10,7 @@ All rights reserved.
 
 #include "common.h"
 
-namespace shaga {
-
+namespace shaga::CRC {
 	static const uint_fast8_t _crc8_dallas_table[256] = {
 		0x00, 0x5e, 0xbc, 0xe2, 0x61, 0x3f, 0xdd, 0x83,
 		0xc2, 0x9c, 0x7e, 0x20, 0xa3, 0xfd, 0x1f, 0x41,
@@ -82,173 +81,169 @@ namespace shaga {
 		0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 	};
 
-	namespace CRC
+	/*** CRC-64 Jones ***/
+	static const uint64_t crc64_magic {0};
+
+	uint64_t crc64 (const char *buf, const size_t len, const uint64_t startval = 0);
+	uint64_t crc64 (const uint8_t *buf, const size_t len, const uint64_t startval = 0);
+
+	template<typename T>
+	uint64_t crc64 (const T &plain, const uint64_t startval = 0)
 	{
-		/*** CRC-64 Jones ***/
-		static const uint64_t crc64_magic {0};
+		return crc64 (plain.data (), plain.size (), startval);
+	}
 
-		uint64_t crc64 (const char *buf, const size_t len, const uint64_t startval = 0);
-		uint64_t crc64 (const uint8_t *buf, const size_t len, const uint64_t startval = 0);
+	size_t crc64_check (const std::string_view plain, const uint64_t startval = 0);
+	void crc64_append (std::string &plain, const uint64_t startval = 0);
 
-		template<typename T>
-		uint64_t crc64 (const T &plain, const uint64_t startval = 0)
-		{
-			return crc64 (plain.data (), plain.size (), startval);
-		}
+	/*** CRC-32 zlib compatible ***/
+	static const uint32_t crc32_zlib_magic {0x2144df1c};
 
-		size_t crc64_check (const std::string &plain, const uint64_t startval = 0);
-		void crc64_append (std::string &plain, const uint64_t startval = 0);
+	uint32_t crc32_zlib (const char *buf, const size_t len, const uint32_t startval = 0);
+	uint32_t crc32_zlib (const uint8_t *buf, const size_t len, const uint32_t startval = 0);
 
-		/*** CRC-32 zlib compatible ***/
-		static const uint32_t crc32_zlib_magic {0x2144df1c};
+	template<typename T>
+	uint32_t crc32_zlib (const T &plain, const uint32_t startval = 0)
+	{
+		return crc32_zlib (plain.data (), plain.size (), startval);
+	}
 
-		uint32_t crc32_zlib (const char *buf, const size_t len, const uint32_t startval = 0);
-		uint32_t crc32_zlib (const uint8_t *buf, const size_t len, const uint32_t startval = 0);
+	size_t crc32_zlib_check (const std::string_view plain, const uint32_t startval = 0);
+	void crc32_zlib_append (std::string &plain, const uint32_t startval = 0);
 
-		template<typename T>
-		uint32_t crc32_zlib (const T &plain, const uint32_t startval = 0)
-		{
-			return crc32_zlib (plain.data (), plain.size (), startval);
-		}
+	/*** CRC-32 Atmel CRCCU CCITT802.3 compatible ***/
+	uint32_t crc32_atmel (const char *buf, const size_t len, const uint32_t startval = UINT32_MAX);
+	uint32_t crc32_atmel (const uint8_t *buf, const size_t len, const uint32_t startval = UINT32_MAX);
 
-		size_t crc32_zlib_check (const std::string &plain, const uint32_t startval = 0);
-		void crc32_zlib_append (std::string &plain, const uint32_t startval = 0);
+	template<typename T>
+	uint32_t crc32_atmel (const T &plain, const uint32_t startval = UINT32_MAX)
+	{
+		return crc32_atmel (plain.data (), plain.size (), startval);
+	}
 
-		/*** CRC-32 Atmel CRCCU CCITT802.3 compatible ***/
-		uint32_t crc32_atmel (const char *buf, const size_t len, const uint32_t startval = UINT32_MAX);
-		uint32_t crc32_atmel (const uint8_t *buf, const size_t len, const uint32_t startval = UINT32_MAX);
+	size_t crc32_atmel_check (const std::string_view plain, const uint32_t startval = UINT32_MAX);
+	void crc32_atmel_append (std::string &plain, const uint32_t startval = UINT32_MAX);
 
-		template<typename T>
-		uint32_t crc32_atmel (const T &plain, const uint32_t startval = UINT32_MAX)
-		{
-			return crc32_atmel (plain.data (), plain.size (), startval);
-		}
+	/*** CRC-32-Castagnoli ***/
+	static const uint32_t crc32c_magic {0x48674bc7};
 
-		size_t crc32_atmel_check (const std::string &plain, const uint32_t startval = UINT32_MAX);
-		void crc32_atmel_append (std::string &plain, const uint32_t startval = UINT32_MAX);
+	uint32_t crc32c (const char *buf, const size_t len, const uint32_t startval = 0);
+	uint32_t crc32c (const uint8_t *buf, const size_t len, const uint32_t startval = 0);
 
-		/*** CRC-32-Castagnoli ***/
-		static const uint32_t crc32c_magic {0x48674bc7};
+	template<typename T>
+	uint32_t crc32c (const T &plain, const uint32_t startval = 0)
+	{
+		return crc32c (plain.data (), plain.size (), startval);
+	}
 
-		uint32_t crc32c (const char *buf, const size_t len, const uint32_t startval = 0);
-		uint32_t crc32c (const uint8_t *buf, const size_t len, const uint32_t startval = 0);
+	size_t crc32c_check (const std::string_view plain, const uint32_t startval = 0);
+	void crc32c_append (std::string &plain, const uint32_t startval = 0);
 
-		template<typename T>
-		uint32_t crc32c (const T &plain, const uint32_t startval = 0)
-		{
-			return crc32c (plain.data (), plain.size (), startval);
-		}
+	/*** CRC-16 Modbus compatible ***/
+	static const uint16_t crc16_modbus_magic {0};
 
-		size_t crc32c_check (const std::string &plain, const uint32_t startval = 0);
-		void crc32c_append (std::string &plain, const uint32_t startval = 0);
+	uint16_t crc16_modbus (const char *buf, const size_t len, const uint16_t startval = UINT16_MAX);
+	uint16_t crc16_modbus (const uint8_t *buf, const size_t len, const uint16_t startval = UINT16_MAX);
 
-		/*** CRC-16 Modbus compatible ***/
-		static const uint16_t crc16_modbus_magic {0};
+	template<typename T>
+	uint16_t crc16_modbus (const T &plain, const uint16_t startval = UINT16_MAX)
+	{
+		return crc16_modbus (plain.data (), plain.size (), startval);
+	}
 
-		uint16_t crc16_modbus (const char *buf, const size_t len, const uint16_t startval = UINT16_MAX);
-		uint16_t crc16_modbus (const uint8_t *buf, const size_t len, const uint16_t startval = UINT16_MAX);
+	size_t crc16_modbus_check (const std::string_view plain, const uint16_t startval = UINT16_MAX);
+	void crc16_modbus_append (std::string &plain, const uint16_t startval = UINT16_MAX);
 
-		template<typename T>
-		uint16_t crc16_modbus (const T &plain, const uint16_t startval = UINT16_MAX)
-		{
-			return crc16_modbus (plain.data (), plain.size (), startval);
-		}
+	/*** CRC-8 Dallas/Maxim ***/
+	static const uint8_t crc8_dallas_magic {0};
 
-		size_t crc16_modbus_check (const std::string &plain, const uint16_t startval = UINT16_MAX);
-		void crc16_modbus_append (std::string &plain, const uint16_t startval = UINT16_MAX);
+	uint8_t crc8_dallas (const char *buf, const size_t len, const uint8_t startval = 0);
+	uint8_t crc8_dallas (const uint8_t *buf, const size_t len, const uint8_t startval = 0);
 
-		/*** CRC-8 Dallas/Maxim ***/
-		static const uint8_t crc8_dallas_magic {0};
+	template<typename T>
+	uint8_t crc8_dallas (const T &plain, const uint8_t startval = 0)
+	{
+		return crc8_dallas (plain.data (), plain.size (), startval);
+	}
 
-		uint8_t crc8_dallas (const char *buf, const size_t len, const uint8_t startval = 0);
-		uint8_t crc8_dallas (const uint8_t *buf, const size_t len, const uint8_t startval = 0);
+	size_t crc8_dallas_check (const std::string_view plain, const uint8_t startval = 0);
+	void crc8_dallas_append (std::string &plain, const uint8_t startval = 0);
 
-		template<typename T>
-		uint8_t crc8_dallas (const T &plain, const uint8_t startval = 0)
-		{
-			return crc8_dallas (plain.data (), plain.size (), startval);
-		}
+	/*** SHA-256 ***/
+	std::string sha256 (const char *buf, const size_t len);
+	std::string sha256 (const uint8_t *buf, const size_t len);
 
-		size_t crc8_dallas_check (const std::string &plain, const uint8_t startval = 0);
-		void crc8_dallas_append (std::string &plain, const uint8_t startval = 0);
+	template<class T>
+	std::string sha256 (const T &plain)
+	{
+		return sha256 (plain.data (), plain.size ());
+	}
 
-		/*** SHA-256 ***/
-		std::string sha256 (const char *buf, const size_t len);
-		std::string sha256 (const uint8_t *buf, const size_t len);
+	/*** SHA-512 ***/
+	std::string sha512 (const char *buf, const size_t len);
+	std::string sha512 (const uint8_t *buf, const size_t len);
 
-		template<class T>
-		std::string sha256 (const T &plain)
-		{
-			return sha256 (plain.data (), plain.size ());
-		}
+	template<class T>
+	std::string sha512 (const T &plain)
+	{
+		return sha512 (plain.data (), plain.size ());
+	}
 
-		/*** SHA-512 ***/
-		std::string sha512 (const char *buf, const size_t len);
-		std::string sha512 (const uint8_t *buf, const size_t len);
+	/*** SipHash ***/
+	typedef std::pair<uint64_t, uint64_t> SipHash128_t;
 
-		template<class T>
-		std::string sha512 (const T &plain)
-		{
-			return sha512 (plain.data (), plain.size ());
-		}
+	SipHash128_t siphash_extract_key (const std::string_view key);
 
-		/*** SipHash ***/
-		typedef std::pair<uint64_t, uint64_t> SipHash128_t;
+	uint64_t siphash24 (const char *buf, const size_t len, const SipHash128_t &key);
+	uint64_t siphash24 (const uint8_t *buf, const size_t len, const SipHash128_t &key);
+	uint64_t siphash48 (const char *buf, const size_t len, const SipHash128_t &key);
+	uint64_t siphash48 (const uint8_t *buf, const size_t len, const SipHash128_t &key);
 
-		SipHash128_t siphash_extract_key (const std::string &key);
+	template<typename T>
+	uint64_t siphash24 (const T &plain, const SipHash128_t &key)
+	{
+		return siphash24 (plain.data (), plain.size (), key);
+	}
 
-		uint64_t siphash24 (const char *buf, const size_t len, const SipHash128_t &key);
-		uint64_t siphash24 (const uint8_t *buf, const size_t len, const SipHash128_t &key);
-		uint64_t siphash48 (const char *buf, const size_t len, const SipHash128_t &key);
-		uint64_t siphash48 (const uint8_t *buf, const size_t len, const SipHash128_t &key);
+	template<typename T>
+	uint64_t siphash48 (const T &plain, const SipHash128_t &key)
+	{
+		return siphash48 (plain.data (), plain.size (), key);
+	}
 
-		template<typename T>
-		uint64_t siphash24 (const T &plain, const SipHash128_t &key)
-		{
-			return siphash24 (plain.data (), plain.size (), key);
-		}
+	std::string siphash24_128 (const char *buf, const size_t len, const SipHash128_t &key);
+	std::string siphash24_128 (const uint8_t *buf, const size_t len, const SipHash128_t &key);
+	std::string siphash48_128 (const char *buf, const size_t len, const SipHash128_t &key);
+	std::string siphash48_128 (const uint8_t *buf, const size_t len, const SipHash128_t &key);
 
-		template<typename T>
-		uint64_t siphash48 (const T &plain, const SipHash128_t &key)
-		{
-			return siphash48 (plain.data (), plain.size (), key);
-		}
+	template<typename T>
+	std::string siphash24_128 (const T &plain, const SipHash128_t &key)
+	{
+		return siphash24_128 (plain.data (), plain.size (), key);
+	}
 
-		std::string siphash24_128 (const char *buf, const size_t len, const SipHash128_t &key);
-		std::string siphash24_128 (const uint8_t *buf, const size_t len, const SipHash128_t &key);
-		std::string siphash48_128 (const char *buf, const size_t len, const SipHash128_t &key);
-		std::string siphash48_128 (const uint8_t *buf, const size_t len, const SipHash128_t &key);
+	template<typename T>
+	std::string siphash48_128 (const T &plain, const SipHash128_t &key)
+	{
+		return siphash48_128 (plain.data (), plain.size (), key);
+	}
 
-		template<typename T>
-		std::string siphash24_128 (const T &plain, const SipHash128_t &key)
-		{
-			return siphash24_128 (plain.data (), plain.size (), key);
-		}
+	SipHash128_t siphash24_128t (const char *buf, const size_t len, const SipHash128_t &key);
+	SipHash128_t siphash24_128t (const uint8_t *buf, const size_t len, const SipHash128_t &key);
+	SipHash128_t siphash48_128t (const char *buf, const size_t len, const SipHash128_t &key);
+	SipHash128_t siphash48_128t (const uint8_t *buf, const size_t len, const SipHash128_t &key);
 
-		template<typename T>
-		std::string siphash48_128 (const T &plain, const SipHash128_t &key)
-		{
-			return siphash48_128 (plain.data (), plain.size (), key);
-		}
+	template<typename T>
+	SipHash128_t siphash24_128t (const T &plain, const SipHash128_t &key)
+	{
+		return siphash24_128t (plain.data (), plain.size (), key);
+	}
 
-		SipHash128_t siphash24_128t (const char *buf, const size_t len, const SipHash128_t &key);
-		SipHash128_t siphash24_128t (const uint8_t *buf, const size_t len, const SipHash128_t &key);
-		SipHash128_t siphash48_128t (const char *buf, const size_t len, const SipHash128_t &key);
-		SipHash128_t siphash48_128t (const uint8_t *buf, const size_t len, const SipHash128_t &key);
-
-		template<typename T>
-		SipHash128_t siphash24_128t (const T &plain, const SipHash128_t &key)
-		{
-			return siphash24_128t (plain.data (), plain.size (), key);
-		}
-
-		template<typename T>
-		SipHash128_t siphash48_128t (const T &plain, const SipHash128_t &key)
-		{
-			return siphash48_128t (plain.data (), plain.size (), key);
-		}
-
-	};
-};
+	template<typename T>
+	SipHash128_t siphash48_128t (const T &plain, const SipHash128_t &key)
+	{
+		return siphash48_128t (plain.data (), plain.size (), key);
+	}
+}
 
 #endif // HEAD_shaga_CRC

@@ -91,14 +91,14 @@ TEST (STR, sprintf)
 
 TEST (STR, bool)
 {
-	EXPECT_TRUE (STR::to_bool ("on"));
-	EXPECT_TRUE (STR::to_bool ("yes"));
-	EXPECT_TRUE (STR::to_bool ("true"));
+	EXPECT_TRUE (STR::to_bool ("oN"));
+	EXPECT_TRUE (STR::to_bool ("yeS"));
+	EXPECT_TRUE (STR::to_bool ("TruE"));
 	EXPECT_TRUE (STR::to_bool ("1"));
 
-	EXPECT_FALSE (STR::to_bool ("off"));
-	EXPECT_FALSE (STR::to_bool ("no"));
-	EXPECT_FALSE (STR::to_bool ("false"));
+	EXPECT_FALSE (STR::to_bool ("ofF"));
+	EXPECT_FALSE (STR::to_bool ("nO"));
+	EXPECT_FALSE (STR::to_bool ("FaLse"));
 	EXPECT_FALSE (STR::to_bool ("0"));
 
 	EXPECT_THROW (STR::to_bool ("something else"), CommonException);
@@ -125,7 +125,7 @@ TEST (STR, uint16)
 {
 	EXPECT_TRUE (STR::to_uint16 ("0") == 0);
 	EXPECT_TRUE (STR::to_uint16 ("65535") == 65535);
-	EXPECT_TRUE (STR::to_uint16 ("ffff", 16) == 65535);
+	EXPECT_TRUE (STR::to_uint16 ("fFfF", 16) == 65535);
 
 	EXPECT_TRUE (STR::from_int (static_cast <uint16_t> (0)) == "0");
 	EXPECT_TRUE (STR::from_int (static_cast <uint16_t> (65535)) == "65535");
@@ -139,7 +139,7 @@ TEST (STR, uint32)
 {
 	EXPECT_TRUE (STR::to_uint32 ("0") == 0);
 	EXPECT_TRUE (STR::to_uint32 ("4294967295") == 4294967295LL);
-	EXPECT_TRUE (STR::to_uint32 ("ffffffff", 16) == 4294967295LL);
+	EXPECT_TRUE (STR::to_uint32 ("ffffFFff", 16) == 4294967295LL);
 
 	EXPECT_TRUE (STR::from_int (static_cast <uint32_t> (0)) == "0");
 	EXPECT_TRUE (STR::from_int (static_cast <uint32_t> (4294967295LL)) == "4294967295");
@@ -153,14 +153,14 @@ TEST (STR, uint64)
 {
 	EXPECT_TRUE (STR::to_uint64 ("0") == 0);
 	EXPECT_TRUE (STR::to_uint64 ("18446744073709551615") == 18446744073709551615ULL);
-	EXPECT_TRUE (STR::to_uint64 ("   ff'ff'ff'ff'ff'ff'ff'ff   ", 16) == 18446744073709551615ULL);
+	EXPECT_TRUE (STR::to_uint64 ("   ff'FF'ff'ff'ff'ff'ff'ff   ", 16) == 18446744073709551615ULL);
 
 	EXPECT_TRUE (STR::from_int (static_cast <uint64_t> (0)) == "0");
 	EXPECT_TRUE (STR::from_int (static_cast <uint64_t> (18446744073709551615ULL)) == "18446744073709551615");
 
 	EXPECT_THROW (STR::to_uint64 ("-1"), CommonException);
 	EXPECT_THROW (STR::to_uint64 ("18446744073709551616"), CommonException);
-	EXPECT_THROW (STR::to_uint64 ("ff'ff'ff'ff'ff'ff'ff'ff'00", 16), CommonException);
+	EXPECT_THROW (STR::to_uint64 ("ff'ff'ff'FF'ff'ff'ff'ff'00", 16), CommonException);
 	EXPECT_THROW (STR::to_uint64 ("a", 10), CommonException);
 	EXPECT_THROW (STR::to_uint64 ("0", 1), CommonException);
 }
@@ -170,6 +170,7 @@ TEST (STR, int8)
 	EXPECT_TRUE (STR::to_int8 ("-128") == (-128));
 	EXPECT_TRUE (STR::to_int8 ("127") == 127);
 	EXPECT_TRUE (STR::to_int8 ("7f", 16) == 127);
+	EXPECT_TRUE (STR::to_int8 ("7F", 16) == 127);
 
 	EXPECT_TRUE (STR::from_int (static_cast <int8_t> (-128)) == "-128");
 	EXPECT_TRUE (STR::from_int (static_cast <int8_t> (127)) == "127");
@@ -182,7 +183,7 @@ TEST (STR, int16)
 {
 	EXPECT_TRUE (STR::to_int16 ("-32768") == (-32768));
 	EXPECT_TRUE (STR::to_int16 ("32767") == 32767);
-	EXPECT_TRUE (STR::to_int16 ("7fff", 16) == 32767);
+	EXPECT_TRUE (STR::to_int16 ("7ffF", 16) == 32767);
 
 	EXPECT_TRUE (STR::from_int (static_cast <int16_t> (-32768)) == "-32768");
 	EXPECT_TRUE (STR::from_int (static_cast <int16_t> (32767)) == "32767");
@@ -196,7 +197,7 @@ TEST (STR, int32)
 {
 	EXPECT_TRUE (STR::to_int32 ("-2147483648") == (-2147483648LL));
 	EXPECT_TRUE (STR::to_int32 ("2147483647") == 2147483647LL);
-	EXPECT_TRUE (STR::to_int32 ("7fffffff", 16) == 2147483647LL);
+	EXPECT_TRUE (STR::to_int32 ("7ffffFff", 16) == 2147483647LL);
 
 	EXPECT_TRUE (STR::from_int (static_cast <int32_t> (-2147483648LL)) == "-2147483648");
 	EXPECT_TRUE (STR::from_int (static_cast <int32_t> (2147483647LL)) == "2147483647");
@@ -210,13 +211,64 @@ TEST (STR, int64)
 {
 	EXPECT_TRUE (STR::to_int64 ("-9223372036854775808") == (-9223372036854775807LL - 1));
 	EXPECT_TRUE (STR::to_int64 ("9223372036854775807") == 9223372036854775807LL);
-	EXPECT_TRUE (STR::to_int64 ("7fffffffffffffff", 16) == 9223372036854775807LL);
+	EXPECT_TRUE (STR::to_int64 ("7fffffFFFFffffff", 16) == 9223372036854775807LL);
 
 	EXPECT_TRUE (STR::from_int (static_cast <int64_t> (-9223372036854775807LL - 1)) == "-9223372036854775808");
 	EXPECT_TRUE (STR::from_int (static_cast <int64_t> (9223372036854775807LL)) == "9223372036854775807");
 
 	EXPECT_THROW (STR::to_int64 ("-9223372036854775809"), CommonException);
 	EXPECT_THROW (STR::to_int64 ("9223372036854775808"), CommonException);
+}
+
+TEST (STR, trim)
+{
+	const std::string_view chars ("\n\r\t\0 ", 5);
+	const char arr[] = {' ', ' ', 'a', 'b', ' ', 'c', 'd', ' ', ' ', '\0', '\0', '\0'};
+	const char arr2[] = {' ', ' ', '\t', '\t', ' ', '\t', '\t', ' ', ' ', '\0', '\0', '\0'};
+
+	auto ltrim = [](const char *arr, const size_t len, const std::string_view chars) -> size_t
+	{
+		std::string s (arr, len);
+		std::string_view v (arr, len);
+
+		STR::ltrim (s, chars);
+		STR::ltrim (v, chars);
+
+		EXPECT_TRUE (s.size () == v.size ());
+		return s.size ();
+	};
+
+	auto rtrim = [](const char *arr, const size_t len, const std::string_view chars) -> size_t
+	{
+		std::string s (arr, len);
+		std::string_view v (arr, len);
+
+		STR::rtrim (s, chars);
+		STR::rtrim (v, chars);
+
+		EXPECT_TRUE (s.size () == v.size ()) << s.size () << " " << v.size ();
+		return s.size ();
+	};
+
+	auto trim = [](const char *arr, const size_t len, const std::string_view chars) -> size_t
+	{
+		std::string s (arr, len);
+		std::string_view v (arr, len);
+
+		STR::trim (s, chars);
+		STR::trim (v, chars);
+
+		EXPECT_TRUE (s.size () == v.size ());
+		return s.size ();
+	};
+
+	EXPECT_TRUE (ltrim (arr, sizeof (arr), chars) == sizeof (arr) - 2);
+	EXPECT_TRUE (rtrim (arr, sizeof (arr), chars) == sizeof (arr) - 5);
+	EXPECT_TRUE (trim (arr, sizeof (arr), chars) == sizeof (arr) - 7);
+
+	EXPECT_TRUE (ltrim (arr2, sizeof (arr2), chars) == 0);
+	EXPECT_TRUE (rtrim (arr2, sizeof (arr2), chars) == 0);
+	EXPECT_TRUE (trim (arr2, sizeof (arr2), chars) == 0);
 }
 
 TEST (STR, split_join)

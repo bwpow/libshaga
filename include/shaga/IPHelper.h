@@ -19,7 +19,6 @@ All rights reserved.
 #endif // OS_WIN
 
 namespace shaga {
-
 	class IPHelper
 	{
 		public:
@@ -86,7 +85,6 @@ namespace shaga {
 			friend bool operator== (const IPHelper &a, const IPHelper &b);
 			friend bool operator< (const IPHelper &a, const IPHelper &b);
 	};
-
 }
 
 #endif // HEAD_shaga_IPHelper

@@ -407,7 +407,6 @@ static inline CRC::SipHash128_t _calc_siphash48_128t SIPHASH_PARAMS
 	return std::make_pair (val, vv0 ^ vv1 ^ vv2 ^ vv3);
 }
 
-#undef ROTL
 #undef SIPHASH_ROUND
 #undef SIPHASH_LAST
 #undef SIPHASH_BEGIN

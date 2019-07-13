@@ -11,7 +11,6 @@ All rights reserved.
 #include "common.h"
 
 namespace shaga {
-
 	class ShSocket : public std::enable_shared_from_this<ShSocket>
 	{
 		private:

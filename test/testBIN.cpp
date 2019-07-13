@@ -129,31 +129,60 @@ TEST (BIN, big_endian_from)
 	EXPECT_TRUE (BIN::be_from_uint64 (val) == "HGFEDCBA");
 }
 
-TEST (BIN, big_endian_to)
+template <typename T>
+static void _big_endian_to (void)
 {
-	BIN::endian_detect ();
-
 	uint64_t val = 0;
+	uint64_t vbl = 0;
+	size_t offset;
 
 	uint64_t testval = 0;
 	for (size_t i = 0; i < 8; i++) {
 		testval |= static_cast<uint64_t> ('A' + i) << (i * 8);
 	}
 
-	val |= BIN::be_to_uint8 ("A");
+	val |= BIN::be_to_uint8 (T("A"));
 	EXPECT_TRUE (val == (testval & 0xff));
 
-	val |= BIN::be_to_uint16 ("BA");
+	offset = 0;
+	vbl |= BIN::be_to_uint8 (T("A"), offset);
+	EXPECT_TRUE (vbl == (testval & 0xff));
+
+	val |= BIN::be_to_uint16 (T("BA"));
 	EXPECT_TRUE (val == (testval & 0xff'ff));
 
-	val |= BIN::be_to_uint24 ("CBA");
+	offset = 0;
+	vbl |= BIN::be_to_uint16 (T("BA"), offset);
+	EXPECT_TRUE (vbl == (testval & 0xff'ff));
+
+	val |= BIN::be_to_uint24 (T("CBA"));
 	EXPECT_TRUE (val == (testval & 0xff'ff'ff));
 
-	val |= BIN::be_to_uint32 ("DCBA");
+	offset = 0;
+	vbl |= BIN::be_to_uint24 (T("CBA"), offset);
+	EXPECT_TRUE (vbl == (testval & 0xff'ff'ff));
+
+	val |= BIN::be_to_uint32 (T("DCBA"));
 	EXPECT_TRUE (val == (testval & 0xff'ff'ff'ff));
 
-	val |= BIN::be_to_uint64 ("HGFEDCBA");
+	offset = 0;
+	vbl |= BIN::be_to_uint32 (T("DCBA"), offset);
+	EXPECT_TRUE (vbl == (testval & 0xff'ff'ff'ff));
+
+	val |= BIN::be_to_uint64 (T("HGFEDCBA"));
 	EXPECT_TRUE (val == testval);
+
+	offset = 0;
+	vbl |= BIN::be_to_uint64 (T("HGFEDCBA"), offset);
+	EXPECT_TRUE (vbl == testval);
+};
+
+TEST (BIN, big_endian_to)
+{
+	BIN::endian_detect ();
+
+	_big_endian_to<std::string>();
+	_big_endian_to<std::string_view>();
 }
 
 TEST (BIN, little_endian_from)
@@ -172,45 +201,81 @@ TEST (BIN, little_endian_from)
 	EXPECT_TRUE (BIN::from_uint64 (val) == "ABCDEFGH");
 }
 
-TEST (BIN, little_endian_to)
+template <typename T>
+static void _little_endian_to (void)
 {
-	BIN::endian_detect ();
-
 	uint64_t val = 0;
+	uint64_t vbl = 0;
+	size_t offset;
 
 	uint64_t testval = 0;
 	for (size_t i = 0; i < 8; i++) {
 		testval |= static_cast<uint64_t> ('A' + i) << (i * 8);
 	}
 
-	val |= BIN::to_uint8 ("A");
+	val |= BIN::to_uint8 (T("A"));
 	EXPECT_TRUE (val == (testval & 0xff));
 
-	val |= BIN::to_uint16 ("AB");
+	offset = 0;
+	vbl |= BIN::to_uint8 (T("A"), offset);
+	EXPECT_TRUE (vbl == (testval & 0xff));
+
+	val |= BIN::to_uint16 (T("AB"));
 	EXPECT_TRUE (val == (testval & 0xff'ff));
 
-	val |= BIN::to_uint24 ("ABC");
+	offset = 0;
+	vbl |= BIN::to_uint16 (T("AB"), offset);
+	EXPECT_TRUE (vbl == (testval & 0xff'ff));
+
+	val |= BIN::to_uint24 (T("ABC"));
 	EXPECT_TRUE (val == (testval & 0xff'ff'ff));
 
-	val |= BIN::to_uint32 ("ABCD");
+	offset = 0;
+	vbl |= BIN::to_uint24 (T("ABC"), offset);
+	EXPECT_TRUE (vbl == (testval & 0xff'ff'ff));
+
+	val |= BIN::to_uint32 (T("ABCD"));
 	EXPECT_TRUE (val == (testval & 0xff'ff'ff'ff));
 
-	val |= BIN::to_uint64 ("ABCDEFGH");
+	offset = 0;
+	vbl |= BIN::to_uint32 (T("ABCD"), offset);
+	EXPECT_TRUE (vbl == (testval & 0xff'ff'ff'ff));
+
+	val |= BIN::to_uint64 (T("ABCDEFGH"));
 	EXPECT_TRUE (val == testval);
+
+	offset = 0;
+	vbl |= BIN::to_uint64 (T("ABCDEFGH"), offset);
+	EXPECT_TRUE (vbl == testval);
 }
 
-TEST (BIN, size)
+TEST (BIN, little_endian_to)
+{
+	BIN::endian_detect ();
+
+	_little_endian_to<std::string>();
+	_little_endian_to<std::string_view>();
+}
+
+template <typename T>
+static void _size (void)
 {
 	for (size_t i = 1; i < 29; i++) {
 		const size_t cnt = (1 << i) - 1;
 		const std::string str = BIN::from_size (cnt);
 
 		size_t offset = 0;
-		const size_t output = BIN::to_size (str, offset);
+		const size_t output = BIN::to_size (T(str), offset);
 
 		EXPECT_TRUE (str.size () == offset);
 		EXPECT_TRUE (cnt == output);
 	}
+}
+
+TEST (BIN, size)
+{
+	_size<std::string> ();
+	_size<std::string_view> ();
 }
 
 //TEST (BIN, special_chars)

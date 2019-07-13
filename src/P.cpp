@@ -59,17 +59,17 @@ namespace shaga {
 
 	/////////////////////////////////////////////////////////////
 
-	void P::set_dir_log (const std::string &var)
+	void P::set_dir_log (const std::string_view var)
 	{
 		_dir_log.assign (var);
 	}
 
-	void P::set_name_log (const std::string &var)
+	void P::set_name_log (const std::string_view var)
 	{
 		_name_log.assign (var);
 	}
 
-	void P::set_app_name (const std::string &var)
+	void P::set_app_name (const std::string_view var)
 	{
 		_app_name.assign (var);
 	}
@@ -182,7 +182,7 @@ namespace shaga {
 
 #ifndef OS_WIN
 		if (_DirLogEnum::SYSLOG == _dir_log_enum) {
-			::openlog (_name_log.c_str (), LOG_PID | LOG_CONS, LOG_USER);
+			::openlog (~_name_log, LOG_PID | LOG_CONS, LOG_USER);
 			::syslog (LOG_NOTICE, _printf_buf);
 			::closelog ();
 		}
@@ -201,7 +201,7 @@ namespace shaga {
 			::fflush (stderr);
 		}
 		else {
-			::snprintf (_printf_fname, sizeof (_printf_fname), "%s/%s_%04d-%02d-%02d.log", _dir_log.c_str (), _name_log.c_str (), local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday);
+			::snprintf (_printf_fname, sizeof (_printf_fname), "%s/%s_%04d-%02d-%02d.log", ~_dir_log, ~_name_log, local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday);
 
 			_printf_entries.push_back (std::string ());
 
@@ -249,13 +249,13 @@ namespace shaga {
 			}
 			catch (...) {
 #ifndef OS_WIN
-				::openlog (_name_log.c_str (), LOG_PID | LOG_CONS, LOG_USER);
+				::openlog (~_name_log, LOG_PID | LOG_CONS, LOG_USER);
 				for (const std::string &entry : _printf_entries) {
 					if (entry.empty () == true) {
 						::syslog (LOG_NOTICE, _printf_buf);
 					}
 					else {
-						::syslog (LOG_ERR, entry.c_str ());
+						::syslog (LOG_ERR, ~entry);
 					}
 				}
 				_printf_entries.clear ();
@@ -294,5 +294,4 @@ namespace shaga {
 
 		printf ("[DEBUG] %s", _debug_printf_buf);
 	}
-
 }

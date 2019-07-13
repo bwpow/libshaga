@@ -11,7 +11,6 @@ All rights reserved.
 #include "common.h"
 
 namespace shaga {
-
 	typedef std::list <Chunk> CHUNKLIST;
 	typedef std::multiset <Chunk> CHUNKSET;
 	typedef std::pair <CHUNKSET::const_iterator, CHUNKSET::const_iterator> CHUNKSET_RANGE;
@@ -115,10 +114,10 @@ namespace shaga {
 			static const uint8_t max_ttl {0x7};
 			static const uint8_t max_hop_counter {0x7};
 
-			static const uint_fast8_t channel_primary {0b10};
-			static const uint_fast8_t channel_secondary {0b01};
+			static const uint_fast8_t channel_primary {0b01};
+			static const uint_fast8_t channel_secondary {0b10};
 
-			static uint32_t key_to_bin (const std::string &key);
+			static uint32_t key_to_bin (const std::string_view key);
 			static std::string bin_to_key (const uint32_t bkey);
 
 		private:
@@ -133,14 +132,14 @@ namespace shaga {
 			HWIDMASK _hwid_dest;
 			std::list<TRACERT_HOP> _tracert_hops;
 
-			bool should_continue (const std::string &s, const size_t offset) const;
+			bool should_continue (const std::string_view s, const size_t offset) const;
 
 			void _reset (void);
 
 			void _construct (void);
 
 			template<typename ... Types>
-			void _construct (const std::string &payload, Types&& ... rest)
+			void _construct (const std::string_view payload, Types&& ... rest)
 			{
 				_payload.assign (payload);
 				_construct (rest...);
@@ -207,13 +206,13 @@ namespace shaga {
 			ChunkMeta meta;
 
 			Chunk ();
-			Chunk (const std::string &bin, size_t &offset);
+			Chunk (const std::string_view bin, size_t &offset);
 
-			Chunk (const HWID hwid_source, const std::string &type);
+			Chunk (const HWID hwid_source, const std::string_view type);
 			Chunk (const HWID hwid_source, const uint32_t type);
 
 			template<typename ... Types>
-			Chunk (const HWID hwid_source, const std::string &type, Types&& ... rest) : Chunk (hwid_source, type)
+			Chunk (const HWID hwid_source, const std::string_view type, Types&& ... rest) : Chunk (hwid_source, type)
 			{
 				_construct (rest...);
 			}
@@ -238,10 +237,15 @@ namespace shaga {
 			std::string get_type (void) const;
 			uint32_t get_num_type (void) const;
 
-			void set_payload (const std::string &payload);
+			void set_payload (const std::string_view payload);
 			void set_payload (std::string &&payload);
 			void swap_payload (std::string &other);
-			std::string get_payload (void) const;
+
+			template<typename T = std::string_view>
+			T get_payload (void) const
+			{
+				return _payload;
+			}
 
 			void set_prio (const Priority prio);
 			Priority get_prio (void) const;
@@ -290,7 +294,7 @@ namespace shaga {
 	Chunk::TrustLevel uint8_to_trustlevel (const uint8_t v);
 	uint8_t trustlevel_to_uint8 (const Chunk::TrustLevel v);
 	std::string trustlevel_to_string (const Chunk::TrustLevel level);
-	Chunk::TrustLevel string_to_trustlevel (const std::string &str);
+	Chunk::TrustLevel string_to_trustlevel (const std::string_view str);
 
 	Chunk::Priority uint8_to_priority (const uint8_t v);
 	uint8_t priority_to_uint8 (const Chunk::Priority v);
@@ -303,28 +307,28 @@ namespace shaga {
 	bool channel_to_bool (const Chunk::Channel channel);
 	std::string channel_to_string (const Chunk::Channel channel);
 
-	CHUNKLIST chunkset_extract_type (const CHUNKSET &cs, const std::string &type);
-	size_t chunkset_count_type (const CHUNKSET &cs, const std::string &type);
+	CHUNKLIST chunkset_extract_type (const CHUNKSET &cs, const std::string_view type);
+	size_t chunkset_count_type (const CHUNKSET &cs, const std::string_view type);
 
-	CHUNKLIST bin_to_chunklist (const std::string &s, size_t &offset);
-	CHUNKLIST bin_to_chunklist (const std::string &s);
+	CHUNKLIST bin_to_chunklist (const std::string_view s, size_t &offset);
+	CHUNKLIST bin_to_chunklist (const std::string_view s);
 
 	/* Append to CHUNKLIST &cs */
-	void bin_to_chunklist (const std::string &s, size_t &offset, CHUNKLIST &cs);
+	void bin_to_chunklist (const std::string_view s, size_t &offset, CHUNKLIST &cs);
 	/* Append to CHUNKLIST &cs */
-	void bin_to_chunklist (const std::string &s, CHUNKLIST &cs);
+	void bin_to_chunklist (const std::string_view s, CHUNKLIST &cs);
 
 	/* Append out std::string &out */
 	void chunklist_to_bin (CHUNKLIST &cs, std::string &out, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool erase_skipped = false);
 	std::string chunklist_to_bin (CHUNKLIST &cs, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool erase_skipped = false);
 
-	CHUNKSET bin_to_chunkset (const std::string &s, size_t &offset);
-	CHUNKSET bin_to_chunkset (const std::string &s);
+	CHUNKSET bin_to_chunkset (const std::string_view s, size_t &offset);
+	CHUNKSET bin_to_chunkset (const std::string_view s);
 
 	/* Append to CHUNKSET &cs */
-	void bin_to_chunkset (const std::string &s, size_t &offset, CHUNKSET &cs);
+	void bin_to_chunkset (const std::string_view s, size_t &offset, CHUNKSET &cs);
 	/* Append to CHUNKSET &cs */
-	void bin_to_chunkset (const std::string &s, CHUNKSET &cs);
+	void bin_to_chunkset (const std::string_view s, CHUNKSET &cs);
 
 	/* Append out std::string &out */
 	void chunkset_to_bin (CHUNKSET &cs, std::string &out, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool thr = true);

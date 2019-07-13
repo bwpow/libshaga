@@ -13,10 +13,8 @@ All rights reserved.
 #ifdef OS_WIN
 
 namespace shaga {
-
 	void signal_handler (int sgn);
 	void signal_register_handlers (const bool ignore_pipe = false, const bool ignore_hup = false);
-
 }
 
 #endif // OS_WIN

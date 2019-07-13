@@ -11,7 +11,6 @@ All rights reserved.
 #include "common.h"
 
 namespace shaga {
-
 #define RING(x) if ((x) >= _size) { (x) = 0; }
 
 	template<class T>

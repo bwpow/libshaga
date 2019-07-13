@@ -11,6 +11,38 @@ All rights reserved.
 
 namespace shaga {
 
+	static const size_t _operator_cache_max_size {6};
+	#ifdef SHAGA_THREADING
+		static thread_local size_t _operator_cache_now {0};
+		static thread_local std::array<std::string, _operator_cache_max_size> _operator_cache;
+	#else
+		static size_t _operator_cache_now {0};
+		static std::array<std::string, _operator_cache_max_size> _operator_cache;
+	#endif // SHAGA_THREADING
+
+	static const char _null_terminated_empty_str[1] = {'\0'};
+
+	const char* operator~ (const std::string &src)
+	{
+		return src.c_str ();
+	}
+
+	const char* operator~ (const std::string_view &src)
+	{
+		if (src.empty ()) {
+			return _null_terminated_empty_str;
+		}
+		else if (src.back () == '\0') {
+			return src.data ();
+		}
+		else {
+			++_operator_cache_now;
+			_operator_cache_now %= _operator_cache_max_size;
+			_operator_cache[_operator_cache_now].assign (src);
+			return _operator_cache[_operator_cache_now].c_str ();
+		}
+	}
+
 	void STR::sprintf (std::string &str, const char *fmt, va_list &ap)
 	{
 		if (str.capacity () < 8) {
@@ -71,7 +103,7 @@ namespace shaga {
 		sprintf (str, fmt, ap);
 		::va_end (ap);
 
-		v.push_back (str);
+		v.push_back (std::move (str));
 	}
 
 	void STR::sprintf (COMMON_LIST &v, const char *fmt, ...)
@@ -82,7 +114,18 @@ namespace shaga {
 		sprintf (str, fmt, ap);
 		::va_end (ap);
 
-		v.push_back (str);
+		v.push_back (std::move (str));
+	}
+
+	void STR::sprintf (COMMON_DEQUE &v, const char *fmt, ...)
+	{
+		std::string str;
+		va_list ap;
+		::va_start (ap, fmt);
+		sprintf (str, fmt, ap);
+		::va_end (ap);
+
+		v.push_back (std::move (str));
 	}
 
 	static inline void _to_uint_process_char (uint64_t &result, const uint8_t chr, const uint64_t base)
@@ -113,7 +156,7 @@ namespace shaga {
 	}
 
 	template <typename T>
-	static void _to_uint_process (T &result, const std::string &s, const int base, const char *type)
+	static void _to_uint_process (T &result, std::string_view src, const int base, const char *type)
 	{
 		if (base < 2) {
 			cThrow ("Base must be at least 2");
@@ -129,7 +172,7 @@ namespace shaga {
 				TRAILING_SPACES,
 			} stage {Stage::START_SPACES};
 
-			for (std::string::const_iterator iter = s.cbegin (); iter != s.cend (); ++iter) {
+			for (auto iter = src.cbegin (); iter != src.cend (); ++iter) {
 				if (::isspace (*iter)) {
 					switch (stage) {
 						case Stage::START_SPACES:
@@ -201,11 +244,11 @@ namespace shaga {
 			}
 		}
 		catch (const std::exception &e) {
-			cThrow ("Could not convert '%s' to %s: %s", s.c_str (), type, e.what ());
+			cThrow ("Could not convert '%s' to %s: %s", ~src, type, e.what ());
 		}
 	}
 
-	bool STR::to_bool (const std::string &s, [[maybe_unused]] const int base)
+	bool STR::to_bool (const std::string_view s, [[maybe_unused]] const int base)
 	{
 		if (icompare (s, "true") == true || icompare (s, "on") == true || icompare (s, "yes") == true || s == "1") {
 			return true;
@@ -213,82 +256,82 @@ namespace shaga {
 		else if (icompare (s, "false") == true || icompare (s, "off") == true || icompare (s, "no") == true || s == "0") {
 			return false;
 		}
-		cThrow ("Could not convert '%s' to bool: Not recognized", s.c_str ());
+		cThrow ("Could not convert '%s' to bool: Not recognized", ~s);
 	}
 
-	uint8_t STR::to_uint8 (const std::string &s, const int base)
+	uint8_t STR::to_uint8 (const std::string_view s, const int base)
 	{
 		uint8_t out;
 		_to_uint_process (out, s, base, "uint8");
 		return out;
 	}
 
-	uint16_t STR::to_uint16 (const std::string &s, const int base)
+	uint16_t STR::to_uint16 (const std::string_view s, const int base)
 	{
 		uint16_t out;
 		_to_uint_process (out, s, base, "uint16");
 		return out;
 	}
 
-	uint32_t STR::to_uint32 (const std::string &s, const int base)
+	uint32_t STR::to_uint32 (const std::string_view s, const int base)
 	{
 		uint32_t out;
 		_to_uint_process (out, s, base, "uint32");
 		return out;
 	}
 
-	uint64_t STR::to_uint64 (const std::string &s, const int base)
+	uint64_t STR::to_uint64 (const std::string_view s, const int base)
 	{
 		uint64_t out;
 		_to_uint_process (out, s, base, "uint64");
 		return out;
 	}
 
-	int8_t STR::to_int8 (const std::string &s, const int base)
+	int8_t STR::to_int8 (const std::string_view s, const int base)
 	{
 		int8_t out;
 		_to_uint_process (out, s, base, "int8");
 		return out;
 	}
 
-	int16_t STR::to_int16 (const std::string &s, const int base)
+	int16_t STR::to_int16 (const std::string_view s, const int base)
 	{
 		int16_t out;
 		_to_uint_process (out, s, base, "int16");
 		return out;
 	}
 
-	int32_t STR::to_int32 (const std::string &s, const int base)
+	int32_t STR::to_int32 (const std::string_view s, const int base)
 	{
 		int32_t out;
 		_to_uint_process (out, s, base, "int32");
 		return out;
 	}
 
-	int64_t STR::to_int64 (const std::string &s, const int base)
+	int64_t STR::to_int64 (const std::string_view s, const int base)
 	{
 		int64_t out;
 		_to_uint_process (out, s, base, "int64");
 		return out;
 	}
 
-	void STR::split (const std::string &what, const std::string &delimiter, std::function<void (const std::string &)> f)
+	void STR::split (const std::string_view what, const std::string_view delimiter, std::function<void (std::string_view)> callback)
 	{
-		size_t  start = 0, end = 0;
-		std::string t;
+		size_t p_start = 0;
+		size_t p_end = 0;
 
-		while (end != std::string::npos) {
-			end = what.find_first_of (delimiter, start);
+		while (p_end != std::string_view::npos) {
+			p_end = what.find_first_of (delimiter, p_start);
 
 			// If at end, use length=maxLength.  Else use length=end-start.
-			t = what.substr (start, (end == std::string::npos) ? std::string::npos : (end - start));
-			if (t.size() > 0) {
-				trim (t);
-				f (t);
+			std::string_view token = what.substr (p_start, (p_end == std::string_view::npos) ? std::string_view::npos : (p_end - p_start));
+			if (token.size() > 0) {
+				trim (token);
+				callback (token);
 			}
 
 			// If at end, use start=maxSize.  Else use start=end+delimiter.
-			start = ( (end > (std::string::npos - 1)) ? std::string::npos : end + 1);
+			p_start = (p_end > (std::string_view::npos - 1)) ? std::string_view::npos : (p_end + 1);
 		}
 	}
 
@@ -363,7 +406,7 @@ namespace shaga {
 		return format_date (theTime, local, separatorstr);
 	}
 
-	void STR::replace (std::string &str, const std::string &what, const std::string &with)
+	void STR::replace (std::string &str, const std::string_view what, const std::string_view with)
 	{
 		size_t pos = 0;
 		while (true) {
@@ -377,12 +420,12 @@ namespace shaga {
 		}
 	}
 
-	bool STR::has_suffix (const std::string &str, const std::string &suffix)
+	bool STR::has_suffix (const std::string_view str, const std::string_view suffix)
 	{
 		return (str.size () >= suffix.size ()) && std::equal (suffix.rbegin (), suffix.rend (), str.rbegin ());
 	}
 
-	bool STR::has_isuffix (const std::string &str, const std::string &suffix)
+	bool STR::has_isuffix (const std::string_view str, const std::string_view suffix)
 	{
 		return (str.size () >= suffix.size ()) && std::equal (suffix.rbegin (), suffix.rend (), str.rbegin (),
 			[](const auto a, const auto b) -> bool {
@@ -390,12 +433,12 @@ namespace shaga {
 			});
 	}
 
-	bool STR::has_prefix (const std::string &str, const std::string &prefix)
+	bool STR::has_prefix (const std::string_view str, const std::string_view prefix)
 	{
 		return (str.size () >= prefix.size ()) && std::equal (prefix.begin (), prefix.end (), str.begin ());
 	}
 
-	bool STR::has_iprefix (const std::string &str, const std::string &prefix)
+	bool STR::has_iprefix (const std::string_view str, const std::string_view prefix)
 	{
 		return (str.size () >= prefix.size ()) && std::equal (prefix.begin (), prefix.end (), str.begin (),
 			[](const auto a, const auto b) -> bool {
@@ -415,14 +458,14 @@ namespace shaga {
 		});
 	}
 
-	std::string STR::get_printable (const std::string &text, const unsigned char replace_with)
+	std::string STR::get_printable (const std::string_view text, const unsigned char replace_with)
 	{
 		std::string output (text);
 		make_printable (output, replace_with);
 		return output;
 	}
 
-	void STR::rtrim (std::string &str, const std::string &chars)
+	void STR::rtrim (std::string &str, const std::string_view chars)
 	{
 		const auto found = str.find_last_not_of (chars);
 		if (std::string::npos != found) {
@@ -433,7 +476,18 @@ namespace shaga {
 		}
 	}
 
-	void STR::ltrim (std::string &str, const std::string &chars)
+	void STR::rtrim (std::string_view &str, const std::string_view chars)
+	{
+		const auto found = str.find_last_not_of (chars);
+		if (std::string::npos != found) {
+			str.remove_suffix (str.size () - found - 1);
+		}
+		else {
+			str.remove_suffix (str.size ());
+		}
+	}
+
+	void STR::ltrim (std::string &str, const std::string_view chars)
 	{
 		const auto found = str.find_first_not_of (chars);
 		if (std::string::npos != found) {
@@ -444,20 +498,32 @@ namespace shaga {
 		}
 	}
 
-	void STR::trim (std::string &str, const std::string &chars)
+	void STR::ltrim (std::string_view &str, const std::string_view chars)
+	{
+		const auto found = std::min (str.find_first_not_of (chars), str.size ());
+		str.remove_prefix (found);
+	}
+
+	void STR::trim (std::string &str, const std::string_view chars)
 	{
 		rtrim (str, chars);
 		ltrim (str, chars);
 	}
 
-	bool STR::icompare (const std::string &a, const std::string &b)
+	void STR::trim (std::string_view &str, const std::string_view chars)
 	{
-		return std::equal (a.begin (), a.end (), b.begin (), b.end (), [](const auto a, const auto b) {
+		rtrim (str, chars);
+		ltrim (str, chars);
+	}
+
+	bool STR::icompare (const std::string_view a, const std::string_view b)
+	{
+		return std::equal (a.cbegin (), a.cend (), b.cbegin (), b.cend (), [](const auto a, const auto b) {
 			return std::tolower(a) == std::tolower(b);
 		});
 	}
 
-	std::string STR::multiply (const std::string &what, const uint_fast32_t cnt)
+	std::string STR::multiply (std::string_view what, const uint_fast32_t cnt)
 	{
 		std::string out;
 		out.reserve (what.size () * cnt);
@@ -467,7 +533,7 @@ namespace shaga {
 		return out;
 	}
 
-	std::string STR::multiply (const std::string &what, const uint_fast32_t cnt, const std::string &postfix)
+	std::string STR::multiply (std::string_view what, const uint_fast32_t cnt, const std::string_view postfix)
 	{
 		std::string out;
 		out.reserve (postfix.size () + (what.size () * cnt));
@@ -551,20 +617,19 @@ namespace shaga {
 		return v;
 	}
 
-	COMMON_VECTOR STR::to_argv (const std::string &vars)
+	COMMON_VECTOR STR::to_argv (std::string cmd)
 	{
-		std::string cmd = vars;
-		COMMON_VECTOR v;
+		COMMON_VECTOR vout;
 
-		replace (cmd, "\\\\", std::string (1, 0x02));
-		replace (cmd, "\\\"", std::string (1, 0x03));
-		replace (cmd, "\\'",  std::string (1, 0x04));
+		replace (cmd, std::string ("\\\\"), std::string (1, 0x02));
+		replace (cmd, std::string ("\\\""), std::string (1, 0x03));
+		replace (cmd, std::string ("\\'"),  std::string (1, 0x04));
 
 		std::string what_find = "\"'";
 		size_t pos = 0, last_pos;
 		while (true) {
 			pos = cmd.find_first_of (what_find, pos);
-			if (pos == std::string::npos) {
+			if (std::string::npos == pos) {
 				break;
 			}
 
@@ -579,9 +644,9 @@ namespace shaga {
 			pos++;
 		}
 
-		replace (cmd, std::string (1, 0x02), "\\");
-		replace (cmd, std::string (1, 0x03), "\"");
-		replace (cmd, std::string (1, 0x04), "'");
+		replace (cmd, std::string (1, 0x02), std::string ("\\"));
+		replace (cmd, std::string (1, 0x03), std::string ("\""));
+		replace (cmd, std::string (1, 0x04), std::string ("'"));
 
 		pos = 0;
 		bool in_quotes = false;
@@ -589,43 +654,43 @@ namespace shaga {
 		while (true) {
 			last_pos = pos;
 			pos = cmd.find_first_of (0x01, pos);
-			if (pos == std::string::npos) {
-				if (in_quotes) {
+			if (std::string::npos == pos) {
+				if (true == in_quotes) {
 					if (last_pos >= 2 && (cmd.at (last_pos - 2) == ' ' || cmd.at (last_pos - 2) == '\t')) {
-						v.push_back (cmd.substr (last_pos));
+						vout.push_back (cmd.substr (last_pos));
 					}
 					else {
-						v.back ().append (cmd.substr (last_pos));
+						vout.back ().append (cmd.substr (last_pos));
 					}
 				}
 				else {
-					if (last_pos < cmd.size () && cmd.at (last_pos) != ' ' && cmd.at (last_pos) != '\t' && v.empty () == false) {
-						v.back ().append (1, 0x01);
+					if (last_pos < cmd.size () && cmd.at (last_pos) != ' ' && cmd.at (last_pos) != '\t' && vout.empty () == false) {
+						vout.back ().append (1, 0x01);
 					}
-					split (v, cmd.substr (last_pos), " \t");
+					split (vout, cmd.substr (last_pos), " \t");
 				}
 
 				break;
 			}
 
 			if (pos > 0) {
-				if (in_quotes) {
+				if (true == in_quotes) {
 					if (last_pos >= 2 && (cmd.at (last_pos - 2) == ' ' || cmd.at (last_pos - 2) == '\t')) {
-						v.push_back (cmd.substr (last_pos, pos - last_pos));
+						vout.push_back (cmd.substr (last_pos, pos - last_pos));
 					}
 					else {
-						v.back ().append (cmd.substr (last_pos, pos - last_pos));
+						vout.back ().append (cmd.substr (last_pos, pos - last_pos));
 					}
 				}
 				else {
-					if (last_pos < cmd.size () && cmd.at (last_pos) != ' ' && cmd.at (last_pos) != '\t' && v.empty () == false) {
-						v.back ().append (1, 0x01);
+					if (last_pos < cmd.size () && cmd.at (last_pos) != ' ' && cmd.at (last_pos) != '\t' && vout.empty () == false) {
+						vout.back ().append (1, 0x01);
 					}
-					split (v, cmd.substr (last_pos, pos - last_pos), " \t");
+					split (vout, cmd.substr (last_pos, pos - last_pos), " \t");
 				}
 			}
 			else {
-				v.push_back ("");
+				vout.push_back ("");
 			}
 
 			pos++;
@@ -635,21 +700,21 @@ namespace shaga {
 		std::string to_prefix;
 		to_prefix.clear ();
 
-		for (COMMON_VECTOR::iterator iter = v.begin (); iter != v.end (); ) {
+		for (COMMON_VECTOR::iterator iter = vout.begin (); iter != vout.end (); ) {
 			if (to_prefix.empty () == false) {
 				*iter = to_prefix + *iter;
 				to_prefix.clear ();
 			}
 
 			if ( (*iter).empty ()) {
-				iter = v.erase (iter);
+				iter = vout.erase (iter);
 				continue;
 			}
 			if (iter->back () == 0x01) {
 				iter->pop_back ();
 				to_prefix.assign (*iter);
 
-				iter = v.erase (iter);
+				iter = vout.erase (iter);
 				continue;
 			}
 
@@ -657,10 +722,10 @@ namespace shaga {
 		}
 
 		if (to_prefix.empty () == false) {
-			v.push_back (to_prefix);
+			vout.push_back (to_prefix);
 		}
 
-		return v;
+		return vout;
 	}
 
 }

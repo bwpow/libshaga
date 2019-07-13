@@ -11,7 +11,6 @@ All rights reserved.
 #include "common.h"
 
 namespace shaga {
-
 	class SPSCDataInterface
 	{
 		public:
@@ -204,7 +203,6 @@ namespace shaga {
 				_real_bufsize = 0;
 			}
 	};
-
 }
 
 #endif // HEAD_shaga_SPSCData

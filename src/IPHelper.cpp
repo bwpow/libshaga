@@ -211,14 +211,14 @@ namespace shaga {
 			if (addr4->sin_family != _af) {
 				cThrow ("Incorrect protocol family set. Expected IPv4.");
 			}
-			P::debug_printf ("IPHelper: IPv4 address '%s' port %" PRIu16 " mask %d", get_ip_string (_af, _addr).c_str (), ntohs (addr4->sin_port), _mask);
+			P::debug_printf ("IPHelper: IPv4 address '%s' port %" PRIu16 " mask %d", ~get_ip_string (_af, _addr), ntohs (addr4->sin_port), _mask);
 		}
 		else if (_af == AF_INET6) {
 			const struct sockaddr_in6* addr6 = (struct sockaddr_in6*)&_addr;
 			if (addr6->sin6_family != _af) {
 				cThrow ("Incorrect protocol family set. Expected IPv6.");
 			}
-			P::debug_printf ("IPHelper: IPv6 address '%s' port %" PRIu16 " mask %d", get_ip_string (_af, _addr).c_str (), ntohs (addr6->sin6_port), _mask);
+			P::debug_printf ("IPHelper: IPv6 address '%s' port %" PRIu16 " mask %d", ~get_ip_string (_af, _addr), ntohs (addr6->sin6_port), _mask);
 		}
 		else {
 			cThrow ("Unknown protocol family or unrecognized address");
@@ -234,7 +234,7 @@ namespace shaga {
 		struct sockaddr_in* addr4 = (struct sockaddr_in*)&_addr;
 		static_assert (sizeof (addr4->sin_addr) == 4, "Size of sin_addr needs to be 4 bytes");
 
-		if (::inet_pton (AF_INET, buf.c_str (), &(addr4->sin_addr)) == 1) {
+		if (::inet_pton (AF_INET, ~buf, &(addr4->sin_addr)) == 1) {
 			_af = AF_INET;
 			addr4->sin_family = AF_INET;
 			addr4->sin_port = htons(port);
@@ -254,7 +254,7 @@ namespace shaga {
 		struct sockaddr_in6* addr6 = (struct sockaddr_in6*)&_addr;
 		static_assert (sizeof (addr6->sin6_addr) == 16, "Size of sin6_addr needs to be 16 bytes");
 
-		if (::inet_pton (AF_INET6, buf.c_str (), &(addr6->sin6_addr)) == 1) {
+		if (::inet_pton (AF_INET6, ~buf, &(addr6->sin6_addr)) == 1) {
 			_af = AF_INET6;
 			addr6->sin6_family = AF_INET6;
 			addr6->sin6_port = htons(port);
@@ -310,7 +310,7 @@ namespace shaga {
 					port = STR::to_uint16 (str_port.substr (1));
 				}
 				else {
-					cThrow ("Malformed port specification '%s'", str_port.c_str ());
+					cThrow ("Malformed port specification '%s'", ~str_port);
 				}
 			}
 		}
@@ -333,7 +333,7 @@ namespace shaga {
 		}
 
 		if (ok == false) {
-			cThrow ("String '%s' not recognized as valid IP address", buf.c_str ());
+			cThrow ("String '%s' not recognized as valid IP address", ~buf);
 		}
 
 		if (_mask < 0) {
@@ -487,7 +487,7 @@ namespace shaga {
 				for (size_t i = 0; i < sizeof (addr4->sin_addr); ++i) {
 					str.append (get_byte_mask (_mask, i));
 				}
-				if (::inet_pton (AF_INET, str.c_str (), &(addr4->sin_addr)) != 1) {
+				if (::inet_pton (AF_INET, ~str, &(addr4->sin_addr)) != 1) {
 					cThrow ("Malformed network mask");
 				}
 				addr4->sin_family = AF_INET;
@@ -498,7 +498,7 @@ namespace shaga {
 					str.append (get_byte_mask (_mask, i));
 				}
 
-				if (::inet_pton (AF_INET6, str.c_str (), &(addr6->sin6_addr)) != 1) {
+				if (::inet_pton (AF_INET6, ~str, &(addr6->sin6_addr)) != 1) {
 					cThrow ("Malformed network mask");
 				}
 				addr6->sin6_family = AF_INET6;

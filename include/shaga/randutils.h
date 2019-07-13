@@ -936,7 +936,6 @@ using mt19937_rng = random_generator<std::mt19937>;
 
 using default_r_rng = random_generator<std::default_random_engine, auto_seed_256_r>;
 using mt19937_r_rng = random_generator<std::mt19937, auto_seed_256_r>;
-
 }
 
 #endif // HEAD_shaga_randutils

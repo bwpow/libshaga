@@ -82,7 +82,7 @@ static void _redata_test (shaga::ReDataConfig &config, const bool use_header, co
 		}
 
 		const std::string desc = STR::sprintf ("Digest = %s, Crypto = %s, use_header = %s, use_key_ident = %s, use_mix = %s, str_size = %d",
-			config.get_digest_text ().c_str (), config.get_crypto_text ().c_str (),
+			~config.get_digest_text (), ~config.get_crypto_text (),
 			use_header ? "YES" : "NO",
 			use_key_ident ? "YES" : "NO",
 			use_mix ? "YES" : "NO",

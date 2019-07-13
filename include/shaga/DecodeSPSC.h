@@ -62,7 +62,7 @@ namespace shaga {
 					if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
 						return false;
 					}
-					cThrow ("%s: Error reading from notice eventfd: %s", this->_name.c_str (), strerror (errno));
+					cThrow ("%s: Error reading from notice eventfd: %s", ~this->_name, strerror (errno));
 				}
 				#endif // OS_LINUX
 
@@ -78,7 +78,7 @@ namespace shaga {
 				#endif // SHAGA_THREADING
 
 				if (true == _throw_at_error) {
-					cThrow ("%s: %s", _name.c_str (), buf);
+					cThrow ("%s: %s", ~_name, buf);
 				}
 
 				try {
@@ -99,7 +99,7 @@ namespace shaga {
 					RING (next);
 
 					if (next == _pos_read.load (std::memory_order_acquire)) {
-						cThrow ("%s: Ring full", _name.c_str ());
+						cThrow ("%s: Ring full", ~_name);
 					}
 
 					_pos_write.store (next, std::memory_order_release);
@@ -108,7 +108,7 @@ namespace shaga {
 					RING (next);
 
 					if (next == _pos_read) {
-						cThrow ("%s: Ring full", _name.c_str ());
+						cThrow ("%s: Ring full", ~_name);
 					}
 
 					_pos_write = next;
@@ -116,7 +116,7 @@ namespace shaga {
 
 				#ifdef OS_LINUX
 				if (::write (_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)) < 0) {
-					cThrow ("%s: Error writing to eventfd: %s", _name.c_str (), strerror (errno));
+					cThrow ("%s: Error writing to eventfd: %s", ~_name, strerror (errno));
 				}
 				#endif // OS_LINUX
 
@@ -129,7 +129,7 @@ namespace shaga {
 				_num_packets (num_packets)
 			{
 				if (_num_packets < 2) {
-					cThrow ("%s: Ring size must be at least 2", _name.c_str ());
+					cThrow ("%s: Ring size must be at least 2", ~_name);
 				}
 
 				_data.reserve (_num_packets);
@@ -142,7 +142,7 @@ namespace shaga {
 				/* This eventfd will work as a SEMAPHORE, so every push will increase counter by one and every read will decrease it. */
 				_eventfd = eventfd (0, EFD_NONBLOCK | EFD_SEMAPHORE);
 				if (_eventfd < 0) {
-					cThrow ("%s: Unable to init eventfd: %s", _name.c_str (), strerror (errno));
+					cThrow ("%s: Unable to init eventfd: %s", ~_name, strerror (errno));
 				}
 				_event_sock = std::make_shared<ShSocket> (_eventfd);
 				#endif // OS_LINUX
@@ -165,7 +165,7 @@ namespace shaga {
 			DecodeSPSC (const DecodeSPSC &) = delete;
 			DecodeSPSC& operator= (const DecodeSPSC &) = delete;
 
-			virtual void set_name (const std::string &name) final
+			virtual void set_name (const std::string_view name) final
 			{
 				_name.assign (name);
 			}
@@ -222,7 +222,7 @@ namespace shaga {
 					const uint_fast32_t now = this->_pos_read.load (std::memory_order_relaxed);
 					if (now == this->_pos_write.load (std::memory_order_acquire)) {
 						#ifdef OS_LINUX
-						cThrow ("%s: Internal error: eventfd test passed but atomic position didn't", this->_name.c_str ());
+						cThrow ("%s: Internal error: eventfd test passed but atomic position didn't", ~this->_name);
 						#endif // OS_LINUX
 						return false;
 					}
@@ -230,7 +230,7 @@ namespace shaga {
 					const uint_fast32_t now = this->_pos_read;
 					if (now == this->_pos_write) {
 						#ifdef OS_LINUX
-						cThrow ("%s: Internal error: eventfd test passed but read/write position didn't", this->_name.c_str ());
+						cThrow ("%s: Internal error: eventfd test passed but read/write position didn't", ~this->_name);
 						#endif // OS_LINUX
 						return false;
 					}
@@ -252,7 +252,7 @@ namespace shaga {
 			}
 
 			virtual void push_buffer (const uint8_t *buffer, uint_fast32_t offset, const uint_fast32_t len) = 0;
-			virtual void push_buffer (const std::string &buffer) = 0;
+			virtual void push_buffer (const std::string_view buffer) = 0;
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -337,7 +337,7 @@ namespace shaga {
 					}
 					else {
 						if (true == _has_crc8 && this->_curdata->size () > 0) {
-							_crc8_val = _crc8_dallas_table[this->_curdata->buffer[this->_curdata->size () - 1] ^ _crc8_val];
+							_crc8_val = CRC::_crc8_dallas_table[this->_curdata->buffer[this->_curdata->size () - 1] ^ _crc8_val];
 						}
 
 						if (true == _escape_next_char) {
@@ -351,7 +351,7 @@ namespace shaga {
 				}
 			}
 
-			virtual void push_buffer (const std::string &buffer) override final
+			virtual void push_buffer (const std::string_view buffer) override final
 			{
 				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
 			}
@@ -410,8 +410,8 @@ namespace shaga {
 				}
 				else {
 					uint_fast16_t crc16_val = startval;
-					crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[0])) & 0xff];
-					crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[1])) & 0xff];
+					crc16_val = (crc16_val >> 8) ^ CRC::_crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[0])) & 0xff];
+					crc16_val = (crc16_val >> 8) ^ CRC::_crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[1])) & 0xff];
 					_crc16_startval = crc16_val;
 				}
 			}
@@ -439,7 +439,7 @@ namespace shaga {
 						_got_stx = 3;
 
 						_crc16_val = _crc16_startval;
-						_crc16_val = (_crc16_val >> 8) ^ _crc16_modbus_table[(_crc16_val ^ static_cast<uint_fast16_t> (buffer[offset])) & 0xff];
+						_crc16_val = (_crc16_val >> 8) ^ CRC::_crc16_modbus_table[(_crc16_val ^ static_cast<uint_fast16_t> (buffer[offset])) & 0xff];
 					}
 					else if (3 == _got_stx) {
 						/* High length byte */
@@ -453,7 +453,7 @@ namespace shaga {
 						else {
 							_got_stx = 4;
 
-							_crc16_val = (_crc16_val >> 8) ^ _crc16_modbus_table[(_crc16_val ^ static_cast<uint_fast16_t> (buffer[offset])) & 0xff];
+							_crc16_val = (_crc16_val >> 8) ^ CRC::_crc16_modbus_table[(_crc16_val ^ static_cast<uint_fast16_t> (buffer[offset])) & 0xff];
 
 							this->_curdata->zero_size ();
 							this->_curdata->alloc (_remaining_len);
@@ -462,7 +462,7 @@ namespace shaga {
 					else {
 						/* If we have at least 2 bytes already, use it for crc calculation. */
 						if (true == _has_crc16) {
-							_crc16_val = (_crc16_val >> 8) ^ _crc16_modbus_table[(_crc16_val ^ static_cast<uint_fast16_t> (buffer[offset])) & 0xff];
+							_crc16_val = (_crc16_val >> 8) ^ CRC::_crc16_modbus_table[(_crc16_val ^ static_cast<uint_fast16_t> (buffer[offset])) & 0xff];
 						}
 
 						/* This is part of the message */
@@ -484,7 +484,7 @@ namespace shaga {
 				}
 			}
 
-			virtual void push_buffer (const std::string &buffer) override final
+			virtual void push_buffer (const std::string_view buffer) override final
 			{
 				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
 			}
@@ -519,7 +519,7 @@ namespace shaga {
 			{
 				for (;offset < len; ++offset) {
 					if (_remaining_crc > 0) {
-						_crc8_val = _crc8_dallas_table[buffer[offset] ^ _crc8_val];
+						_crc8_val = CRC::_crc8_dallas_table[buffer[offset] ^ _crc8_val];
 						--_remaining_crc;
 
 						if (0 == _remaining_crc && _crc8_val != _crc8_expected) {
@@ -590,7 +590,7 @@ namespace shaga {
 				}
 			}
 
-			virtual void push_buffer (const std::string &buffer) override final
+			virtual void push_buffer (const std::string_view buffer) override final
 			{
 				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
 			}
@@ -619,7 +619,7 @@ namespace shaga {
 				uint_fast32_t data_length = 0;
 
 				try {
-					const std::string tbuf (reinterpret_cast <const char *> (buffer + offset), 3);
+					const std::string_view tbuf (reinterpret_cast <const char *> (buffer + offset), 3);
 					data_length = BIN::to_uint24 (tbuf);
 				}
 				catch (const std::exception &e) {
@@ -645,12 +645,11 @@ namespace shaga {
 				this->push ();
 			}
 
-			virtual void push_buffer (const std::string &buffer) override final
+			virtual void push_buffer (const std::string_view buffer) override final
 			{
 				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
 			}
 	};
-
 #undef RING
 }
 

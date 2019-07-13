@@ -47,13 +47,13 @@ namespace shaga {
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	int DiSig::DEC_CTX_ENTRY::add_raw_key (const std::string &key, const std::string &curve_type)
+	int DiSig::DEC_CTX_ENTRY::add_raw_key (const std::string_view key, const std::string_view curve_type)
 	{
 		int ret;
 
-		const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (curve_type.c_str ());
+		const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (~curve_type);
 		if (nullptr == curve_info) {
-			cThrow ("DiSig error: Unknown curve '%s'", curve_type.c_str ());
+			cThrow ("DiSig error: Unknown curve '%s'", ~curve_type);
 		}
 
 		mbedtls_pk_free (&_ctx);
@@ -90,7 +90,7 @@ namespace shaga {
 		return 0;
 	}
 
-	DiSig::DEC_CTX_ENTRY::DEC_CTX_ENTRY (const std::string &key, const std::string &name, const DiSig::_TYPE type, const std::string &curve_type) try :
+	DiSig::DEC_CTX_ENTRY::DEC_CTX_ENTRY (const std::string_view key, const std::string_view name, const DiSig::_TYPE type, const std::string_view curve_type) try :
 		_name (name)
 	{
 		::mbedtls_pk_init  (&_ctx);
@@ -99,7 +99,7 @@ namespace shaga {
 
 		switch (type) {
 			case DiSig::_TYPE::PEM:
-				ret = ::mbedtls_pk_parse_public_key (&_ctx, reinterpret_cast<const unsigned char *> (key.c_str ()), key.size () + 1);
+				ret = ::mbedtls_pk_parse_public_key (&_ctx, reinterpret_cast<const unsigned char *> (~key), key.size () + 1);
 				break;
 
 			case DiSig::_TYPE::DER:
@@ -118,7 +118,7 @@ namespace shaga {
 		::mbedtls_pk_free (&_ctx);
 	}
 
-	DiSig::DEC_CTX_ENTRY::DEC_CTX_ENTRY (const std::string &key, const std::string &name, const DiSig::_TYPE type) :
+	DiSig::DEC_CTX_ENTRY::DEC_CTX_ENTRY (const std::string_view key, const std::string_view name, const DiSig::_TYPE type) :
 		DEC_CTX_ENTRY (key, name, type, "")
 	{ }
 
@@ -127,25 +127,25 @@ namespace shaga {
 		::mbedtls_pk_free (&_ctx);
 	}
 
-	void DiSig::dump_to_file (const std::string &fname, const unsigned char *buf) const
+	void DiSig::dump_to_file (const std::string_view fname, const unsigned char *buf) const
 	{
 		ShFile file (fname, ShFile::mWRITE | ShFile::mTRUNC);
 		file.write (reinterpret_cast<const char *> (buf));
 	}
 
-	void DiSig::dump_to_file (const std::string &fname, const unsigned char *buf, const size_t len) const
+	void DiSig::dump_to_file (const std::string_view fname, const unsigned char *buf, const size_t len) const
 	{
 		ShFile file (fname, ShFile::mWRITE | ShFile::mTRUNC);
 		file.write (reinterpret_cast<const char *> (buf), len);
 	}
 
-	void DiSig::dump_to_file (const std::string &fname, const std::string &buf) const
+	void DiSig::dump_to_file (const std::string_view fname, const std::string_view buf) const
 	{
 		ShFile file (fname, ShFile::mWRITE | ShFile::mTRUNC);
 		file.write (buf);
 	}
 
-	void DiSig::check_hash (const mbedtls_md_type_t md_alg, const std::string &hsh) const
+	void DiSig::check_hash (const mbedtls_md_type_t md_alg, const std::string_view hsh) const
 	{
 		const mbedtls_md_info_t *info = ::mbedtls_md_info_from_type (md_alg);
 		if (nullptr == info) {
@@ -172,28 +172,28 @@ namespace shaga {
 		::mbedtls_pk_free (&_enc_ctx);
 	}
 
-	void DiSig::set_encryption_key_pem (const std::string &key, const std::string &pass)
+	void DiSig::set_encryption_key_pem (const std::string_view key, const std::string_view pass)
 	{
 		::mbedtls_pk_free (&_enc_ctx);
 
-		const int ret = ::mbedtls_pk_parse_key (&_enc_ctx, reinterpret_cast<const unsigned char *> (key.c_str ()), key.size () + 1,
+		const int ret = ::mbedtls_pk_parse_key (&_enc_ctx, reinterpret_cast<const unsigned char *> (~key), key.size () + 1,
 			reinterpret_cast<const unsigned char *> (pass.data ()), pass.size ());
 		check_error (ret);
 
 		can_do (_enc_ctx);
 	}
 
-	void DiSig::set_encryption_key_pem (const std::string &key)
+	void DiSig::set_encryption_key_pem (const std::string_view key)
 	{
 		::mbedtls_pk_free (&_enc_ctx);
 
-		const int ret = ::mbedtls_pk_parse_key (&_enc_ctx, reinterpret_cast<const unsigned char *> (key.c_str ()), key.size () + 1, nullptr, 0);
+		const int ret = ::mbedtls_pk_parse_key (&_enc_ctx, reinterpret_cast<const unsigned char *> (~key), key.size () + 1, nullptr, 0);
 		check_error (ret);
 
 		can_do (_enc_ctx);
 	}
 
-	void DiSig::set_encryption_key_der (const std::string &key, const std::string &pass)
+	void DiSig::set_encryption_key_der (const std::string_view key, const std::string_view pass)
 	{
 		::mbedtls_pk_free (&_enc_ctx);
 
@@ -204,7 +204,7 @@ namespace shaga {
 		can_do (_enc_ctx);
 	}
 
-	void DiSig::set_encryption_key_der (const std::string &key)
+	void DiSig::set_encryption_key_der (const std::string_view key)
 	{
 		::mbedtls_pk_free (&_enc_ctx);
 
@@ -214,27 +214,27 @@ namespace shaga {
 		can_do (_enc_ctx);
 	}
 
-	void DiSig::load_encryption_key (const std::string &fname, const std::string &pass)
+	void DiSig::load_encryption_key (const std::string_view fname, const std::string_view pass)
 	{
 		::mbedtls_pk_free (&_enc_ctx);
 
-		const int ret = ::mbedtls_pk_parse_keyfile (&_enc_ctx, fname.c_str (), pass.c_str ());
+		const int ret = ::mbedtls_pk_parse_keyfile (&_enc_ctx, ~fname, ~pass);
 		check_error (ret);
 
 		can_do (_enc_ctx);
 	}
 
-	void DiSig::load_encryption_key (const std::string &fname)
+	void DiSig::load_encryption_key (const std::string_view fname)
 	{
 		::mbedtls_pk_free (&_enc_ctx);
 
-		const int ret = ::mbedtls_pk_parse_keyfile (&_enc_ctx, fname.c_str (), nullptr);
+		const int ret = ::mbedtls_pk_parse_keyfile (&_enc_ctx, ~fname, nullptr);
 		check_error (ret);
 
 		can_do (_enc_ctx);
 	}
 
-	void DiSig::save_encryption_keypair_pem (const std::string &fname_priv, const std::string &fname_pub)
+	void DiSig::save_encryption_keypair_pem (const std::string_view fname_priv, const std::string_view fname_pub)
 	{
 		int ret;
 
@@ -249,7 +249,7 @@ namespace shaga {
 		dump_to_file (fname_pub, _output_buf);
 	}
 
-	void DiSig::save_encryption_keypair_der (const std::string &fname_priv, const std::string &fname_pub)
+	void DiSig::save_encryption_keypair_der (const std::string_view fname_priv, const std::string_view fname_pub)
 	{
 		int ret;
 
@@ -264,7 +264,7 @@ namespace shaga {
 		dump_to_file (fname_pub, _output_buf + sizeof (_output_buf) - ret, ret);
 	}
 
-	void DiSig::save_encryption_keypair_raw (const std::string &fname_priv, const std::string &fname_pub)
+	void DiSig::save_encryption_keypair_raw (const std::string_view fname_priv, const std::string_view fname_pub)
 	{
 		{
 			const std::string buf = get_encryption_key_raw ();
@@ -359,34 +359,34 @@ namespace shaga {
 		return output;
 	}
 
-	void DiSig::add_decryption_key_pem (const std::string &key, const std::string &name)
+	void DiSig::add_decryption_key_pem (const std::string_view key, const std::string_view name)
 	{
 		_dec_ctx_list.emplace_back (key, name, _TYPE::PEM);
 	}
 
-	void DiSig::add_decryption_key_pem (const std::string &key)
+	void DiSig::add_decryption_key_pem (const std::string_view key)
 	{
 		const std::string name = "deckey" + STR::from_int (_dec_ctx_list.size ());
 		_dec_ctx_list.emplace_back (key, name, _TYPE::PEM);
 	}
 
-	void DiSig::add_decryption_key_der (const std::string &key, const std::string &name)
+	void DiSig::add_decryption_key_der (const std::string_view key, const std::string_view name)
 	{
 		_dec_ctx_list.emplace_back (key, name, _TYPE::DER);
 	}
 
-	void DiSig::add_decryption_key_der (const std::string &key)
+	void DiSig::add_decryption_key_der (const std::string_view key)
 	{
 		const std::string name = "deckey" + STR::from_int (_dec_ctx_list.size ());
 		_dec_ctx_list.emplace_back (key, name, _TYPE::DER);
 	}
 
-	void DiSig::add_decryption_key_raw (const std::string &curve_type, const std::string &key, const std::string &name)
+	void DiSig::add_decryption_key_raw (const std::string_view curve_type, const std::string_view key, const std::string_view name)
 	{
 		_dec_ctx_list.emplace_back (key, name, _TYPE::RAW, curve_type);
 	}
 
-	void DiSig::add_decryption_key_raw (const std::string &curve_type, const std::string &key)
+	void DiSig::add_decryption_key_raw (const std::string_view curve_type, const std::string_view key)
 	{
 		const std::string name = "deckey" + STR::from_int (_dec_ctx_list.size ());
 		_dec_ctx_list.emplace_back (key, name, _TYPE::RAW, curve_type);
@@ -397,7 +397,7 @@ namespace shaga {
 		_dec_ctx_list.clear ();
 	}
 
-	std::string DiSig::sign (const mbedtls_md_type_t md_alg, const std::string &hsh)
+	std::string DiSig::sign (const mbedtls_md_type_t md_alg, const std::string_view hsh)
 	{
 		check_hash (md_alg, hsh);
 
@@ -409,7 +409,7 @@ namespace shaga {
 		return std::string (reinterpret_cast<const char *> (sgn), sgn_len);
 	}
 
-	bool DiSig::verify (const mbedtls_md_type_t md_alg, const std::string &hsh, const std::string &sgn, std::string &key_name_out)
+	bool DiSig::verify (const mbedtls_md_type_t md_alg, const std::string_view hsh, const std::string_view sgn, std::string &key_name_out)
 	{
 		check_hash (md_alg, hsh);
 
@@ -426,15 +426,15 @@ namespace shaga {
 		return false;
 	}
 
-	void DiSig::generate_new_key (const std::string &curve_type)
+	void DiSig::generate_new_key (const std::string_view curve_type)
 	{
 		int ret;
 
 		::mbedtls_pk_free (&_enc_ctx);
 
-		const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (curve_type.c_str ());
+		const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (~curve_type);
 		if (nullptr == curve_info) {
-			cThrow ("Unknown curve '%s'", curve_type.c_str ());
+			cThrow ("Unknown curve '%s'", ~curve_type);
 		}
 
 		ret = ::mbedtls_pk_setup (&_enc_ctx, ::mbedtls_pk_info_from_type (MBEDTLS_PK_ECKEY));

@@ -35,7 +35,7 @@ TEST (Chunk, keys)
 		key.append (1, chars[(i/17576) % 26]);
 
 		const uint32_t k = Chunk::key_to_bin (key);
-		const uint32_t ck = ChKEY (key.c_str ());
+		const uint32_t ck = ChKEY (~key);
 
 		EXPECT_TRUE (k == ck);
 
@@ -174,7 +174,7 @@ TEST (Chunk, channel)
 			v1.back ().set_channel (true);
 		}
 
-		v1.emplace_back (i, "ZZZZ", "payload");
+		v1.emplace_back (i, "ZZZZ", std::string_view ("payload"));
 		if ((i % 2) == 0) {
 			/* Channel == true is default */
 			v1.back ().set_channel (Chunk::Channel::PRIMARY);

@@ -63,7 +63,7 @@ namespace shaga {
 		cThrow ("Unsupported crypto");
 	}
 
-	static inline size_t _calc_aes (std::string &out, const char *msg, const size_t msg_size, unsigned char *iv_data, const size_t iv_size, const std::string &key, const bool enc, ReDataConfig::CryptoCache &cache)
+	static inline size_t _calc_aes (std::string &out, const char *msg, const size_t msg_size, unsigned char *iv_data, const size_t iv_size, const std::string_view key, const bool enc, ReDataConfig::CryptoCache &cache)
 	{
 #ifdef SHAGA_FULL
 		if (iv_size != 16) {
@@ -107,7 +107,7 @@ namespace shaga {
 #endif // SHAGA_FULL
 	}
 
-	typedef std::function<size_t(std::string &, const char *, const size_t, unsigned char *, const size_t, const std::string &, const bool, ReDataConfig::CryptoCache &)> CRYPTO_FUNC;
+	typedef std::function<size_t(std::string &, const char *, const size_t, unsigned char *, const size_t, const std::string_view, const bool, ReDataConfig::CryptoCache &)> CRYPTO_FUNC;
 
 	static inline CRYPTO_FUNC _get_crypto_calc_function (const ReDataConfig::CRYPTO crypto)
 	{
@@ -176,7 +176,7 @@ namespace shaga {
 	//  Public class methods  ///////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void ReDataConfig::calc_crypto_enc (std::string &plain, std::string &out, const std::string &key)
+	void ReDataConfig::calc_crypto_enc (std::string &plain, std::string &out, const std::string_view key)
 	{
 		/* This function is appending data to out, because header might already be present */
 		const size_t key_size = _get_crypto_key_size (_used_crypto);
@@ -218,7 +218,7 @@ namespace shaga {
 		}
 	}
 
-	void ReDataConfig::calc_crypto_dec (const std::string &msg, size_t offset, std::string &out, const std::string &key)
+	void ReDataConfig::calc_crypto_dec (const std::string_view msg, size_t offset, std::string &out, const std::string_view key)
 	{
 		/* This function is replacing data in out */
 		const size_t key_size = _get_crypto_key_size (_used_crypto);
@@ -305,7 +305,7 @@ namespace shaga {
 		return _get_crypto_key_size (_used_crypto) * 8 >= limit;
 	}
 
-	void ReDataConfig::set_user_iv (const std::string &iv)
+	void ReDataConfig::set_user_iv (const std::string_view iv)
 	{
 		_user_iv_enabled = true;
 		_user_iv.assign (iv);

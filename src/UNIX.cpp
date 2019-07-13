@@ -57,11 +57,11 @@ namespace shaga {
 			}
 
 			if (specchar != '\0') {
-				if (hostname[i] >= 'a' && hostname[i] <= 'z') {
-				} else if (hostname[i] >= '0' && hostname[i] <= '9') {
-				} else if (hostname[i] == '-') {
-				} else if (hostname[i] == '.') {
-				} else {
+				if (hostname[i] >= 'a' && hostname[i] <= 'z') { }
+				else if (hostname[i] >= '0' && hostname[i] <= '9') { }
+				else if (hostname[i] == '-') { }
+				else if (hostname[i] == '.') { }
+				else {
 					hostname[i] = specchar;
 				}
 			}
@@ -70,15 +70,15 @@ namespace shaga {
 		return std::string (hostname);
 	}
 
-	pid_t UNIX::daemonize (const std::string &pidfile)
+	pid_t UNIX::daemonize (const std::string_view pidfile)
 	{
 		pid_t pid;
 		FILE *pidf = nullptr;
 
 		if (pidfile.empty () == false) {
-			pidf = ::fopen (pidfile.c_str (), "w");
+			pidf = ::fopen (~pidfile, "w");
 			if (nullptr == pidf) {
-				cThrow ("Could not open PID file '%s' for writing", pidfile.c_str ());
+				cThrow ("Could not open PID file '%s' for writing", ~pidfile);
 			}
 		}
 

@@ -53,7 +53,7 @@ namespace shaga {
 				#ifdef OS_LINUX
 				const ssize_t sze = ::read (_eventfd, &_eventfd_read_val, sizeof (_eventfd_read_val));
 				if (sze < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
-					cThrow ("%s: Error reading from notice eventfd: %s", this->_name.c_str (), strerror (errno));
+					cThrow ("%s: Error reading from notice eventfd: %s", ~this->_name, strerror (errno));
 				}
 				#endif // OS_LINUX
 
@@ -67,7 +67,7 @@ namespace shaga {
 					RING (next);
 
 					if (next == _pos_read.load (std::memory_order_acquire)) {
-						cThrow ("%s: Ring full", _name.c_str ());
+						cThrow ("%s: Ring full", ~_name);
 					}
 
 					_pos_write.store (next, std::memory_order_release);
@@ -76,7 +76,7 @@ namespace shaga {
 					RING (next);
 
 					if (next == _pos_read) {
-						cThrow ("%s: Ring full", _name.c_str ());
+						cThrow ("%s: Ring full", ~_name);
 					}
 
 					_pos_write = next;
@@ -85,7 +85,7 @@ namespace shaga {
 				#ifdef OS_LINUX
 				_eventfd_write_val = _curdata->size ();
 				if (::write (_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)) < 0) {
-					cThrow ("%s: Error writing to eventfd: %s", _name.c_str (), strerror (errno));
+					cThrow ("%s: Error writing to eventfd: %s", ~_name, strerror (errno));
 				}
 				#endif // OS_LINUX
 
@@ -98,7 +98,7 @@ namespace shaga {
 				_num_packets (num_packets)
 			{
 				if (_num_packets < 2) {
-					cThrow ("%s: Ring size must be at least 2", _name.c_str ());
+					cThrow ("%s: Ring size must be at least 2", ~_name);
 				}
 
 				_data.reserve (_num_packets);
@@ -110,7 +110,7 @@ namespace shaga {
 				#ifdef OS_LINUX
 				_eventfd = eventfd (0, EFD_NONBLOCK);
 				if (_eventfd < 0) {
-					cThrow ("%s: Unable to init eventfd: %s", _name.c_str (), strerror (errno));
+					cThrow ("%s: Unable to init eventfd: %s", ~_name, strerror (errno));
 				}
 				_event_sock = std::make_shared<ShSocket> (_eventfd);
 				#endif // OS_LINUX
@@ -128,7 +128,7 @@ namespace shaga {
 			EncodeSPSC (const EncodeSPSC &) = delete;
 			EncodeSPSC& operator= (const EncodeSPSC &) = delete;
 
-			virtual void set_name (const std::string &name) final
+			virtual void set_name (const std::string_view name) final
 			{
 				_name.assign (name);
 			}
@@ -162,7 +162,7 @@ namespace shaga {
 			virtual void move_front_buffer (uint_fast32_t len) = 0;
 
 			virtual void push_buffer (const uint8_t *buffer, uint_fast32_t offset, const uint_fast32_t len) = 0;
-			virtual void push_buffer (const std::string &buffer) = 0;
+			virtual void push_buffer (const std::string_view buffer) = 0;
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -268,7 +268,7 @@ namespace shaga {
 					_remaining_total += this->read_eventfd ();
 
 					if (len > _remaining_total) {
-						cThrow ("%s: Unable to move front buffer. Destination too far.", this->_name.c_str ());
+						cThrow ("%s: Unable to move front buffer. Destination too far.", ~this->_name);
 					}
 
 					_remaining_total -= len;
@@ -291,7 +291,7 @@ namespace shaga {
 
 				while (true) {
 					if (now_read == now_write) {
-						cThrow ("%s: Unable to move front buffer. Destination too far.", this->_name.c_str ());
+						cThrow ("%s: Unable to move front buffer. Destination too far.", ~this->_name);
 					}
 
 					remaining = this->_data[now_read]->size () - read_offset;
@@ -421,11 +421,11 @@ namespace shaga {
 				#endif // SHAGA_THREADING
 
 				if (now_read == now_write) {
-					cThrow ("%s: Unable to move front buffer. Destination too far.", this->_name.c_str ());
+					cThrow ("%s: Unable to move front buffer. Destination too far.", ~this->_name);
 				}
 
 				if (this->_data[now_read]->size () != len) {
-					cThrow ("%s: Supplied wrong move length.", this->_name.c_str ());
+					cThrow ("%s: Supplied wrong move length.", ~this->_name);
 				}
 
 				this->_data[now_read]->free ();
@@ -477,7 +477,7 @@ namespace shaga {
 				this->_curdata->buffer[this->_curdata->inc_size ()] = _stx;
 
 				for (;offset < len; ++offset) {
-					crc8_val = _crc8_dallas_table[buffer[offset] ^ crc8_val];
+					crc8_val = CRC::_crc8_dallas_table[buffer[offset] ^ crc8_val];
 
 					if (_stx == buffer[offset] || _etx == buffer[offset] || _ntx == buffer[offset]) {
 						this->_curdata->buffer[this->_curdata->inc_size ()] = _ntx;
@@ -503,7 +503,7 @@ namespace shaga {
 				this->push ();
 			}
 
-			virtual void push_buffer (const std::string &buffer) override final
+			virtual void push_buffer (const std::string_view buffer) override final
 			{
 				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
 			}
@@ -538,8 +538,8 @@ namespace shaga {
 				}
 				else {
 					uint_fast16_t crc16_val = startval;
-					crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[0])) & 0xff];
-					crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[1])) & 0xff];
+					crc16_val = (crc16_val >> 8) ^ CRC::_crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[0])) & 0xff];
+					crc16_val = (crc16_val >> 8) ^ CRC::_crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[1])) & 0xff];
 					_crc16_startval = crc16_val;
 				}
 			}
@@ -563,13 +563,13 @@ namespace shaga {
 				this->_curdata->buffer[this->_curdata->inc_size ()] = (real_len >> 8) & 0xff;
 
 				if (true == _has_crc16) {
-					crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (this->_curdata->buffer[this->_curdata->size () - 2])) & 0xff];
-					crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (this->_curdata->buffer[this->_curdata->size () - 1])) & 0xff];
+					crc16_val = (crc16_val >> 8) ^ CRC::_crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (this->_curdata->buffer[this->_curdata->size () - 2])) & 0xff];
+					crc16_val = (crc16_val >> 8) ^ CRC::_crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (this->_curdata->buffer[this->_curdata->size () - 1])) & 0xff];
 				}
 
 				for (;offset < len; ++offset) {
 					if (true == _has_crc16) {
-						crc16_val = (crc16_val >> 8) ^ _crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (buffer[offset])) & 0xff];
+						crc16_val = (crc16_val >> 8) ^ CRC::_crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (buffer[offset])) & 0xff];
 					}
 
 					this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset];
@@ -584,7 +584,7 @@ namespace shaga {
 				this->push ();
 			}
 
-			virtual void push_buffer (const std::string &buffer) override final
+			virtual void push_buffer (const std::string_view buffer) override final
 			{
 				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
 			}
@@ -642,7 +642,7 @@ namespace shaga {
 				this->push ();
 			}
 
-			virtual void push_buffer (const std::string &buffer) override final
+			virtual void push_buffer (const std::string_view buffer) override final
 			{
 				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
 			}
@@ -689,7 +689,7 @@ namespace shaga {
 				this->push ();
 			}
 
-			virtual void push_buffer (const std::string &buffer) override final
+			virtual void push_buffer (const std::string_view buffer) override final
 			{
 				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
 			}

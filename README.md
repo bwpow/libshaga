@@ -31,12 +31,12 @@ is not required. Using atomic operations and mutex locking is quite expensive on
 the programmer may avoid using atomics and mutexes altogether and compile without pthread.
 
 ## Current progress and future development
-I am currently working on unit tests using [Google Test](https://github.com/google/googletest) that were missing in the original library.
-I am also planning to add documentation in doxygen format and cmake building process.
+I am currently working on unit tests using [Google Test](https://github.com/google/googletest) that were missing in the original library and slowly modifying
+source code to use C++17 types and structures (like string_view). I am also planning to add documentation in doxygen format and cmake building process.
 
 ## Help needed
 If you are willing to help with documentation, unit tests or building process, please, fork this library. Any help is appreciated.
-The goal is to be able to compile library using any C++17 compiler. Right now, I am using gcc7 only during development.
+The goal is to be able to compile library using any C++17 compiler. Right now, I am using gcc8 during development.
 
 ## Name
 Name of the library comes from my favorite band [Shadow Gallery]( https://en.wikipedia.org/wiki/Shadow_Gallery).

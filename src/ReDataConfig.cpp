@@ -98,7 +98,7 @@ namespace shaga {
 		_user_iv_enabled = false;
 	}
 
-	void ReDataConfig::decode (const std::string &msg, size_t &offset)
+	void ReDataConfig::decode (const std::string_view msg, size_t &offset)
 	{
 		size_t mv = offset;
 		try {
@@ -120,7 +120,7 @@ namespace shaga {
 		offset = mv;
 	}
 
-	void ReDataConfig::decode (const std::string &msg)
+	void ReDataConfig::decode (const std::string_view msg)
 	{
 		size_t offset = 0;
 		decode (msg, offset);
@@ -155,9 +155,9 @@ namespace shaga {
 		return *this;
 	}
 
-	ReDataConfig& ReDataConfig::set_digest (const std::string &str)
+	ReDataConfig& ReDataConfig::set_digest (const std::string_view str)
 	{
-		const auto res = DIGEST_MAP.find (str);
+		const auto res = DIGEST_MAP.find (std::string (str));
 		if (res == DIGEST_MAP.end ()) {
 			std::string vals;
 			for (const auto &v : DIGEST_MAP) {
@@ -166,7 +166,7 @@ namespace shaga {
 				}
 				vals.append (v.first);
 			}
-			cThrow ("Unknown digest. Possible values: %s", vals.c_str ());
+			cThrow ("Unknown digest. Possible values: %s", ~vals);
 		}
 
 		_used_digest = res->second;
@@ -186,9 +186,9 @@ namespace shaga {
 		return *this;
 	}
 
-	ReDataConfig& ReDataConfig::set_crypto (const std::string &str)
+	ReDataConfig& ReDataConfig::set_crypto (const std::string_view str)
 	{
-		const auto res = CRYPTO_MAP.find (str);
+		const auto res = CRYPTO_MAP.find (std::string (str));
 		if (res == CRYPTO_MAP.end ()) {
 			std::string vals;
 			for (const auto &v : CRYPTO_MAP) {
@@ -197,7 +197,7 @@ namespace shaga {
 				}
 				vals.append (v.first);
 			}
-			cThrow ("Unknown crypto. Possible values: %s", vals.c_str ());
+			cThrow ("Unknown crypto. Possible values: %s", ~vals);
 		}
 
 		_used_crypto = res->second;

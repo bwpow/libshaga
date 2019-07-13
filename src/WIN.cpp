@@ -27,13 +27,10 @@ namespace shaga {
 		TRY_TO_SHUTDOWN ();
 	}
 
-	void signal_register_handlers (const bool ignore_pipe, const bool ignore_hup)
+	void signal_register_handlers ([[maybe_unused]] const bool ignore_pipe, [[maybe_unused]] const bool ignore_hup)
 	{
 		::signal (SIGINT, signal_handler);
 		::signal (SIGTERM, signal_handler);
-
-		(void) ignore_pipe;
-		(void) ignore_hup;
 	}
 
 }

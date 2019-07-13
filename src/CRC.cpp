@@ -8,7 +8,6 @@ All rights reserved.
 #include "shaga/common.h"
 
 namespace shaga {
-
 	/* Bit reverse table is used for CRC-32 Atmel compatible algorithm */
 	static const uint_fast32_t _bit_reverse_table[256] = {
 		0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0, 0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xF0,
@@ -315,7 +314,7 @@ namespace shaga {
 		return val & UINT64_MAX;
 	}
 
-	size_t CRC::crc64_check (const std::string &plain, const uint64_t startval)
+	size_t CRC::crc64_check (const std::string_view plain, const uint64_t startval)
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint64_t)) {
@@ -364,7 +363,7 @@ namespace shaga {
 		return (val ^ UINT32_MAX);
 	}
 
-	size_t CRC::crc32_zlib_check (const std::string &plain, const uint32_t startval)
+	size_t CRC::crc32_zlib_check (const std::string_view plain, const uint32_t startval)
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint32_t)) {
@@ -413,7 +412,7 @@ namespace shaga {
 		return val & UINT32_MAX;
 	}
 
-	size_t CRC::crc32_atmel_check (const std::string &plain, const uint32_t startval)
+	size_t CRC::crc32_atmel_check (const std::string_view plain, const uint32_t startval)
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint32_t)) {
@@ -464,7 +463,7 @@ namespace shaga {
 		return (val ^ UINT32_MAX);
 	}
 
-	size_t CRC::crc32c_check (const std::string &plain, const uint32_t startval)
+	size_t CRC::crc32c_check (const std::string_view plain, const uint32_t startval)
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint32_t)) {
@@ -509,7 +508,7 @@ namespace shaga {
 		return val & UINT16_MAX;
 	}
 
-	size_t CRC::crc16_modbus_check (const std::string &plain, const uint16_t startval)
+	size_t CRC::crc16_modbus_check (const std::string_view plain, const uint16_t startval)
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint16_t)) {
@@ -554,7 +553,7 @@ namespace shaga {
 		return val & UINT8_MAX;
 	}
 
-	size_t CRC::crc8_dallas_check (const std::string &plain, const uint8_t startval)
+	size_t CRC::crc8_dallas_check (const std::string_view plain, const uint8_t startval)
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint8_t)) {
@@ -660,7 +659,7 @@ namespace shaga {
 		#undef SIPHASH_DATA
 	};
 
-	CRC::SipHash128_t CRC::siphash_extract_key (const std::string &key)
+	CRC::SipHash128_t CRC::siphash_extract_key (const std::string_view key)
 	{
 		if (key.size () != 16) {
 			cThrow ("SipHash key must be exactly 16 bytes (128 bit) long");
@@ -733,5 +732,4 @@ namespace shaga {
 	{
 		return _calc_siphash48_128t (buf, len, key);
 	}
-
-};
+}

@@ -27,7 +27,6 @@
 #define HEAD_shaga_AhoCorasick
 
 namespace aho_corasick {
-
 	// class interval
 	class interval {
 		size_t d_start;
@@ -581,8 +580,6 @@ namespace aho_corasick {
 
 	typedef basic_trie<char>     trie;
 	typedef basic_trie<wchar_t>  wtrie;
-
-
 } // namespace aho_corasick
 
 #endif // HEAD_shaga_AhoCorasick

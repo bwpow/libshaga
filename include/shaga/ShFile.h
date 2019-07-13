@@ -11,7 +11,6 @@ All rights reserved.
 #include "common.h"
 
 namespace shaga {
-
 	class ShFile {
 		public:
 			enum class CallbackAction {
@@ -59,7 +58,7 @@ namespace shaga {
 			ShFileCallback _callback {nullptr};
 
 		public:
-			ShFile (const std::string &filename, const uint8_t mode = mREAD, const mode_t mask = mask644, const bool do_open = true);
+			ShFile (const std::string_view filename, const uint8_t mode = mREAD, const mode_t mask = mask644, const bool do_open = true);
 			ShFile ();
 			~ShFile ();
 
@@ -74,8 +73,8 @@ namespace shaga {
 			void close (void) noexcept;
 			void sync (const bool also_metadata = false);
 
-			void write (const std::string &data, const size_t len);
-			void write (const std::string &data);
+			void write (const std::string_view data, const size_t len);
+			void write (const std::string_view data);
 			void write (const char *buf, const size_t len);
 			void write (const char *buf);
 			void write (const uint8_t val);
@@ -90,8 +89,8 @@ namespace shaga {
 			void realloc_printf_buffer (void);
 			void free_printf_buffer (void);
 
-			void set_file_name (const std::string &filename, const uint8_t mode);
-			void set_file_name (const std::string &filename);
+			void set_file_name (const std::string_view filename, const uint8_t mode);
+			void set_file_name (const std::string_view filename);
 			std::string get_file_name (void) const;
 
 			void set_mode (const uint8_t mode);
@@ -113,7 +112,6 @@ namespace shaga {
 
 			bool is_opened (void) const;
 	};
-
 }
 
 #endif // HEAD_shaga_ShFile

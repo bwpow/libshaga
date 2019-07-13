@@ -8,7 +8,6 @@ All rights reserved.
 #include "shaga/common.h"
 
 namespace shaga {
-
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -50,7 +49,7 @@ namespace shaga {
 		}
 	}
 
-	uint32_t Chunk::key_to_bin (const std::string &key)
+	uint32_t Chunk::key_to_bin (const std::string_view key)
 	{
 		if (key.size () != 4) {
 			cThrow ("Key must be 4 characters long");
@@ -58,13 +57,13 @@ namespace shaga {
 
 		uint32_t val = 0;
 
-		val += _key_char_to_val (key.at (3));
+		val += _key_char_to_val (key[3]);
 		val *= 26;
-		val += _key_char_to_val (key.at (2));
+		val += _key_char_to_val (key[2]);
 		val *= 26;
-		val += _key_char_to_val (key.at (1));
+		val += _key_char_to_val (key[1]);
 		val *= 26;
-		val += _key_char_to_val (key.at (0));
+		val += _key_char_to_val (key[0]);
 		++val;
 
 		return val;
@@ -81,13 +80,13 @@ namespace shaga {
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	bool Chunk::should_continue (const std::string &s, const size_t offset) const
+	bool Chunk::should_continue (const std::string_view s, const size_t offset) const
 	{
-		if (offset == s.size ()) {
+		if (offset >= s.size ()) {
 			return false;
 		}
 		/* If highest bit is set, we should continue */
-		return (static_cast<uint8_t> (s.at (offset)) & 0x80) != 0;
+		return (static_cast<uint8_t> (s[offset]) & 0x80) != 0;
 	}
 
 	void Chunk::_reset (void)
@@ -124,7 +123,7 @@ namespace shaga {
 		_type = key_type_min;
 	}
 
-	Chunk::Chunk (const std::string &bin, size_t &offset)
+	Chunk::Chunk (const std::string_view bin, size_t &offset)
 	{
 		if (should_continue (bin, offset) == false) {
 			cThrow ("Buffer is empty");
@@ -186,7 +185,7 @@ namespace shaga {
 		meta.from_bin (bin, offset);
 	}
 
-	Chunk::Chunk (const HWID hwid_source, const std::string &type)
+	Chunk::Chunk (const HWID hwid_source, const std::string_view type)
 	{
 		_reset ();
 		_hwid_source = hwid_source;
@@ -274,7 +273,7 @@ namespace shaga {
 		return _type;
 	}
 
-	void Chunk::set_payload (const std::string &payload)
+	void Chunk::set_payload (const std::string_view payload)
 	{
 		_payload.assign (payload);
 	}
@@ -287,11 +286,6 @@ namespace shaga {
 	void Chunk::swap_payload (std::string &other)
 	{
 		_payload.swap (other);
-	}
-
-	std::string Chunk::get_payload (void) const
-	{
-		return _payload;
 	}
 
 	void Chunk::set_prio (const Chunk::Priority prio)
@@ -582,7 +576,7 @@ namespace shaga {
 		cThrow ("Unknown Trustlevel");
 	}
 
-	Chunk::TrustLevel string_to_trustlevel (const std::string &str)
+	Chunk::TrustLevel string_to_trustlevel (const std::string_view str)
 	{
 		for (const auto &t : Chunk::TrustLevel ()) {
 			if (true == STR::icompare (str, trustlevel_to_string (t))) {
@@ -667,7 +661,7 @@ namespace shaga {
 		}
 	}
 
-	CHUNKLIST chunkset_extract_type (const CHUNKSET &cs, const std::string &type)
+	CHUNKLIST chunkset_extract_type (const CHUNKSET &cs, const std::string_view type)
 	{
 		CHUNKLIST out;
 		const uint32_t t = Chunk::key_to_bin (type);
@@ -681,7 +675,7 @@ namespace shaga {
 		return out;
 	}
 
-	size_t chunkset_count_type (const CHUNKSET &cs, const std::string &type)
+	size_t chunkset_count_type (const CHUNKSET &cs, const std::string_view type)
 	{
 		size_t out = 0;
 		const uint32_t t = Chunk::key_to_bin (type);
@@ -695,7 +689,7 @@ namespace shaga {
 		return out;
 	}
 
-	CHUNKLIST bin_to_chunklist (const std::string &s, size_t &offset)
+	CHUNKLIST bin_to_chunklist (const std::string_view s, size_t &offset)
 	{
 		CHUNKLIST cs;
 
@@ -706,20 +700,20 @@ namespace shaga {
 		return cs;
 	}
 
-	CHUNKLIST bin_to_chunklist (const std::string &s)
+	CHUNKLIST bin_to_chunklist (const std::string_view s)
 	{
 		size_t offset = 0;
 		return bin_to_chunklist (s, offset);
 	}
 
-	void bin_to_chunklist (const std::string &s, size_t &offset, CHUNKLIST &cs)
+	void bin_to_chunklist (const std::string_view s, size_t &offset, CHUNKLIST &cs)
 	{
 		while (offset != s.size ()) {
 			cs.emplace_back (s, offset);
 		}
 	}
 
-	void bin_to_chunklist (const std::string &s, CHUNKLIST &cs)
+	void bin_to_chunklist (const std::string_view s, CHUNKLIST &cs)
 	{
 		size_t offset = 0;
 
@@ -770,7 +764,7 @@ namespace shaga {
 		return out;
 	}
 
-	CHUNKSET bin_to_chunkset (const std::string &s, size_t &offset)
+	CHUNKSET bin_to_chunkset (const std::string_view s, size_t &offset)
 	{
 		CHUNKSET cs;
 
@@ -781,7 +775,7 @@ namespace shaga {
 		return cs;
 	}
 
-	CHUNKSET bin_to_chunkset (const std::string &s)
+	CHUNKSET bin_to_chunkset (const std::string_view s)
 	{
 		size_t offset = 0;
 		CHUNKSET cs;
@@ -793,14 +787,14 @@ namespace shaga {
 		return cs;
 	}
 
-	void bin_to_chunkset (const std::string &s, size_t &offset, CHUNKSET &cs)
+	void bin_to_chunkset (const std::string_view s, size_t &offset, CHUNKSET &cs)
 	{
 		while (offset != s.size ()) {
 			cs.emplace (s, offset);
 		}
 	}
 
-	void bin_to_chunkset (const std::string &s, CHUNKSET &cs)
+	void bin_to_chunkset (const std::string_view s, CHUNKSET &cs)
 	{
 		size_t offset = 0;
 

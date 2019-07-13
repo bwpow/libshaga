@@ -98,25 +98,25 @@ namespace shaga {
 		cThrow ("Unsupported digest");
 	}
 
-	static inline std::string _calc_crc8 (const std::string &plain, ReDataConfig::DigestCache &cache)
+	static inline std::string _calc_crc8 (const std::string_view plain, ReDataConfig::DigestCache &cache)
 	{
 		(void) cache;
 		return BIN::from_uint8 (CRC::crc8_dallas (plain.data (), plain.size ()));
 	}
 
-	static inline std::string _calc_crc32 (const std::string &plain, ReDataConfig::DigestCache &cache)
+	static inline std::string _calc_crc32 (const std::string_view plain, ReDataConfig::DigestCache &cache)
 	{
 		(void) cache;
 		return BIN::from_uint32 (CRC::crc32c (plain.data (), plain.size ()));
 	}
 
-	static inline std::string _calc_crc64 (const std::string &plain, ReDataConfig::DigestCache &cache)
+	static inline std::string _calc_crc64 (const std::string_view plain, ReDataConfig::DigestCache &cache)
 	{
 		(void) cache;
 		return BIN::from_uint64 (CRC::crc64 (plain.data (), plain.size ()));
 	}
 
-	static inline std::string _calc_sha1 (const std::string &plain, ReDataConfig::DigestCache &cache)
+	static inline std::string _calc_sha1 (const std::string_view plain, ReDataConfig::DigestCache &cache)
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = _get_digest_result_size (ReDataConfig::DIGEST::SHA1);
@@ -129,7 +129,7 @@ namespace shaga {
 #endif // SHAGA_FULL
 	}
 
-	static inline std::string _calc_sha256 (const std::string &plain, ReDataConfig::DigestCache &cache)
+	static inline std::string _calc_sha256 (const std::string_view plain, ReDataConfig::DigestCache &cache)
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = _get_digest_result_size (ReDataConfig::DIGEST::SHA256);
@@ -142,7 +142,7 @@ namespace shaga {
 #endif // SHAGA_FULL
 	}
 
-	static inline std::string _calc_sha512 (const std::string &plain, ReDataConfig::DigestCache &cache)
+	static inline std::string _calc_sha512 (const std::string_view plain, ReDataConfig::DigestCache &cache)
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = _get_digest_result_size (ReDataConfig::DIGEST::SHA512);
@@ -155,7 +155,7 @@ namespace shaga {
 #endif // SHAGA_FULL
 	}
 
-	static inline std::string _calc_ripemd160 (const std::string &plain, ReDataConfig::DigestCache &cache)
+	static inline std::string _calc_ripemd160 (const std::string_view plain, ReDataConfig::DigestCache &cache)
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = _get_digest_result_size (ReDataConfig::DIGEST::HMAC_RIPEMD160);
@@ -171,7 +171,7 @@ namespace shaga {
 
 #define SIPHASH_DATA reinterpret_cast<const uint8_t *>(plain.data ())
 #define SIPHASH_DATA_SIZE plain.size ()
-#define SIPHASH_PARAMS (const std::string &plain, ReDataConfig::DigestCache &cache)
+#define SIPHASH_PARAMS (const std::string_view plain, ReDataConfig::DigestCache &cache)
 
 #define SIPHASH_BEGIN_KEYS \
 	uint64_t vv0 = 0x736f6d6570736575ULL ^ cache.siphash_k0;				\
@@ -186,7 +186,7 @@ namespace shaga {
 #undef SIPHASH_DATA_SIZE
 #undef SIPHASH_DATA
 
-	typedef std::function<std::string(const std::string &, ReDataConfig::DigestCache &)> HASH_FUNC;
+	typedef std::function<std::string(const std::string_view, ReDataConfig::DigestCache &)> HASH_FUNC;
 
 	static inline HASH_FUNC _get_digest_calc_function (const ReDataConfig::DIGEST digest)
 	{
@@ -268,7 +268,7 @@ namespace shaga {
 		return *this;
 	}
 
-	std::string ReDataConfig::calc_digest (const std::string &plain, const std::string &key)
+	std::string ReDataConfig::calc_digest (const std::string_view plain, const std::string_view key)
 	{
 		HASH_FUNC hfunc = _get_digest_calc_function (_used_digest);
 		const DIGEST_HMAC_TYPE hmac_type = _get_digest_hmac_type (_used_digest);
@@ -290,8 +290,8 @@ namespace shaga {
 				_cache_digest.digest = _used_digest;
 				_cache_digest.key.assign (key);
 
-				_cache_digest.opad = std::string (blocksize, 0x5c);
-				_cache_digest.ipad = std::string (blocksize, 0x36);
+				_cache_digest.opad.assign (blocksize, 0x5c);
+				_cache_digest.ipad.assign (blocksize, 0x36);
 
 				std::string wkey;
 				if (key.size () > blocksize) {
@@ -307,7 +307,7 @@ namespace shaga {
 			}
 
 			/* Calculate HFUNC (OPAD + HFUNC (IPAD + TEXT)) */
-			return hfunc (_cache_digest.opad + hfunc (_cache_digest.ipad + plain, _cache_digest), _cache_digest);
+			return hfunc (_cache_digest.opad + hfunc (_cache_digest.ipad + std::string (plain), _cache_digest), _cache_digest);
 #else
 		cThrow ("Digest is not supported in lite version");
 #endif // SHAGA_FULL

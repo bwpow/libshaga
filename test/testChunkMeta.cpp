@@ -13,10 +13,10 @@ using namespace shaga;
 TEST (ChunkMeta, modify_value)
 {
 	ChunkMeta meta;
-	meta.add_value ("ABC", "abc");
-	meta.add_value ("XYZ", "abc");
-	meta.add_value ("ABC", "def");
-	meta.add_value ("XYZ", "def");
+	meta.add_value ("ABC", std::string_view("abc"));
+	meta.add_value ("XYZ", std::string_view("abc"));
+	meta.add_value ("ABC", std::string_view("def"));
+	meta.add_value ("XYZ", std::string_view("def"));
 
 	auto func = [](std::string &str) -> void {
 		if (str == "abc") {
@@ -88,11 +88,11 @@ TEST (ChunkMeta, merge)
 
 	for (int id = 0; id < 3; ++id) {
 		for (int i = 0; i < 10; ++i) {
-			meta[id].add_value ("ABC", "ahoj");
-			meta[id].add_value ("ABC", "bhoj");
+			meta[id].add_value ("ABC", std::string_view("ahoj"));
+			meta[id].add_value ("ABC", std::string_view("bhoj"));
 			meta[id].add_value ("ABC");
-			meta[id].add_value ("BBC", "ahoj");
-			meta[id].add_value ("CBC", "ahoj");
+			meta[id].add_value ("BBC", std::string_view("ahoj"));
+			meta[id].add_value ("CBC", std::string_view("ahoj"));
 
 			meta[id].add_value ((id * 10 + i) + 1);
 		}
@@ -117,18 +117,18 @@ TEST (ChunkMeta, unique)
 	ChunkMeta meta;
 
 	for (int i = 0; i < 10; ++i) {
-		meta.add_value ("ABC", "ahoj");
-		meta.add_value ("ABC", "bhoj");
+		meta.add_value ("ABC", std::string_view("ahoj"));
+		meta.add_value ("ABC", std::string_view("bhoj"));
 		meta.add_value ("ABC");
-		meta.add_value ("BBC", "ahoj");
-		meta.add_value ("CBC", "ahoj");
+		meta.add_value ("BBC", std::string_view("ahoj"));
+		meta.add_value ("CBC", std::string_view("ahoj"));
 	}
 
 	EXPECT_TRUE (meta.size () > 5);
 	meta.unique ();
 	EXPECT_TRUE (meta.size () == 5);
 
-	meta.add_value ("CBC", "ahoj");
+	meta.add_value ("CBC", std::string_view("ahoj"));
 	meta.add_value ("CBC");
 
 	EXPECT_TRUE (meta.size () > 6);
@@ -147,11 +147,11 @@ TEST (ChunkMeta, keys)
 		key.append (1, chars[(i/27) % 27]);
 		key.append (1, chars[(i/729) % 27]);
 
-		EXPECT_NO_THROW (meta.add_value (key, "")) << "Key value: " << key;
+		EXPECT_NO_THROW (meta.add_value (key, std::string_view())) << "Key value: " << key;
 		EXPECT_NO_THROW (meta.add_value (key, BIN::from_int64 (i))) << "Key value: " << key;
 
 		const uint16_t k = ChunkMeta::key_to_bin (key);
-		const uint16_t ck = ChMetaKEY (key.c_str ());
+		const uint16_t ck = ChMetaKEY (~key);
 
 		EXPECT_TRUE (k == ck);
 
@@ -170,11 +170,11 @@ TEST (ChunkMeta, keys)
 		EXPECT_TRUE (meta.count (key) == 2);
 	}
 
-	EXPECT_THROW (meta.add_value ("", ""), CommonException);
-	EXPECT_THROW (meta.add_value ("A", ""), CommonException);
-	EXPECT_THROW (meta.add_value ("x", ""), CommonException);
-	EXPECT_THROW (meta.add_value ("xyz", ""), CommonException);
-	EXPECT_THROW (meta.add_value ("ABCD", ""), CommonException);
+	EXPECT_THROW (meta.add_value ("", std::string_view()), CommonException);
+	EXPECT_THROW (meta.add_value ("A", std::string_view()), CommonException);
+	EXPECT_THROW (meta.add_value ("x", std::string_view()), CommonException);
+	EXPECT_THROW (meta.add_value ("xyz", std::string_view()), CommonException);
+	EXPECT_THROW (meta.add_value ("ABCD", std::string_view()), CommonException);
 }
 
 TEST (ChunkMeta, bin)

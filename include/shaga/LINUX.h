@@ -12,15 +12,13 @@ All rights reserved.
 
 #ifdef OS_LINUX
 
-namespace shaga {
-	namespace LINUX {
-		void add_to_epoll (int sock, const uint32_t ev, int epoll_fd, const bool should_modify_if_exists = false);
-		void modify_epoll (int sock, const uint32_t ev, int epoll_fd);
-		void remove_from_epoll (int sock, int epoll_fd, const bool ignore_failure = false);
+namespace shaga::LINUX {
+	void add_to_epoll (int sock, const uint32_t ev, int epoll_fd, const bool should_modify_if_exists = false);
+	void modify_epoll (int sock, const uint32_t ev, int epoll_fd);
+	void remove_from_epoll (int sock, int epoll_fd, const bool ignore_failure = false);
 
-		SHAGA_NODISCARD bool login_to_uid (const std::string &text, uid_t &uid);
-		SHAGA_NODISCARD bool group_to_gid (const std::string &text, gid_t &gid);
-	}
+	SHAGA_NODISCARD bool login_to_uid (const std::string_view text, uid_t &uid);
+	SHAGA_NODISCARD bool group_to_gid (const std::string_view text, gid_t &gid);
 }
 
 #endif // OS_LINUX

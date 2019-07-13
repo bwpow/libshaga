@@ -75,32 +75,32 @@ namespace shaga {
 
 	bool ShSocket::operator== (const ShSocket &other) const
 	{
-		return _fd == other._fd;
+		return (_fd == other._fd);
 	}
 
 	bool ShSocket::operator!= (const ShSocket &other) const
 	{
-		return _fd != other._fd;
+		return (_fd != other._fd);
 	}
 
 	bool ShSocket::operator< (const ShSocket &other) const
 	{
-		return _fd < other._fd;
+		return (_fd < other._fd);
 	}
 
 	bool ShSocket::operator== (const int other) const
 	{
-		return _fd == other;
+		return (_fd == other);
 	}
 
 	bool ShSocket::operator!= (const int other) const
 	{
-		return _fd != other;
+		return (_fd != other);
 	}
 
 	bool ShSocket::operator< (const int other) const
 	{
-		return _fd < other;
+		return (_fd < other);
 	}
 
 }

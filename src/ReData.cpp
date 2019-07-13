@@ -18,7 +18,7 @@ namespace shaga {
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void ReData::decode_message (const std::string &msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed)
+	void ReData::decode_message (const std::string_view msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed)
 	{
 		if (_conf.get_crypto () != ReDataConfig::CRYPTO::NONE) {
 			/* No need to clear _work_msg, because calc_crypto_dec will clear it for us */
@@ -48,7 +48,7 @@ namespace shaga {
 		_last_decode_was_mixed = key_mixed;
 	}
 
-	void ReData::encode_message (const std::string &plain, std::string &msg, const size_t key_id, const bool key_mixed)
+	void ReData::encode_message (const std::string_view plain, std::string &msg, const size_t key_id, const bool key_mixed)
 	{
 		/* This function is appending data to msg */
 		if (_conf.get_crypto () != ReDataConfig::CRYPTO::NONE) {
@@ -136,7 +136,7 @@ namespace shaga {
 		}
 	}
 
-	void ReData::decode (const std::string &msg, size_t &offset, std::string &out, std::function<bool(const ReDataConfig &)> check_callback, const MixKeysUse use)
+	void ReData::decode (const std::string_view msg, size_t &offset, std::string &out, std::function<bool(const ReDataConfig &)> check_callback, const MixKeysUse use)
 	{
 		const size_t orig_offset = offset;
 
@@ -253,13 +253,13 @@ namespace shaga {
 		}
 	}
 
-	void ReData::decode (const std::string &msg, std::string &out, std::function<bool(const ReDataConfig &)> check_callback, const MixKeysUse use)
+	void ReData::decode (const std::string_view msg, std::string &out, std::function<bool(const ReDataConfig &)> check_callback, const MixKeysUse use)
 	{
 		size_t offset = 0;
 		decode (msg, offset, out, check_callback, use);
 	}
 
-	void ReData::encode (const std::string &plain, std::string &out, const bool use_mixed)
+	void ReData::encode (const std::string_view plain, std::string &out, const bool use_mixed)
 	{
 		const size_t original_size = out.size ();
 		try {
@@ -284,7 +284,7 @@ namespace shaga {
 		}
 	}
 
-	std::string ReData::encode (const std::string &plain, const bool use_mixed)
+	std::string ReData::encode (const std::string_view plain, const bool use_mixed)
 	{
 		std::string out;
 		encode (plain, out, use_mixed);
@@ -311,19 +311,19 @@ namespace shaga {
 		return _conf;
 	}
 
-	void ReData::set_hmac_key (const std::string &key)
+	void ReData::set_hmac_key (const std::string_view key)
 	{
 		_hmac_keys.clear ();
-		_hmac_keys.push_back (key);
+		_hmac_keys.emplace_back (key);
 		_key_id = 0;
 		_last_key_ident = UINT_FAST16_MAX;
 		mix_keys (_hmac_keys, _hmac_keys_mixed);
 	}
 
-	void ReData::set_crypto_key (const std::string &key)
+	void ReData::set_crypto_key (const std::string_view key)
 	{
 		_crypto_keys.clear ();
-		_crypto_keys.push_back (key);
+		_crypto_keys.emplace_back (key);
 		_key_id = 0;
 		_last_key_ident = UINT_FAST16_MAX;
 		mix_keys (_crypto_keys, _crypto_keys_mixed);
@@ -333,7 +333,7 @@ namespace shaga {
 	{
 		_hmac_keys = keys;
 		if (_hmac_keys.empty () == true) {
-			_hmac_keys.push_back ("");
+			_hmac_keys.emplace_back ();
 		}
 
 		if (SIZE_MAX != key_id) {
@@ -382,7 +382,7 @@ namespace shaga {
 		}
 	}
 
-	void ReData::set_mix_key (const std::string &mix)
+	void ReData::set_mix_key (const std::string_view mix)
 	{
 		_mix_key_enabled = true;
 		_mix_key.assign (mix);
