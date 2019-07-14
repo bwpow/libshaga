@@ -84,7 +84,7 @@ namespace shaga {
 			struct passwd pwd;
 			struct passwd *result;
 
-			int ret = getpwnam_r (~text, &pwd, buf, bufsize, &result);
+			int ret = getpwnam_r (s_c_str (text), &pwd, buf, bufsize, &result);
 			if (ret == 0) {
 				if (result != nullptr) {
 					uid = static_cast<int> (pwd.pw_uid);
@@ -122,7 +122,7 @@ namespace shaga {
 			struct group grp;
 			struct group *result;
 
-			int ret = getgrnam_r (~text, &grp, buf, bufsize, &result);
+			int ret = getgrnam_r (s_c_str (text), &grp, buf, bufsize, &result);
 			if (ret == 0) {
 				if (result != nullptr) {
 					gid = static_cast<int> (grp.gr_gid);

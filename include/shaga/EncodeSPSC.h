@@ -53,7 +53,7 @@ namespace shaga {
 				#ifdef OS_LINUX
 				const ssize_t sze = ::read (_eventfd, &_eventfd_read_val, sizeof (_eventfd_read_val));
 				if (sze < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
-					cThrow ("%s: Error reading from notice eventfd: %s", ~this->_name, strerror (errno));
+					cThrow ("%s: Error reading from notice eventfd: %s", this->_name, strerror (errno));
 				}
 				#endif // OS_LINUX
 
@@ -67,7 +67,7 @@ namespace shaga {
 					RING (next);
 
 					if (next == _pos_read.load (std::memory_order_acquire)) {
-						cThrow ("%s: Ring full", ~_name);
+						cThrow ("%s: Ring full", _name);
 					}
 
 					_pos_write.store (next, std::memory_order_release);
@@ -76,7 +76,7 @@ namespace shaga {
 					RING (next);
 
 					if (next == _pos_read) {
-						cThrow ("%s: Ring full", ~_name);
+						cThrow ("%s: Ring full", _name);
 					}
 
 					_pos_write = next;
@@ -85,7 +85,7 @@ namespace shaga {
 				#ifdef OS_LINUX
 				_eventfd_write_val = _curdata->size ();
 				if (::write (_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)) < 0) {
-					cThrow ("%s: Error writing to eventfd: %s", ~_name, strerror (errno));
+					cThrow ("%s: Error writing to eventfd: %s", _name, strerror (errno));
 				}
 				#endif // OS_LINUX
 
@@ -98,7 +98,7 @@ namespace shaga {
 				_num_packets (num_packets)
 			{
 				if (_num_packets < 2) {
-					cThrow ("%s: Ring size must be at least 2", ~_name);
+					cThrow ("%s: Ring size must be at least 2", _name);
 				}
 
 				_data.reserve (_num_packets);
@@ -110,7 +110,7 @@ namespace shaga {
 				#ifdef OS_LINUX
 				_eventfd = eventfd (0, EFD_NONBLOCK);
 				if (_eventfd < 0) {
-					cThrow ("%s: Unable to init eventfd: %s", ~_name, strerror (errno));
+					cThrow ("%s: Unable to init eventfd: %s", _name, strerror (errno));
 				}
 				_event_sock = std::make_shared<ShSocket> (_eventfd);
 				#endif // OS_LINUX
@@ -268,7 +268,7 @@ namespace shaga {
 					_remaining_total += this->read_eventfd ();
 
 					if (len > _remaining_total) {
-						cThrow ("%s: Unable to move front buffer. Destination too far.", ~this->_name);
+						cThrow ("%s: Unable to move front buffer. Destination too far.", this->_name);
 					}
 
 					_remaining_total -= len;
@@ -291,7 +291,7 @@ namespace shaga {
 
 				while (true) {
 					if (now_read == now_write) {
-						cThrow ("%s: Unable to move front buffer. Destination too far.", ~this->_name);
+						cThrow ("%s: Unable to move front buffer. Destination too far.", this->_name);
 					}
 
 					remaining = this->_data[now_read]->size () - read_offset;
@@ -421,11 +421,11 @@ namespace shaga {
 				#endif // SHAGA_THREADING
 
 				if (now_read == now_write) {
-					cThrow ("%s: Unable to move front buffer. Destination too far.", ~this->_name);
+					cThrow ("%s: Unable to move front buffer. Destination too far.", this->_name);
 				}
 
 				if (this->_data[now_read]->size () != len) {
-					cThrow ("%s: Supplied wrong move length.", ~this->_name);
+					cThrow ("%s: Supplied wrong move length.", this->_name);
 				}
 
 				this->_data[now_read]->free ();

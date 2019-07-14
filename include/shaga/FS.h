@@ -11,6 +11,9 @@ All rights reserved.
 #include "common.h"
 
 namespace shaga::FS {
+	typedef std::function<void (const std::string_view)> GLOB_CALLBACK;
+	typedef std::function<void (const std::string_view)> READ_FILE_CALLBACK;
+
 	std::string realpath (const std::string_view path, const bool strip_fname = false);
 
 	struct stat file_stat (const std::string_view fname);
@@ -25,7 +28,9 @@ namespace shaga::FS {
 
 	bool mkdir (const std::string_view dname);
 
-	void glob (const std::string_view pattern, std::function<void (const std::string_view)> f);
+	void unlink (const std::string_view fname);
+
+	void glob (const std::string_view pattern, GLOB_CALLBACK callback);
 
 	template <typename T>
 	void glob (const std::string_view pattern, T &out)
@@ -41,7 +46,7 @@ namespace shaga::FS {
 		return out;
 	}
 
-	void read_file (const std::string_view fname, std::function<void (const std::string_view)> callback);
+	void read_file (const std::string_view fname, READ_FILE_CALLBACK callback);
 
 	template <typename T>
 	void read_file (const std::string_view fname, T &out)

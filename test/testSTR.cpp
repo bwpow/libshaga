@@ -12,11 +12,11 @@ using namespace shaga;
 
 TEST (STR, icompare)
 {
-	EXPECT_TRUE (STR::icompare ("AHOJ", "ahoj"));
-	EXPECT_TRUE (STR::icompare ("01_3", "01_3"));
-	EXPECT_FALSE (STR::icompare ("AHOJ", "ahoi"));
-	EXPECT_FALSE (STR::icompare ("AHOJ", "ahoj "));
-	EXPECT_FALSE (STR::icompare ("AHOJ", ""));
+	EXPECT_TRUE (STR::icompare ("AHOJ"sv, "ahoj"sv));
+	EXPECT_TRUE (STR::icompare ("01_3"sv, "01_3"sv));
+	EXPECT_FALSE (STR::icompare ("AHOJ"sv, "ahoi"sv));
+	EXPECT_FALSE (STR::icompare ("AHOJ"sv, "ahoj "sv));
+	EXPECT_FALSE (STR::icompare ("AHOJ"sv, ""sv));
 	EXPECT_FALSE (STR::icompare ("", "AHOJ"));
 }
 
@@ -82,10 +82,18 @@ TEST (STR, sprintf)
 	str = STR::sprintf ("1234567");
 	EXPECT_TRUE (str == "1234567") << str;
 
-	str = STR::sprintf ("12345678");
+	str = STR::sprintf ("%s", "12345678");
 	EXPECT_TRUE (str == "12345678") << str;
+}
 
-	str = STR::sprintf ("123456789");
+TEST (STR, format)
+{
+	std::string str;
+
+	str = STR::format ("123456789");
+	EXPECT_TRUE (str == "123456789") << str;
+
+	str = STR::format ("{}", "123456789"sv);
 	EXPECT_TRUE (str == "123456789") << str;
 }
 

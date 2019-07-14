@@ -16,7 +16,7 @@ namespace shaga {
 	std::string FS::realpath ([[maybe_unused]] const std::string_view path, [[maybe_unused]] const bool strip_fname)
 	{
 #ifndef OS_WIN
-		char *pth = ::realpath (~path, nullptr);
+		char *pth = ::realpath (s_c_str (path), nullptr);
 		if (nullptr == pth) {
 			return std::string ();
 		}
@@ -39,8 +39,8 @@ namespace shaga {
 	struct stat FS::file_stat (const std::string_view fname)
 	{
 		struct stat st;
-		if (::stat (~fname, &st) != 0) {
-			cThrow ("Unable to get file stat of '%s'", ~fname);
+		if (::stat (s_c_str (fname), &st) != 0) {
+			cFoThrow ("Unable to get file stat of '{}'", fname);
 		}
 
 		return st;
@@ -49,8 +49,8 @@ namespace shaga {
 	off64_t FS::file_size (const std::string_view fname)
 	{
 		struct stat st;
-		if (::stat (~fname, &st) != 0) {
-			cThrow ("Unable to get file size of '%s'", ~fname);
+		if (::stat (s_c_str (fname), &st) != 0) {
+			cFoThrow ("Unable to get file size of '{}'", fname);
 		}
 
 		return st.st_size;
@@ -59,8 +59,8 @@ namespace shaga {
 	time_t FS::file_mtime (const std::string_view fname)
 	{
 		struct stat st;
-		if (::stat (~fname, &st) != 0) {
-			cThrow ("Unable to get file mtime of '%s'", ~fname);
+		if (::stat (s_c_str (fname), &st) != 0) {
+			cFoThrow ("Unable to get file mtime of '{}'", fname);
 		}
 
 		return st.st_mtime;
@@ -69,7 +69,7 @@ namespace shaga {
 	bool FS::is_dir (const std::string_view dname)
 	{
 		struct stat st;
-		if (::stat (~dname, &st) != 0) {
+		if (::stat (s_c_str (dname), &st) != 0) {
 			return false;
 		}
 		if (!S_ISDIR (st.st_mode)) {
@@ -81,7 +81,7 @@ namespace shaga {
 	bool FS::is_file (const std::string_view fname)
 	{
 		struct stat st;
-		if (::stat (~fname, &st) != 0) {
+		if (::stat (s_c_str (fname), &st) != 0) {
 			return false;
 		}
 		if (!S_ISREG (st.st_mode)) {
@@ -96,40 +96,42 @@ namespace shaga {
 			return true;
 		}
 #ifdef OS_WIN
-		if (::mkdir (~dname) != 0) {
+		if (::mkdir (s_c_str (dname)) != 0) {
 			return false;
 		}
 #else
 		::umask (0);
-		if (::mkdir (~dname, 0755) != 0) {
+		if (::mkdir (s_c_str (dname), 0755) != 0) {
 			return false;
 		}
 #endif // OS_WIN
-		if (is_dir (dname)) {
-			return true;
-		}
-		return false;
+		return is_dir (dname);
 	}
 
-	void FS::glob ([[maybe_unused]] const std::string_view pattern, [[maybe_unused]] std::function<void (const std::string_view)> callback)
+	void FS::unlink (const std::string_view fname)
+	{
+		::unlink (s_c_str (fname));
+	}
+
+	void FS::glob ([[maybe_unused]] const std::string_view pattern, [[maybe_unused]] GLOB_CALLBACK callback)
 	{
 #ifndef OS_WIN
 		glob_t glob_result;
 		try {
 			glob_result.gl_offs = 0;
-			const int ret = ::glob (~pattern, GLOB_BRACE | GLOB_DOOFFS, NULL, &glob_result);
+			const int ret = ::glob (s_c_str (pattern), GLOB_BRACE | GLOB_DOOFFS, NULL, &glob_result);
 			if (ret != 0) {
 				if (ret == GLOB_NOMATCH) {
 					::globfree (&glob_result);
 					return;
 				}
 				else if (ret == GLOB_NOSPACE) {
-					cThrow ("glob error for pattern '%s': Out of memory", ~pattern);
+					cThrow ("glob error for pattern '%s': Out of memory", pattern);
 				}
 				else if (ret == GLOB_ABORTED ) {
-					cThrow ("glob error for pattern '%s': Read error", ~pattern);
+					cThrow ("glob error for pattern '%s': Read error", pattern);
 				}
-				cThrow ("glob error for pattern '%s': Unknown error", ~pattern);
+				cThrow ("glob error for pattern '%s': Unknown error", pattern);
 			}
 			for(size_t i = 0 ; i < glob_result.gl_pathc; i++) {
 				callback (glob_result.gl_pathv[i]);
@@ -145,13 +147,13 @@ namespace shaga {
 #endif // OS_WIN
 	}
 
-	void FS::read_file (const std::string_view fname, std::function<void (const std::string_view)> callback)
+	void FS::read_file (const std::string_view fname, READ_FILE_CALLBACK callback)
 	{
 		std::ifstream infile;
 
 		infile.open (std::string (fname), std::ifstream::in);
 		if (infile.is_open () == false) {
-			cThrow ("Unable to open file '%s'", ~fname);
+			cThrow ("Unable to open file '%s'", fname);
 		}
 
 		std::string line;
@@ -164,7 +166,7 @@ namespace shaga {
 		}
 
 		if (infile.fail () == true && infile.eof () == false) {
-			cThrow ("Error reading from file '%s'", ~fname);
+			cFoThrow ("Error reading from file '{}'", fname);
 		}
 	}
 }

@@ -151,7 +151,7 @@ TEST (ChunkMeta, keys)
 		EXPECT_NO_THROW (meta.add_value (key, BIN::from_int64 (i))) << "Key value: " << key;
 
 		const uint16_t k = ChunkMeta::key_to_bin (key);
-		const uint16_t ck = ChMetaKEY (~key);
+		const uint16_t ck = ChMetaKEY (key.c_str ());
 
 		EXPECT_TRUE (k == ck);
 

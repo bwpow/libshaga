@@ -76,9 +76,9 @@ namespace shaga {
 		FILE *pidf = nullptr;
 
 		if (pidfile.empty () == false) {
-			pidf = ::fopen (~pidfile, "w");
+			pidf = ::fopen (s_c_str (pidfile), "w");
 			if (nullptr == pidf) {
-				cThrow ("Could not open PID file '%s' for writing", ~pidfile);
+				cThrow ("Could not open PID file '%s' for writing", pidfile);
 			}
 		}
 
@@ -87,7 +87,7 @@ namespace shaga {
 
 		/* An error occurred */
 		if (pid < 0) {
-			cThrow ("%s", strerror (errno));
+			cThrow (strerror (errno));
 		}
 
 		/* Success: Let the parent terminate */
@@ -97,7 +97,7 @@ namespace shaga {
 
 		/* On success: The child process becomes session leader */
 		if (::setsid () < 0) {
-			cThrow ("%s", strerror (errno));
+			cThrow (strerror (errno));
 		}
 
 		//signal (SIGCHLD, SIG_IGN);
@@ -108,7 +108,7 @@ namespace shaga {
 
 		/* An error occurred */
 		if (pid < 0) {
-			cThrow ("%s", strerror (errno));
+			cThrow (strerror (errno));
 		}
 
 		/* Success: Let the parent terminate */
@@ -150,7 +150,7 @@ namespace shaga {
 			return;
 		}
 
-		const int prio = ini->get_uint8 ("", "renice", UINT8_MAX);
+		const int prio = ini->get_uint8 (""sv, "renice"sv, UINT8_MAX);
 		if (prio != UINT8_MAX) {
 			P::printf ("Changing priority to %d", prio);
 			renice (prio);
@@ -163,7 +163,7 @@ namespace shaga {
 			return;
 		}
 
-		const int prio = ini->get_uint8 ("", "renice", UINT8_MAX);
+		const int prio = ini->get_uint8 (""sv, "renice"sv, UINT8_MAX);
 		if (prio != UINT8_MAX) {
 			P::printf ("Changing priority to %d", prio);
 			renice (prio);

@@ -154,8 +154,13 @@ All rights reserved.
 		!defined(MBEDTLS_VERSION_C)
 		#error Missing required component in mbed TLS
 	#endif
-
 #endif // SHAGA_FULL
+
+/* FMT is used for string formatting */
+/* https://github.com/fmtlib/fmt */
+#define FMT_HEADER_ONLY
+#include "3rdparty/fmt/format.h"
+#include "3rdparty/fmt/printf.h"
 
 #ifndef INT64_C
 	#define INT64_C(c) (c ## LL)
@@ -216,6 +221,13 @@ All rights reserved.
 	#define SHAGA_NODISCARD
 #endif
 
+using namespace std::literals;
+
+#define s_c_str(x) std::string(x).c_str()
+
+/* Needed first for P::_printf used in CommonException */
+#include "P.h"
+
 namespace shaga
 {
 	typedef std::map <std::string, std::string> COMMON_MAP;
@@ -236,23 +248,76 @@ namespace shaga
 	class CommonException: public std::exception
 	{
 		private:
-			char _text[1024];
+			std::string _text;
 			size_t _info_pos;
 		public:
-			CommonException (const bool log, const char *str_file, const char *str_function, int str_line, const char *fmt, ...) throw ();
-			const char *what () const throw ();
-			const char *debugwhat () const throw ();
+			template <typename... Args>
+			CommonException (const bool log, const bool is_format, const char *str_file, const char *str_function, int str_line, const char *format, const Args & ... args) noexcept
+			{
+				try {
+					_text = fmt::format ("{}({}): {}: ", str_file, str_line, str_function);
+					_info_pos = _text.size ();
+
+					if (sizeof...(Args) == 0) {
+						_text.append (format);
+					}
+					else if (true == is_format) {
+						_text.append (fmt::format (format, args...));
+					}
+					else {
+						_text.append (fmt::sprintf (format, args...));
+					}
+				}
+				catch (...) {
+					_text.append ("(format error) ");
+					_text.append (format);
+				}
+
+				if (true == log) {
+					P::_printf (_text.c_str (), "Exception thrown: ");
+				}
+				else if (true == P::debug_is_enabled ()) {
+					P::_printf (_text.c_str (), "Exception thrown: ");
+				}
+			}
+
+			const char *what () const noexcept;
+			const char *debugwhat () const noexcept;
 	};
 
-	#define cLogThrow(format, ...) throw shaga::CommonException(true, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
-	#define cThrow(format, ...) throw shaga::CommonException(false, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
+	#define cLogThrow(format, ...) throw shaga::CommonException(true, false, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
+	#define cThrow(format, ...) throw shaga::CommonException(false, false, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
+
+	#define cFoLogThrow(format, ...) throw shaga::CommonException(true, true, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
+	#define cFoThrow(format, ...) throw shaga::CommonException(false, true, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
 
 	void add_at_exit_callback (std::function<void (void)> func);
-	[[noreturn]] void exit (const int rcode, const char *fmt, ...);
-	[[noreturn]] void exit (const char *fmt, ...);
-	[[noreturn]] void exit (const int rcode);
-	[[noreturn]] void exit_failure (void);
-	[[noreturn]] void exit (void);
+	[[noreturn]] void _exit (const char *text = nullptr, const int rcode = EXIT_FAILURE) noexcept;
+	[[noreturn]] void exit (const int rcode) noexcept;
+	[[noreturn]] void exit_failure (void) noexcept;
+	[[noreturn]] void exit (void) noexcept;
+
+	template <typename... Args>
+	[[noreturn]] void exit (const int rcode, const char *format, const Args & ... args) noexcept
+	{
+		try {
+			_exit (fmt::sprintf (format, args...).c_str (), rcode);
+		}
+		catch (...) {
+			_exit ("Exit failed with exception", EXIT_FAILURE);
+		}
+	}
+
+	template <typename... Args>
+	[[noreturn]] void exit (const char *format, const Args & ... args) noexcept
+	{
+		try {
+			_exit (fmt::sprintf (format, args...).c_str (), EXIT_FAILURE);
+		}
+		catch (...) {
+			_exit ("Exit failed with exception", EXIT_FAILURE);
+		}
+}
 
 	typedef std::function<void (const char *, const int)> FINAL_CALL;
 	void set_final_call (FINAL_CALL func);
@@ -329,13 +394,12 @@ namespace shaga
 	uint64_t get_realtime_usec (void);
 }
 
-#include "aho_corasick.h"
-#include "randutils.h"
+#include "3rdparty/aho_corasick.h"
+#include "3rdparty/randutils.h"
 
 #include "hwid.h"
 #include "CRC.h"
 #include "STR.h"
-#include "P.h"
 #include "ShSocket.h"
 #include "ShFile.h"
 #include "FS.h"

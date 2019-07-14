@@ -82,7 +82,7 @@ namespace shaga {
 				}
 
 				if (true == thr) {
-					cThrow ("Nonexistent entry %s/%s requested", ~section, ~key);
+					cThrow ("Nonexistent entry %s/%s requested", section, key);
 				}
 
 				return defvalue;

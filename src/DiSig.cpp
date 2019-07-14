@@ -51,9 +51,9 @@ namespace shaga {
 	{
 		int ret;
 
-		const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (~curve_type);
+		const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (s_c_str (curve_type));
 		if (nullptr == curve_info) {
-			cThrow ("DiSig error: Unknown curve '%s'", ~curve_type);
+			cThrow ("DiSig error: Unknown curve '%s'", curve_type);
 		}
 
 		mbedtls_pk_free (&_ctx);
@@ -99,7 +99,7 @@ namespace shaga {
 
 		switch (type) {
 			case DiSig::_TYPE::PEM:
-				ret = ::mbedtls_pk_parse_public_key (&_ctx, reinterpret_cast<const unsigned char *> (~key), key.size () + 1);
+				ret = ::mbedtls_pk_parse_public_key (&_ctx, reinterpret_cast<const unsigned char *> (s_c_str (key)), key.size () + 1);
 				break;
 
 			case DiSig::_TYPE::DER:
@@ -176,7 +176,7 @@ namespace shaga {
 	{
 		::mbedtls_pk_free (&_enc_ctx);
 
-		const int ret = ::mbedtls_pk_parse_key (&_enc_ctx, reinterpret_cast<const unsigned char *> (~key), key.size () + 1,
+		const int ret = ::mbedtls_pk_parse_key (&_enc_ctx, reinterpret_cast<const unsigned char *> (s_c_str (key)), key.size () + 1,
 			reinterpret_cast<const unsigned char *> (pass.data ()), pass.size ());
 		check_error (ret);
 
@@ -187,7 +187,7 @@ namespace shaga {
 	{
 		::mbedtls_pk_free (&_enc_ctx);
 
-		const int ret = ::mbedtls_pk_parse_key (&_enc_ctx, reinterpret_cast<const unsigned char *> (~key), key.size () + 1, nullptr, 0);
+		const int ret = ::mbedtls_pk_parse_key (&_enc_ctx, reinterpret_cast<const unsigned char *> (s_c_str (key)), key.size () + 1, nullptr, 0);
 		check_error (ret);
 
 		can_do (_enc_ctx);
@@ -218,7 +218,7 @@ namespace shaga {
 	{
 		::mbedtls_pk_free (&_enc_ctx);
 
-		const int ret = ::mbedtls_pk_parse_keyfile (&_enc_ctx, ~fname, ~pass);
+		const int ret = ::mbedtls_pk_parse_keyfile (&_enc_ctx, s_c_str (fname), s_c_str (pass));
 		check_error (ret);
 
 		can_do (_enc_ctx);
@@ -228,7 +228,7 @@ namespace shaga {
 	{
 		::mbedtls_pk_free (&_enc_ctx);
 
-		const int ret = ::mbedtls_pk_parse_keyfile (&_enc_ctx, ~fname, nullptr);
+		const int ret = ::mbedtls_pk_parse_keyfile (&_enc_ctx, s_c_str (fname), nullptr);
 		check_error (ret);
 
 		can_do (_enc_ctx);
@@ -432,9 +432,9 @@ namespace shaga {
 
 		::mbedtls_pk_free (&_enc_ctx);
 
-		const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (~curve_type);
+		const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (s_c_str (curve_type));
 		if (nullptr == curve_info) {
-			cThrow ("Unknown curve '%s'", ~curve_type);
+			cThrow ("Unknown curve '%s'", curve_type);
 		}
 
 		ret = ::mbedtls_pk_setup (&_enc_ctx, ::mbedtls_pk_info_from_type (MBEDTLS_PK_ECKEY));

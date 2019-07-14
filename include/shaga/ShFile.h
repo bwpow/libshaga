@@ -42,18 +42,10 @@ namespace shaga {
 			static const mode_t mask600 { S_IRUSR | S_IWUSR };
 
 		private:
-			static const size_t printf_buf_size_min {256};
-			static const size_t printf_buf_size_def {4096};
-			static const size_t printf_buf_size_max {SSIZE_MAX};
-
 			std::string _filename;
 			uint8_t _mode {mREAD};
 			int _fd {-1};
 			mode_t _mask {mask644};
-
-			char *_printf_buf {nullptr};
-			ssize_t _printf_buf_req_size {printf_buf_size_def};
-			ssize_t _printf_buf_cur_size {0};
 
 			ShFileCallback _callback {nullptr};
 
@@ -84,10 +76,17 @@ namespace shaga {
 			bool read (char *buf, const size_t len, const bool thr_eof = true);
 			uint8_t read (void);
 
-			void printf (const char *fmt, ...);
-			void set_printf_buffer_size (const size_t sz);
-			void realloc_printf_buffer (void);
-			void free_printf_buffer (void);
+			template <typename... Args>
+			void printf (const char *format, const Args & ... args)
+			{
+				write (fmt::sprintf (format, args...));
+			}
+
+			template <typename... Args>
+			void format (const char *format, const Args & ... args)
+			{
+				write (fmt::format (format, args...));
+			}
 
 			void set_file_name (const std::string_view filename, const uint8_t mode);
 			void set_file_name (const std::string_view filename);

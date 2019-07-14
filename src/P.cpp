@@ -15,50 +15,43 @@ All rights reserved.
 	#include <syslog.h>
 #endif // OS_WIN
 
+namespace shaga::P {
+	static volatile bool _disabled_permanently {false};
+
+	static const size_t _buffer_size {4'096};
+	static const off64_t _bytes_per_mb {1'024 * 1'024};
+
+	static volatile bool _enabled {false};
+	static bool _printf_ms {false};
+
+	static bool _check_size {false};
+	static bool _soft_limit_reached {false};
+	static off64_t _limit_soft {0};
+	static off64_t _limit_hard {0};
+
+	static bool _debug_enabled {false};
+
+	#ifdef SHAGA_THREADING
+	static std::mutex _printf_mutex;
+	static std::mutex _debug_printf_mutex;
+	#endif // SHAGA_THREADING
+
+	static std::string _dir_log;
+	static std::string _name_log;
+	static std::string _app_name;
+
+	static enum class _DirLogEnum {
+		FILE,
+		SYSLOG,
+		STDOUT,
+		STDERR
+	} _dir_log_enum = _DirLogEnum::FILE;
+
+	static ShFile _printf_file;
+	static COMMON_DEQUE _printf_entries;
+}
+
 namespace shaga {
-
-	namespace P {
-		static volatile bool _disabled_permanently {false};
-
-		static const size_t _buffer_size {4'096};
-		static const off64_t _bytes_per_mb {1'024 * 1'024};
-
-		static volatile bool _enabled {false};
-		static char _printf_buf[_buffer_size];
-		static char _printf_time[_buffer_size];
-		static char _printf_fname[PATH_MAX];
-		static bool _printf_ms {false};
-
-		static bool _check_size {false};
-		static bool _soft_limit_reached {false};
-		static off64_t _limit_soft {0};
-		static off64_t _limit_hard {0};
-
-		static bool _debug_enabled {false};
-		static char _debug_printf_buf[_buffer_size];
-
-		#ifdef SHAGA_THREADING
-		static std::mutex _printf_mutex;
-		static std::mutex _debug_printf_mutex;
-		#endif // SHAGA_THREADING
-
-		static std::string _dir_log;
-		static std::string _name_log;
-		static std::string _app_name;
-
-		static enum class _DirLogEnum {
-			FILE,
-			SYSLOG,
-			STDOUT,
-			STDERR
-		} _dir_log_enum = _DirLogEnum::FILE;
-
-		static ShFile _printf_file;
-		static COMMON_DEQUE _printf_entries;
-	}
-
-	/////////////////////////////////////////////////////////////
-
 	void P::set_dir_log (const std::string_view var)
 	{
 		_dir_log.assign (var);
@@ -129,26 +122,19 @@ namespace shaga {
 		_printf_ms = enabled;
 	}
 
-	void P::printf (const char *fmt, ...) noexcept
+	bool P::is_enabled (void) noexcept
+	{
+		return (true == _enabled && false == _disabled_permanently);
+	}
+
+	void P::_printf (const char *message, const char *prefix) noexcept
 	{
 		if (false == _enabled || true == _disabled_permanently) {
 			return;
 		}
 
-		#ifdef SHAGA_THREADING
-		// Since we can write logs to non-POSIX filesystems, let's do locking here instead on FS level.
-		std::lock_guard<std::mutex> lock (_printf_mutex);
-		#endif // SHAGA_THREADING
-
 		struct tm local_tm;
-
-		{
-			::va_list ap;
-			::va_start (ap, fmt);
-			::vsnprintf (_printf_buf, sizeof (_printf_buf) - 1, fmt, ap);
-			::va_end (ap);
-			_printf_buf[sizeof (_printf_buf) - 1] = '\0';
-		}
+		std::string _printf_time;
 
 		{
 			const uint64_t rt = (true == _printf_ms) ? get_realtime_msec () : 0;
@@ -159,49 +145,87 @@ namespace shaga {
 
 #ifndef OS_WIN
 			if (true == _printf_ms) {
-				::snprintf (_printf_time, sizeof (_printf_time) - 1, "%04d-%02d-%02d %02d:%02d:%02d.%03" PRIu64 " %s : ",
-					local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday, local_tm.tm_hour, local_tm.tm_min, local_tm.tm_sec, rt % 1000, local_tm.tm_zone);
+				_printf_time = fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d}.{:03} {} : ",
+					local_tm.tm_year + 1900,
+					local_tm.tm_mon + 1,
+					local_tm.tm_mday,
+					local_tm.tm_hour,
+					local_tm.tm_min,
+					local_tm.tm_sec,
+					rt % 1'000,
+					local_tm.tm_zone);
 			}
 			else {
-				::snprintf (_printf_time, sizeof (_printf_time) - 1, "%04d-%02d-%02d %02d:%02d:%02d %s : ",
-					local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday, local_tm.tm_hour, local_tm.tm_min, local_tm.tm_sec, local_tm.tm_zone);
+				_printf_time = fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d} {} : ",
+					local_tm.tm_year + 1900,
+					local_tm.tm_mon + 1,
+					local_tm.tm_mday,
+					local_tm.tm_hour,
+					local_tm.tm_min,
+					local_tm.tm_sec,
+					local_tm.tm_zone);
 			}
 #else
 			if (true == _printf_ms) {
-				::snprintf (_printf_time, sizeof (_printf_time) - 1, "%04d-%02d-%02d %02d:%02d:%02d.%03" PRIu64 " : ",
-					local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday, local_tm.tm_hour, local_tm.tm_min, local_tm.tm_sec, rt % 1000);
+				_printf_time = fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d}.{:03} : ",
+					local_tm.tm_year + 1900,
+					local_tm.tm_mon + 1,
+					local_tm.tm_mday,
+					local_tm.tm_hour,
+					local_tm.tm_min,
+					local_tm.tm_sec,
+					rt % 1'000);
 			}
 			else {
-				::snprintf (_printf_time, sizeof (_printf_time) - 1, "%04d-%02d-%02d %02d:%02d:%02d : ",
-					local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday, local_tm.tm_hour, local_tm.tm_min, local_tm.tm_sec);
+				_printf_time = fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d} : ",
+					local_tm.tm_year + 1900,
+					local_tm.tm_mon + 1,
+					local_tm.tm_mday,
+					local_tm.tm_hour,
+					local_tm.tm_min,
+					local_tm.tm_sec);
 			}
 #endif // OS_WIN
-
-			_printf_time[sizeof (_printf_time) - 1] = '\0';
 		}
+
+		#ifdef SHAGA_THREADING
+		// Since we can write logs to non-POSIX filesystems, let's do locking here instead on FS level.
+		std::lock_guard<std::mutex> lock (_printf_mutex);
+		#endif // SHAGA_THREADING
 
 #ifndef OS_WIN
 		if (_DirLogEnum::SYSLOG == _dir_log_enum) {
-			::openlog (~_name_log, LOG_PID | LOG_CONS, LOG_USER);
-			::syslog (LOG_NOTICE, _printf_buf);
+			::openlog (_name_log.c_str (), LOG_PID | LOG_CONS, LOG_USER);
+			::syslog (LOG_NOTICE, message);
 			::closelog ();
 		}
 		else
 #endif // OS_WIN
 		if (_DirLogEnum::STDOUT == _dir_log_enum) {
-			::fputs (_printf_time, stdout);
-			::fputs (_printf_buf, stdout);
+			::fputs (_printf_time.c_str (), stdout);
+			if (nullptr != prefix) {
+				::fputs (prefix, stdout);
+			}
+			::fputs (message, stdout);
 			::fputc ('\n', stdout);
 			::fflush (stdout);
 		}
 		else if (_DirLogEnum::STDERR == _dir_log_enum) {
-			::fputs (_printf_time, stderr);
-			::fputs (_printf_buf, stderr);
+			::fputs (_printf_time.c_str (), stderr);
+			if (nullptr != prefix) {
+				::fputs (prefix, stderr);
+			}
+			::fputs (message, stderr);
 			::fputc ('\n', stderr);
 			::fflush (stderr);
 		}
 		else {
-			::snprintf (_printf_fname, sizeof (_printf_fname), "%s/%s_%04d-%02d-%02d.log", ~_dir_log, ~_name_log, local_tm.tm_year + 1900, local_tm.tm_mon + 1, local_tm.tm_mday);
+			const std::string _printf_fname = fmt::format ("{}/{}_{:04}-{:02}-{:02}.log",
+				_dir_log,
+				_name_log,
+				local_tm.tm_year + 1900,
+				local_tm.tm_mon + 1,
+				local_tm.tm_mday);
 
 			_printf_entries.push_back (std::string ());
 
@@ -235,7 +259,10 @@ namespace shaga {
 				while (_printf_entries.empty () == false) {
 					if (_printf_entries.front ().empty () == true) {
 						_printf_file.write (_printf_time);
-						_printf_file.write (_printf_buf);
+						if (nullptr != prefix) {
+							_printf_file.write (prefix);
+						}
+						_printf_file.write (message);
 						_printf_file.write ('\n');
 					}
 					else {
@@ -249,49 +276,30 @@ namespace shaga {
 			}
 			catch (...) {
 #ifndef OS_WIN
-				::openlog (~_name_log, LOG_PID | LOG_CONS, LOG_USER);
+				::openlog (_name_log.c_str (), LOG_PID | LOG_CONS, LOG_USER);
 				for (const std::string &entry : _printf_entries) {
 					if (entry.empty () == true) {
-						::syslog (LOG_NOTICE, _printf_buf);
+						::syslog (LOG_NOTICE, message);
 					}
 					else {
-						::syslog (LOG_ERR, ~entry);
+						::syslog (LOG_ERR, entry.c_str ());
 					}
 				}
 				_printf_entries.clear ();
 				::closelog ();
 #endif // OS_WIN
 			}
-
 		}
-
 	}
 
 	/////////////////////////////////////////////////////////////
-
-	void P::debug_set_enabled (const bool enabled)
+	void P::debug_set_enabled (const bool enabled) noexcept
 	{
 		_debug_enabled = enabled;
 	}
 
-	void P::debug_printf (const char *fmt, ...) noexcept
+	bool P::debug_is_enabled (void) noexcept
 	{
-		if (false == _debug_enabled || true == _disabled_permanently) {
-			return;
-		}
-
-		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_debug_printf_mutex);
-		#endif // SHAGA_THREADING
-
-		va_list ap;
-
-		::va_start (ap, fmt);
-		::vsnprintf (_debug_printf_buf, sizeof (_debug_printf_buf) - 1, fmt, ap);
-		::va_end (ap);
-
-		_debug_printf_buf[sizeof (_debug_printf_buf) - 1] = '\0';
-
-		printf ("[DEBUG] %s", _debug_printf_buf);
+		return (true == _debug_enabled && false == _disabled_permanently);
 	}
 }

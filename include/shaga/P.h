@@ -21,11 +21,84 @@ namespace shaga::P {
 
 	void set_enabled (const bool enabled);
 	void show_ms (const bool enabled) noexcept;
+	bool is_enabled (void) noexcept;
 
-	void printf (const char *fmt, ...) noexcept;
+	void _printf (const char *message, const char *prefix = nullptr) noexcept;
 
-	void debug_set_enabled (const bool enabled);
-	void debug_printf (const char *fmt, ...) noexcept;
+	template <typename... Args>
+	void printf (const char *format, const Args & ... args) noexcept
+	{
+		if (is_enabled ()) {
+			if (sizeof...(Args) == 0) {
+				_printf (format);
+			}
+			else {
+				try {
+					_printf (fmt::sprintf (format, args...).c_str ());
+				}
+				catch (...) {
+					_printf (format, "FORMAT ERROR: ");
+				}
+			}
+		}
+	}
+
+	template <typename... Args>
+	void format (const char *format, const Args & ... args) noexcept
+	{
+		if (is_enabled ()) {
+			if (sizeof...(Args) == 0) {
+				_printf (format);
+			}
+			else {
+				try {
+					_printf (fmt::format (format, args...).c_str ());
+				}
+				catch (...) {
+					_printf (format, "FORMAT ERROR: ");
+				}
+			}
+		}
+	}
+
+	void debug_set_enabled (const bool enabled) noexcept;
+	bool debug_is_enabled (void) noexcept;
+
+	template <typename... Args>
+	void debug_printf (const char *format, const Args & ... args) noexcept
+	{
+		if (debug_is_enabled ()) {
+			if (sizeof...(Args) == 0) {
+				_printf (format);
+			}
+			else {
+				try {
+					_printf (fmt::sprintf (format, args...).c_str (), "[DEBUG] ");
+				}
+				catch (...) {
+					_printf (format, "DEBUG FORMAT ERROR: ");
+				}
+			}
+		}
+	}
+
+	template <typename... Args>
+	void debug_format (const char *format, const Args & ... args) noexcept
+	{
+		if (debug_is_enabled ()) {
+			if (sizeof...(Args) == 0) {
+				_printf (format);
+			}
+			else {
+				try {
+					_printf (fmt::format (format, args...).c_str (), "[DEBUG] ");
+				}
+				catch (...) {
+					_printf (format, "DEBUG FORMAT ERROR: ");
+				}
+			}
+		}
+	}
 }
 
 #endif // HEAD_shaga_P

@@ -21,7 +21,7 @@ namespace shaga {
 		std::string s;
 
 		if (key_short != 0) {
-			s.append (STR::sprintf ("-%c", key_short));
+			s.append (fmt::sprintf ("-%c", key_short));
 			if (has_param == true) {
 				s.append ("<" + param_type + ">");
 			}
@@ -54,7 +54,7 @@ namespace shaga {
 		if (key_long.empty () == true) {
 			cThrow ("Unknown option '-%c'", key_short);
 		}
-		cThrow ("Unknown option '--%s'", ~key_long);
+		cThrow ("Unknown option '--%s'", key_long);
 	}
 
 	void ArgTable::process_entry (Entry &e, const std::string_view var)
@@ -85,14 +85,14 @@ namespace shaga {
 				/* There is no '=', so let's check if there should be parameter */
 				_actual_entry = find_entry_by_key (data.substr (2), 0);
 				if (true == _actual_entry->has_param) {
-					cThrow ("Option '%s' is missing parameter", ~data);
+					cThrow ("Option '%s' is missing parameter", data);
 				}
 				process_entry (*_actual_entry, "");
 			}
 			else {
 				_actual_entry = find_entry_by_key (data.substr (2, pos - 2), 0);
 				if (false == _actual_entry->has_param) {
-					cThrow ("Option '%s' shouldn't have parameter", ~data);
+					cThrow ("Option '%s' shouldn't have parameter", data);
 				}
 				process_entry (*_actual_entry, data.substr (pos + 1));
 			}
@@ -116,7 +116,7 @@ namespace shaga {
 			}
 		}
 		else {
-			cThrow ("Unknown option '%s'", ~data);
+			cThrow ("Unknown option '%s'", data);
 		}
 	}
 
@@ -229,7 +229,7 @@ namespace shaga {
 	{
 		for (const auto &e : _entries) {
 			if (e.key_long.empty () == false && key_long == e.key_long) {
-				cThrow ("Option '--%s' is duplicated", ~key_long);
+				cThrow ("Option '--%s' is duplicated", key_long);
 			}
 			if (e.key_short != 0 && key_short == e.key_short) {
 				cThrow ("Option '-%c' is duplicated", key_short);
@@ -282,7 +282,7 @@ namespace shaga {
 			}
 
 			if (true == _next_entry_is_param) {
-				cThrow ("Option '%s' is missing parameter", ~v.back());
+				cThrow ("Option '%s' is missing parameter", v.back());
 			}
 
 			/* Check for correct incidence */
@@ -293,19 +293,19 @@ namespace shaga {
 
 					case INCIDENCE::ZERO_OR_ONE:
 						if (e.vars.size () > 1) {
-							cThrow ("Option '%s' must be used at most once", ~e.get_str ());
+							cThrow ("Option '%s' must be used at most once", e.get_str ());
 						}
 						break;
 
 					case INCIDENCE::ONE:
 						if (e.vars.size () != 1) {
-							cThrow ("Option '%s' must be used exactly once", ~e.get_str ());
+							cThrow ("Option '%s' must be used exactly once", e.get_str ());
 						}
 						break;
 
 					case INCIDENCE::AT_LEAST_ONE:
 						if (e.vars.size () < 1) {
-							cThrow ("Option '%s' must be used at least once", ~e.get_str ());
+							cThrow ("Option '%s' must be used at least once", e.get_str ());
 						}
 						break;
 				}
@@ -316,7 +316,7 @@ namespace shaga {
 				if (e.checker != nullptr) {
 					for (const auto &v : e.vars) {
 						if (e.checker (v) == false) {
-							cThrow ("Parameter '%s' is not valid for option '%s'", ~v, ~e.get_str ());
+							cThrow ("Parameter '%s' is not valid for option '%s'", v, e.get_str ());
 						}
 					}
 				}

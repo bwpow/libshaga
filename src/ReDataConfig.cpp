@@ -166,7 +166,7 @@ namespace shaga {
 				}
 				vals.append (v.first);
 			}
-			cThrow ("Unknown digest. Possible values: %s", ~vals);
+			cThrow ("Unknown digest. Possible values: %s", vals);
 		}
 
 		_used_digest = res->second;
@@ -197,7 +197,7 @@ namespace shaga {
 				}
 				vals.append (v.first);
 			}
-			cThrow ("Unknown crypto. Possible values: %s", ~vals);
+			cThrow ("Unknown crypto. Possible values: %s", vals);
 		}
 
 		_used_crypto = res->second;

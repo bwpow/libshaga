@@ -10,27 +10,72 @@ All rights reserved.
 
 #include "common.h"
 
-namespace shaga {
-	/* Operators converting string type to null terminated C-style array */
-	/* WARNING! String_view has to copy memory and store it in short-lived cache! */
-	/* TODO: This must be implemented better in the future!!! */
-	const char* operator~ (const std::string &src);
-	const char* operator~ (const std::string_view &src);
-}
-
 namespace shaga::STR {
+	#define DASH std::string_view ("-", 1)
 	#define SPACES std::string_view ("\n\r\t ", 4)
 	#define SPACESZERO std::string_view ("\n\r\t\0 ", 5)
 	#define NEWLINES std::string_view ("\n\r", 2)
 	#define NEWLINESZERO std::string_view ("\n\r\0", 3)
 
-	void sprintf (std::string &str, const char *fmt, va_list &ap);
-	std::string sprintf (const char *fmt, va_list &ap);
-	void sprintf (std::string &str, const char *fmt, ...) ;
-	std::string sprintf (const char *fmt, ...) ;
-	void sprintf (COMMON_VECTOR &v, const char *fmt, ...) ;
-	void sprintf (COMMON_LIST &v, const char *fmt, ...) ;
-	void sprintf (COMMON_DEQUE &v, const char *fmt, ...) ;
+	template <typename... Args>
+	std::string sprintf (const char *format, const Args & ... args)
+	{
+		return fmt::sprintf (format, args...);
+	}
+
+	template <typename... Args>
+	void sprintf (std::string &vout, const char *format, const Args & ... args)
+	{
+		vout.assign (fmt::sprintf (format, args...));
+	}
+
+	template <typename... Args>
+	void sprintf (COMMON_VECTOR &vout, const char *format, const Args & ... args)
+	{
+		vout.push_back (fmt::sprintf (format, args...));
+	}
+
+	template <typename... Args>
+	void sprintf (COMMON_LIST &vout, const char *format, const Args & ... args)
+	{
+		vout.push_back (fmt::sprintf (format, args...));
+	}
+
+	template <typename... Args>
+	void sprintf (COMMON_DEQUE &vout, const char *format, const Args & ... args)
+	{
+		vout.push_back (fmt::sprintf (format, args...));
+	}
+
+	template <typename... Args>
+	std::string format (const char *format, const Args & ... args)
+	{
+		return fmt::format (format, args...);
+	}
+
+	template <typename... Args>
+	void format (std::string &vout, const char *format, const Args & ... args)
+	{
+		vout.assign (fmt::format (format, args...));
+	}
+
+	template <typename... Args>
+	void format (COMMON_VECTOR &vout, const char *format, const Args & ... args)
+	{
+		vout.push_back (fmt::format (format, args...));
+	}
+
+	template <typename... Args>
+	void format (COMMON_LIST &vout, const char *format, const Args & ... args)
+	{
+		vout.push_back (fmt::format (format, args...));
+	}
+
+	template <typename... Args>
+	void format (COMMON_DEQUE &vout, const char *format, const Args & ... args)
+	{
+		vout.push_back (fmt::format (format, args...));
+	}
 
 	bool to_bool (const std::string_view s, const int base = 10);
 	uint8_t to_uint8 (const std::string_view s, const int base = 10);
@@ -160,9 +205,9 @@ namespace shaga::STR {
 	std::string format_time (const time_t theTime, const bool local, const bool for_filename = false);
 	std::string format_time (const bool local, const bool for_filename = false);
 
-	void format_date (std::string &out, const time_t theTime, const bool local, const char *separatorstr = "-");
-	std::string format_date (const time_t theTime, const bool local, const char *separatorstr = "-");
-	std::string format_date (const bool local, const char *separatorstr = "-");
+	void format_date (std::string &out, const time_t theTime, const bool local, const std::string_view separatorstr = DASH);
+	std::string format_date (const time_t theTime, const bool local, const std::string_view separatorstr = DASH);
+	std::string format_date (const bool local, const std::string_view separatorstr = DASH);
 
 	void replace (std::string &str, const std::string_view what, const std::string_view with);
 

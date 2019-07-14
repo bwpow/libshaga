@@ -62,7 +62,7 @@ namespace shaga {
 					if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
 						return false;
 					}
-					cThrow ("%s: Error reading from notice eventfd: %s", ~this->_name, strerror (errno));
+					cThrow ("%s: Error reading from notice eventfd: %s", this->_name, strerror (errno));
 				}
 				#endif // OS_LINUX
 
@@ -78,7 +78,7 @@ namespace shaga {
 				#endif // SHAGA_THREADING
 
 				if (true == _throw_at_error) {
-					cThrow ("%s: %s", ~_name, buf);
+					cThrow ("%s: %s", _name, buf);
 				}
 
 				try {
@@ -99,7 +99,7 @@ namespace shaga {
 					RING (next);
 
 					if (next == _pos_read.load (std::memory_order_acquire)) {
-						cThrow ("%s: Ring full", ~_name);
+						cThrow ("%s: Ring full", _name);
 					}
 
 					_pos_write.store (next, std::memory_order_release);
@@ -108,7 +108,7 @@ namespace shaga {
 					RING (next);
 
 					if (next == _pos_read) {
-						cThrow ("%s: Ring full", ~_name);
+						cThrow ("%s: Ring full", _name);
 					}
 
 					_pos_write = next;
@@ -116,7 +116,7 @@ namespace shaga {
 
 				#ifdef OS_LINUX
 				if (::write (_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)) < 0) {
-					cThrow ("%s: Error writing to eventfd: %s", ~_name, strerror (errno));
+					cThrow ("%s: Error writing to eventfd: %s", _name, strerror (errno));
 				}
 				#endif // OS_LINUX
 
@@ -129,7 +129,7 @@ namespace shaga {
 				_num_packets (num_packets)
 			{
 				if (_num_packets < 2) {
-					cThrow ("%s: Ring size must be at least 2", ~_name);
+					cThrow ("%s: Ring size must be at least 2", _name);
 				}
 
 				_data.reserve (_num_packets);
@@ -142,7 +142,7 @@ namespace shaga {
 				/* This eventfd will work as a SEMAPHORE, so every push will increase counter by one and every read will decrease it. */
 				_eventfd = eventfd (0, EFD_NONBLOCK | EFD_SEMAPHORE);
 				if (_eventfd < 0) {
-					cThrow ("%s: Unable to init eventfd: %s", ~_name, strerror (errno));
+					cThrow ("%s: Unable to init eventfd: %s", _name, strerror (errno));
 				}
 				_event_sock = std::make_shared<ShSocket> (_eventfd);
 				#endif // OS_LINUX
@@ -222,7 +222,7 @@ namespace shaga {
 					const uint_fast32_t now = this->_pos_read.load (std::memory_order_relaxed);
 					if (now == this->_pos_write.load (std::memory_order_acquire)) {
 						#ifdef OS_LINUX
-						cThrow ("%s: Internal error: eventfd test passed but atomic position didn't", ~this->_name);
+						cThrow ("%s: Internal error: eventfd test passed but atomic position didn't", this->_name);
 						#endif // OS_LINUX
 						return false;
 					}
@@ -230,7 +230,7 @@ namespace shaga {
 					const uint_fast32_t now = this->_pos_read;
 					if (now == this->_pos_write) {
 						#ifdef OS_LINUX
-						cThrow ("%s: Internal error: eventfd test passed but read/write position didn't", ~this->_name);
+						cThrow ("%s: Internal error: eventfd test passed but read/write position didn't", this->_name);
 						#endif // OS_LINUX
 						return false;
 					}

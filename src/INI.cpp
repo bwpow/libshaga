@@ -59,13 +59,13 @@ namespace shaga {
 		if (true == create) {
 			std::pair <INI_MAP::iterator, bool> res = m.insert (std::make_pair (key, COMMON_LIST ()));
 			if (false == res.second) {
-				cThrow ("Unable to add key %s/%s", ~key.section, ~key.line);
+				cThrow ("Unable to add key %s/%s", key.section, key.line);
 			}
 
 			return res.first->second;
 		}
 
-		cThrow ("Nonexistent entry %s/%s requested", ~key.section, ~key.line);
+		cThrow ("Nonexistent entry %s/%s requested", key.section, key.line);
 	}
 
 	const COMMON_LIST & INI::_get_list (const INI_MAP &m, const INI_KEY &key) const
@@ -75,7 +75,7 @@ namespace shaga {
 			return iter->second;
 		}
 
-		cThrow ("Nonexistent entry %s/%s requested", ~key.section, ~key.line);
+		cThrow ("Nonexistent entry %s/%s requested", key.section, key.line);
 	}
 
 	COMMON_LIST INI::_get_list_copy (const INI_MAP &m, const INI_KEY &key) const
@@ -85,7 +85,7 @@ namespace shaga {
 			return iter->second;
 		}
 
-		cThrow ("Nonexistent entry %s/%s requested", ~key.section, ~key.line);
+		cThrow ("Nonexistent entry %s/%s requested", key.section, key.line);
 	}
 
 	INI_MAP::iterator INI::begin_of_section (INI_MAP &m, const std::string_view section) const
@@ -120,7 +120,7 @@ namespace shaga {
 
 			const size_t pos = line.find_first_of ("=");
 			if (pos == std::string_view::npos) {
-				cThrow ("Malformed line '%s'", ~line);
+				cThrow ("Malformed line '%s'", line);
 			}
 
 			std::string_view line_key = line.substr (0, pos);
@@ -146,7 +146,7 @@ namespace shaga {
 				});
 			}
 			else {
-				cThrow ("Unknown directive '%s'", ~line_key);
+				cThrow ("Unknown directive '%s'", line_key);
 			}
 
 			return;
@@ -156,7 +156,7 @@ namespace shaga {
 			active_section.assign (line);
 			STR::trim (active_section);
 			if (active_section.at (0) != '[' || active_section.at (active_section.size () - 1) != ']') {
-				cThrow ("Malformed line '%s'", ~line);
+				cThrow ("Malformed line '%s'", line);
 			}
 			active_section.erase (0, 1);
 			active_section.erase (active_section.size () - 1);
@@ -166,7 +166,7 @@ namespace shaga {
 
 		const size_t pos = line.find_first_of ("=");
 		if (pos == std::string_view::npos || pos == 0 || pos == (line.size () - 1)) {
-			cThrow ("Malformed line '%s'", ~line);
+			cThrow ("Malformed line '%s'", line);
 		}
 
 		std::string_view line_key = line.substr (0, pos);
@@ -231,7 +231,7 @@ namespace shaga {
 		}
 
 		_nested_parse_file.emplace_back (fname);
-		P::debug_printf ("INI: Parsing file '%s' nest level %zu", ~fname, _nested_parse_file.size ());
+		P::debug_printf ("INI: Parsing file '%s' nest level %zu", fname, _nested_parse_file.size ());
 
 		std::string active_section;
 		active_section.clear ();
@@ -364,14 +364,14 @@ namespace shaga {
 
 				const bool append = v.size () > 1;
 				for (COMMON_LIST::const_iterator vter = v.cbegin (); vter != v.cend (); ++vter) {
-					file.printf ("%s%s = %s\n", ~key.line, append ? "[]" : "", vter->c_str ());
+					file.printf ("%s%s = %s\n", key.line, append ? "[]" : "", *vter);
 				}
 
 				lines_written = true;
 			}
 		}
 		catch (...) {
-			::unlink (~fname);
+			FS::unlink (fname);
 			throw;
 		}
 	}
@@ -546,7 +546,7 @@ namespace shaga {
 		}
 
 		if (true == thr) {
-			cThrow ("Nonexistent entry %s/%s requested", ~section, ~key);
+			cThrow ("Nonexistent entry %s/%s requested", section, key);
 		}
 
 		return std::string (defvalue);

@@ -10,7 +10,7 @@ All rights reserved.
 #include <cstdarg>
 
 namespace shaga {
-
+/*
 	static const size_t _operator_cache_max_size {6};
 	#ifdef SHAGA_THREADING
 		static thread_local size_t _operator_cache_now {0};
@@ -42,91 +42,7 @@ namespace shaga {
 			return _operator_cache[_operator_cache_now].c_str ();
 		}
 	}
-
-	void STR::sprintf (std::string &str, const char *fmt, va_list &ap)
-	{
-		if (str.capacity () < 8) {
-			str.resize (8);
-		}
-		else {
-			str.resize (str.capacity ());
-		}
-
-		va_list cpy;
-		::va_copy (cpy, ap);
-		/* Note: Since C++11, std::string::data memory must be continuous */
-		/* Note: Since C++17, std::string::data memory isn't const */
-		const int l = ::vsnprintf (str.data (), str.size (), fmt, cpy);
-		::va_end (cpy);
-
-		if (l < static_cast<int> (str.size ())) {
-			str.resize (l);
-		}
-		else {
-			str.resize (l + 1);
-			::vsnprintf (str.data (), str.size (), fmt, ap);
-			str.resize (l);
-		}
-	}
-
-	std::string STR::sprintf (const char *fmt, va_list &ap)
-	{
-		std::string str;
-		sprintf (str, fmt, ap);
-		return str;
-	}
-
-	void STR::sprintf (std::string &str, const char *fmt, ...)
-	{
-		va_list ap;
-		::va_start (ap, fmt);
-		sprintf (str, fmt, ap);
-		::va_end (ap);
-	}
-
-	std::string STR::sprintf (const char *fmt, ...)
-	{
-		std::string str;
-		va_list ap;
-		::va_start (ap, fmt);
-		sprintf (str, fmt, ap);
-		::va_end (ap);
-
-		return str;
-	}
-
-	void STR::sprintf (COMMON_VECTOR &v, const char *fmt, ...)
-	{
-		std::string str;
-		va_list ap;
-		::va_start (ap, fmt);
-		sprintf (str, fmt, ap);
-		::va_end (ap);
-
-		v.push_back (std::move (str));
-	}
-
-	void STR::sprintf (COMMON_LIST &v, const char *fmt, ...)
-	{
-		std::string str;
-		va_list ap;
-		::va_start (ap, fmt);
-		sprintf (str, fmt, ap);
-		::va_end (ap);
-
-		v.push_back (std::move (str));
-	}
-
-	void STR::sprintf (COMMON_DEQUE &v, const char *fmt, ...)
-	{
-		std::string str;
-		va_list ap;
-		::va_start (ap, fmt);
-		sprintf (str, fmt, ap);
-		::va_end (ap);
-
-		v.push_back (std::move (str));
-	}
+*/
 
 	static inline void _to_uint_process_char (uint64_t &result, const uint8_t chr, const uint64_t base)
 	{
@@ -244,7 +160,7 @@ namespace shaga {
 			}
 		}
 		catch (const std::exception &e) {
-			cThrow ("Could not convert '%s' to %s: %s", ~src, type, e.what ());
+			cThrow ("Could not convert '%s' to %s: %s", src, type, e.what ());
 		}
 	}
 
@@ -256,7 +172,7 @@ namespace shaga {
 		else if (icompare (s, "false") == true || icompare (s, "off") == true || icompare (s, "no") == true || s == "0") {
 			return false;
 		}
-		cThrow ("Could not convert '%s' to bool: Not recognized", ~s);
+		cThrow ("Could not convert '%s' to bool: Not recognized", s);
 	}
 
 	uint8_t STR::to_uint8 (const std::string_view s, const int base)
@@ -337,6 +253,11 @@ namespace shaga {
 
 	void STR::format_time (std::string &out, const time_t theTime, const bool local, const bool for_filename)
 	{
+		out.assign (format_time (theTime, local, for_filename));
+	}
+
+	std::string STR::format_time (const time_t theTime, const bool local, const bool for_filename)
+	{
 		struct tm t;
 		::memset (&t, 0, sizeof (t));
 
@@ -348,26 +269,45 @@ namespace shaga {
 		}
 #ifndef OS_WIN
 		if (true == for_filename) {
-			sprintf (out, "%04d-%02d-%02d_%02d%02d%02d_%s", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, t.tm_zone);
+			return fmt::format ("{:04}-{:02}-{:02}_{:02}{:02}{:02d}_{}",
+				t.tm_year + 1900,
+				t.tm_mon + 1,
+				t.tm_mday,
+				t.tm_hour,
+				t.tm_min,
+				t.tm_sec,
+				t.tm_zone);
 		}
 		else {
-			sprintf (out, "%04d-%02d-%02d %02d:%02d:%02d %s", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, t.tm_zone);
+			return fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d} {}",
+				t.tm_year + 1900,
+				t.tm_mon + 1,
+				t.tm_mday,
+				t.tm_hour,
+				t.tm_min,
+				t.tm_sec,
+				t.tm_zone);
 		}
 #else
 		if (true == for_filename) {
-			sprintf (out, "%04d-%02d-%02d_%02d%02d%02d", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+			return fmt::format ("{:04}-{:02}-{:02}_{:02}{:02}{:02d}",
+				t.tm_year + 1900,
+				t.tm_mon + 1,
+				t.tm_mday,
+				t.tm_hour,
+				t.tm_min,
+				t.tm_sec);
 		}
 		else {
-			sprintf (out, "%04d-%02d-%02d %02d:%02d:%02d", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+			return fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d}",
+				t.tm_year + 1900,
+				t.tm_mon + 1,
+				t.tm_mday,
+				t.tm_hour,
+				t.tm_min,
+				t.tm_sec);
 		}
 #endif // OS_WIN
-	}
-
-	std::string STR::format_time (const time_t theTime, const bool local, const bool for_filename)
-	{
-		std::string out;
-		format_time (out, theTime, local, for_filename);
-		return out;
 	}
 
 	std::string STR::format_time (const bool local, const bool for_filename)
@@ -377,10 +317,15 @@ namespace shaga {
 		return format_time (theTime, local, for_filename);
 	}
 
-	void STR::format_date (std::string &out, const time_t theTime, const bool local, const char *separatorstr)
+	void STR::format_date (std::string &out, const time_t theTime, const bool local, const std::string_view separatorstr)
+	{
+		out.assign (format_date (theTime, local, separatorstr));
+	}
+
+	std::string STR::format_date (const time_t theTime, const bool local, const std::string_view separatorstr)
 	{
 		struct tm t;
-		memset (&t, 0, sizeof (t));
+		::memset (&t, 0, sizeof (t));
 
 		if (local == true) {
 			::localtime_r (&theTime, &t);
@@ -389,17 +334,15 @@ namespace shaga {
 			::gmtime_r (&theTime, &t);
 		}
 
-		sprintf (out, "%04d%s%02d%s%02d", t.tm_year + 1900, separatorstr, t.tm_mon + 1, separatorstr, t.tm_mday);
+		return fmt::format ("{:04}{}{:02}{}{:02}",
+			t.tm_year + 1900,
+			separatorstr,
+			t.tm_mon + 1,
+			separatorstr,
+			t.tm_mday);
 	}
 
-	std::string STR::format_date (const time_t theTime, const bool local, const char *separatorstr)
-	{
-		std::string out;
-		format_date (out, theTime, local, separatorstr);
-		return out;
-	}
-
-	std::string STR::format_date (const bool local, const char *separatorstr)
+	std::string STR::format_date (const bool local, const std::string_view separatorstr)
 	{
 		time_t theTime;
 		::time (&theTime);
