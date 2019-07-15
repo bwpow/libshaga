@@ -16,7 +16,7 @@ int main(int argc, char **argv) try
 	return RUN_ALL_TESTS();
 }
 catch (const std::exception &e) {
-	shaga::exit ("FATAL ERROR: %s", e.what ());
+	shaga::exit ("FATAL ERROR: {}", e.what ());
 }
 catch (...) {
 	shaga::exit ("FATAL ERROR: Unknown failure");

@@ -10,6 +10,12 @@ All rights reserved.
 
 using namespace shaga;
 
+TEST (STR, concat)
+{
+	EXPECT_TRUE (STR::concat ("ahoj"s, "ahoj"sv, "ahoj") == "ahojahojahoj"s);
+	EXPECT_TRUE (_CC ("ahoj"s, "ahoj"sv, "ahoj") == "ahojahojahoj"s);
+}
+
 TEST (STR, icompare)
 {
 	EXPECT_TRUE (STR::icompare ("AHOJ"sv, "ahoj"sv));
@@ -72,29 +78,18 @@ TEST (STR, has_isuffix)
 	EXPECT_FALSE (STR::has_isuffix ("", "TOTO"));
 }
 
-TEST (STR, sprintf)
-{
-	std::string str;
-
-	str = STR::sprintf ("%d %X %g %c", 100, 0x100, 100.100d, 'x');
-	EXPECT_TRUE (str == "100 100 100.1 x") << str;
-
-	str = STR::sprintf ("1234567");
-	EXPECT_TRUE (str == "1234567") << str;
-
-	str = STR::sprintf ("%s", "12345678");
-	EXPECT_TRUE (str == "12345678") << str;
-}
-
 TEST (STR, format)
 {
 	std::string str;
 
-	str = STR::format ("123456789");
-	EXPECT_TRUE (str == "123456789") << str;
+	str = fmt::format ("{:d} {:X} {:g} {:c}", 100, 0x100, 100.100d, 'x');
+	EXPECT_TRUE (str == "100 100 100.1 x") << str;
 
-	str = STR::format ("{}", "123456789"sv);
-	EXPECT_TRUE (str == "123456789") << str;
+	str = fmt::format ("1234567");
+	EXPECT_TRUE (str == "1234567") << str;
+
+	str = fmt::format ("{}", "12345678");
+	EXPECT_TRUE (str == "12345678") << str;
 }
 
 TEST (STR, bool)

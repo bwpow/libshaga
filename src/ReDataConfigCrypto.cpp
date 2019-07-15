@@ -185,7 +185,7 @@ namespace shaga {
 			cThrow ("No crypto algorithm selected");
 		}
 		else if (key_size != key.size ()) {
-			cThrow ("Wrong crypto key size. Expected %" PRIu32 " bytes, got %" PRIu32 " bytes.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
+			cThrow ("Wrong crypto key size. Expected {} bytes, got {} bytes.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
 		}
 		else {
 			const size_t iv_size = _get_crypto_iv_size (_used_crypto);
@@ -227,7 +227,7 @@ namespace shaga {
 			cThrow ("No crypto algorithm selected");
 		}
 		else if (key_size != key.size ()) {
-			cThrow ("Wrong crypto key size. Expected %" PRIu32 " bytes, got %" PRIu32 " bytes.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
+			cThrow ("Wrong crypto key size. Expected {} bytes, got {} bytes.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
 		}
 		else {
 			/* Get IV size */

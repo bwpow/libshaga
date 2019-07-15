@@ -85,16 +85,16 @@ namespace shaga {
 		return (_endian == Endian::BIG);
 	}
 
-	std::string BIN::endian_to_string (void)
+	std::string_view BIN::endian_to_string (void)
 	{
 		endian_detect ();
 		switch (_endian) {
-			case Endian::UNKNOWN: return "unknown endian";
-			case Endian::LITTLE: return "little endian";
-			case Endian::BIG: return "big endian";
+			case Endian::UNKNOWN: return "unknown endian"sv;
+			case Endian::LITTLE: return "little endian"sv;
+			case Endian::BIG: return "big endian"sv;
 		}
 
-		cThrow ("Undefined endian");
+		cThrow ("Undefined endian"sv);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -104,7 +104,7 @@ namespace shaga {
 	void BIN::OR (std::string &lhs, const std::string_view rhs)
 	{
 		if (lhs.size () != rhs.size ()) {
-			cThrow ("Both inputs must have same length");
+			cThrow ("Both inputs must have same length"sv);
 		}
 		std::string::iterator lhs_it = lhs.begin ();
 		std::string_view::const_iterator rhs_it = rhs.cbegin ();
@@ -118,7 +118,7 @@ namespace shaga {
 	void BIN::XOR (std::string &lhs, const std::string_view rhs)
 	{
 		if (lhs.size () != rhs.size ()) {
-			cThrow ("Both inputs must have same length");
+			cThrow ("Both inputs must have same length"sv);
 		}
 		std::string::iterator lhs_it = lhs.begin ();
 		std::string_view::const_iterator rhs_it = rhs.cbegin ();
@@ -132,7 +132,7 @@ namespace shaga {
 	void BIN::AND (std::string &lhs, const std::string_view rhs)
 	{
 		if (lhs.size () != rhs.size ()) {
-			cThrow ("Both inputs must have same length");
+			cThrow ("Both inputs must have same length"sv);
 		}
 		std::string::iterator lhs_it = lhs.begin ();
 		std::string_view::const_iterator rhs_it = rhs.cbegin ();
@@ -647,19 +647,9 @@ namespace shaga {
 		return s;
 	}
 
-	uint8_t BIN::be_to_uint8 (const std::string &s, size_t &offset)
-	{
-		return _be_to_int<uint8_t> (s, offset);
-	}
-
 	uint8_t BIN::be_to_uint8 (const std::string_view s, size_t &offset)
 	{
 		return _be_to_int<uint8_t> (s, offset);
-	}
-
-	uint16_t BIN::be_to_uint16 (const std::string &s, size_t &offset)
-	{
-		return _be_to_int<uint16_t> (s, offset);
 	}
 
 	uint16_t BIN::be_to_uint16 (const std::string_view s, size_t &offset)
@@ -667,19 +657,9 @@ namespace shaga {
 		return _be_to_int<uint16_t> (s, offset);
 	}
 
-	uint32_t BIN::be_to_uint24 (const std::string &s, size_t &offset)
-	{
-		return _be_to_uint24 (s, offset);
-	}
-
 	uint32_t BIN::be_to_uint24 (const std::string_view s, size_t &offset)
 	{
 		return _be_to_uint24 (s, offset);
-	}
-
-	uint32_t BIN::be_to_uint32 (const std::string &s, size_t &offset)
-	{
-		return _be_to_int<uint32_t> (s, offset);
 	}
 
 	uint32_t BIN::be_to_uint32 (const std::string_view s, size_t &offset)
@@ -687,20 +667,9 @@ namespace shaga {
 		return _be_to_int<uint32_t> (s, offset);
 	}
 
-	uint64_t BIN::be_to_uint64 (const std::string &s, size_t &offset)
-	{
-		return _be_to_int<uint64_t> (s, offset);
-	}
-
 	uint64_t BIN::be_to_uint64 (const std::string_view s, size_t &offset)
 	{
 		return _be_to_int<uint64_t> (s, offset);
-	}
-
-	uint8_t BIN::be_to_uint8 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _be_to_int<uint8_t> (s, offset);
 	}
 
 	uint8_t BIN::be_to_uint8 (const std::string_view s)
@@ -709,22 +678,10 @@ namespace shaga {
 		return _be_to_int<uint8_t> (s, offset);
 	}
 
-	uint16_t BIN::be_to_uint16 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _be_to_int<uint16_t> (s, offset);
-	}
-
 	uint16_t BIN::be_to_uint16 (const std::string_view s)
 	{
 		size_t offset = 0;
 		return _be_to_int<uint16_t> (s, offset);
-	}
-
-	uint32_t BIN::be_to_uint24 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _be_to_uint24 (s, offset);
 	}
 
 	uint32_t BIN::be_to_uint24 (const std::string_view s)
@@ -733,22 +690,10 @@ namespace shaga {
 		return _be_to_uint24 (s, offset);
 	}
 
-	uint32_t BIN::be_to_uint32 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _be_to_int<uint32_t> (s, offset);
-	}
-
 	uint32_t BIN::be_to_uint32 (const std::string_view s)
 	{
 		size_t offset = 0;
 		return _be_to_int<uint32_t> (s, offset);
-	}
-
-	uint64_t BIN::be_to_uint64 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _be_to_int<uint64_t> (s, offset);
 	}
 
 	uint64_t BIN::be_to_uint64 (const std::string_view s)
@@ -757,19 +702,9 @@ namespace shaga {
 		return _be_to_int<uint64_t> (s, offset);
 	}
 
-	int8_t BIN::be_to_int8 (const std::string &s, size_t &offset)
-	{
-		return _be_to_int<int8_t> (s, offset);
-	}
-
 	int8_t BIN::be_to_int8 (const std::string_view s, size_t &offset)
 	{
 		return _be_to_int<int8_t> (s, offset);
-	}
-
-	int16_t BIN::be_to_int16 (const std::string &s, size_t &offset)
-	{
-		return _be_to_int<int16_t> (s, offset);
 	}
 
 	int16_t BIN::be_to_int16 (const std::string_view s, size_t &offset)
@@ -777,30 +712,14 @@ namespace shaga {
 		return _be_to_int<int16_t> (s, offset);
 	}
 
-	int32_t BIN::be_to_int32 (const std::string &s, size_t &offset)
-	{
-		return _be_to_int<int32_t> (s, offset);
-	}
-
 	int32_t BIN::be_to_int32 (const std::string_view s, size_t &offset)
 	{
 		return _be_to_int<int32_t> (s, offset);
 	}
 
-	int64_t BIN::be_to_int64 (const std::string &s, size_t &offset)
-	{
-		return _be_to_int<int64_t> (s, offset);
-	}
-
 	int64_t BIN::be_to_int64 (const std::string_view s, size_t &offset)
 	{
 		return _be_to_int<int64_t> (s, offset);
-	}
-
-	int8_t BIN::be_to_int8 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _be_to_int<int8_t> (s, offset);
 	}
 
 	int8_t BIN::be_to_int8 (const std::string_view s)
@@ -809,34 +728,16 @@ namespace shaga {
 		return _be_to_int<int8_t> (s, offset);
 	}
 
-	int16_t BIN::be_to_int16 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _be_to_int<int16_t> (s, offset);
-	}
-
 	int16_t BIN::be_to_int16 (const std::string_view s)
 	{
 		size_t offset = 0;
 		return _be_to_int<int16_t> (s, offset);
 	}
 
-	int32_t BIN::be_to_int32 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _be_to_int<int32_t> (s, offset);
-	}
-
 	int32_t BIN::be_to_int32 (const std::string_view s)
 	{
 		size_t offset = 0;
 		return _be_to_int<int32_t> (s, offset);
-	}
-
-	int64_t BIN::be_to_int64 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _be_to_int<int64_t> (s, offset);
 	}
 
 	int64_t BIN::be_to_int64 (const std::string_view s)
@@ -966,19 +867,9 @@ namespace shaga {
 		return s;
 	}
 
-	uint8_t BIN::to_uint8 (const std::string &s, size_t &offset)
-	{
-		return _to_int<uint8_t> (s, offset);
-	}
-
 	uint8_t BIN::to_uint8 (const std::string_view s, size_t &offset)
 	{
 		return _to_int<uint8_t> (s, offset);
-	}
-
-	uint16_t BIN::to_uint16 (const std::string &s, size_t &offset)
-	{
-		return _to_int<uint16_t> (s, offset);
 	}
 
 	uint16_t BIN::to_uint16 (const std::string_view s, size_t &offset)
@@ -986,19 +877,9 @@ namespace shaga {
 		return _to_int<uint16_t> (s, offset);
 	}
 
-	uint32_t BIN::to_uint24 (const std::string &s, size_t &offset)
-	{
-		return _to_uint24 (s, offset);
-	}
-
 	uint32_t BIN::to_uint24 (const std::string_view s, size_t &offset)
 	{
 		return _to_uint24 (s, offset);
-	}
-
-	uint32_t BIN::to_uint32 (const std::string &s, size_t &offset)
-	{
-		return _to_int<uint32_t> (s, offset);
 	}
 
 	uint32_t BIN::to_uint32 (const std::string_view s, size_t &offset)
@@ -1006,20 +887,9 @@ namespace shaga {
 		return _to_int<uint32_t> (s, offset);
 	}
 
-	uint64_t BIN::to_uint64 (const std::string &s, size_t &offset)
-	{
-		return _to_int<uint64_t> (s, offset);
-	}
-
 	uint64_t BIN::to_uint64 (const std::string_view s, size_t &offset)
 	{
 		return _to_int<uint64_t> (s, offset);
-	}
-
-	uint8_t BIN::to_uint8 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _to_int<uint8_t> (s, offset);
 	}
 
 	uint8_t BIN::to_uint8 (const std::string_view s)
@@ -1028,22 +898,10 @@ namespace shaga {
 		return _to_int<uint8_t> (s, offset);
 	}
 
-	uint16_t BIN::to_uint16 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _to_int<uint16_t> (s, offset);
-	}
-
 	uint16_t BIN::to_uint16 (const std::string_view s)
 	{
 		size_t offset = 0;
 		return _to_int<uint16_t> (s, offset);
-	}
-
-	uint32_t BIN::to_uint24 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _to_uint24 (s, offset);
 	}
 
 	uint32_t BIN::to_uint24 (const std::string_view s)
@@ -1052,22 +910,10 @@ namespace shaga {
 		return _to_uint24 (s, offset);
 	}
 
-	uint32_t BIN::to_uint32 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _to_int<uint32_t> (s, offset);
-	}
-
 	uint32_t BIN::to_uint32 (const std::string_view s)
 	{
 		size_t offset = 0;
 		return _to_int<uint32_t> (s, offset);
-	}
-
-	uint64_t BIN::to_uint64 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _to_int<uint64_t> (s, offset);
 	}
 
 	uint64_t BIN::to_uint64 (const std::string_view s)
@@ -1076,19 +922,9 @@ namespace shaga {
 		return _to_int<uint64_t> (s, offset);
 	}
 
-	int8_t BIN::to_int8 (const std::string &s, size_t &offset)
-	{
-		return _to_int<int8_t> (s, offset);
-	}
-
 	int8_t BIN::to_int8 (const std::string_view s, size_t &offset)
 	{
 		return _to_int<int8_t> (s, offset);
-	}
-
-	int16_t BIN::to_int16 (const std::string &s, size_t &offset)
-	{
-		return _to_int<int16_t> (s, offset);
 	}
 
 	int16_t BIN::to_int16 (const std::string_view s, size_t &offset)
@@ -1096,30 +932,14 @@ namespace shaga {
 		return _to_int<int16_t> (s, offset);
 	}
 
-	int32_t BIN::to_int32 (const std::string &s, size_t &offset)
-	{
-		return _to_int<int32_t> (s, offset);
-	}
-
 	int32_t BIN::to_int32 (const std::string_view s, size_t &offset)
 	{
 		return _to_int<int32_t> (s, offset);
 	}
 
-	int64_t BIN::to_int64 (const std::string &s, size_t &offset)
-	{
-		return _to_int<int64_t> (s, offset);
-	}
-
 	int64_t BIN::to_int64 (const std::string_view s, size_t &offset)
 	{
 		return _to_int<int64_t> (s, offset);
-	}
-
-	int8_t BIN::to_int8 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _to_int<int8_t> (s, offset);
 	}
 
 	int8_t BIN::to_int8 (const std::string_view s)
@@ -1128,34 +948,16 @@ namespace shaga {
 		return _to_int<int8_t> (s, offset);
 	}
 
-	int16_t BIN::to_int16 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _to_int<int16_t> (s, offset);
-	}
-
 	int16_t BIN::to_int16 (const std::string_view s)
 	{
 		size_t offset = 0;
 		return _to_int<int16_t> (s, offset);
 	}
 
-	int32_t BIN::to_int32 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _to_int<int32_t> (s, offset);
-	}
-
 	int32_t BIN::to_int32 (const std::string_view s)
 	{
 		size_t offset = 0;
 		return _to_int<int32_t> (s, offset);
-	}
-
-	int64_t BIN::to_int64 (const std::string &s)
-	{
-		size_t offset = 0;
-		return _to_int<int64_t> (s, offset);
 	}
 
 	int64_t BIN::to_int64 (const std::string_view s)
@@ -1167,47 +969,34 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Size functions  /////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	namespace BIN {
-		template<typename S>
-		static inline size_t _to_size (const S &s, size_t &offset)
-		{
-			size_t v = 0;
+	size_t BIN::to_size (const std::string_view s, size_t &offset)
+	{
+		size_t v = 0;
 
-			#define SAT static_cast<uint8_t> (s.at (offset)); ++offset
-			const size_t d1 = SAT;
-			if (d1 & 0x80) {
-				const size_t d2 = SAT;
-				if (d1 & 0x40) {
-					const size_t d3 = SAT;
-					if (d1 & 0x20) {
-						const size_t d4 = SAT;
-						v = ( (d1 & 0x1F) << 24) | (d2 << 16) | (d3 << 8) | d4;
-					}
-					else {
-						v = ( (d1 & 0x3F) << 16) | (d2 << 8) | d3;
-					}
+		#define SAT static_cast<uint8_t> (s.at (offset)); ++offset
+		const size_t d1 = SAT;
+		if (d1 & 0x80) {
+			const size_t d2 = SAT;
+			if (d1 & 0x40) {
+				const size_t d3 = SAT;
+				if (d1 & 0x20) {
+					const size_t d4 = SAT;
+					v = ( (d1 & 0x1F) << 24) | (d2 << 16) | (d3 << 8) | d4;
 				}
 				else {
-					v = ( (d1 & 0x7F) << 8) | d2;
+					v = ( (d1 & 0x3F) << 16) | (d2 << 8) | d3;
 				}
 			}
 			else {
-				v = d1;
+				v = ( (d1 & 0x7F) << 8) | d2;
 			}
-			#undef SAT
-
-			return v;
 		}
-	}
+		else {
+			v = d1;
+		}
+		#undef SAT
 
-	size_t BIN::to_size (const std::string &s, size_t &offset)
-	{
-		return _to_size (s, offset);
-	}
-
-	size_t BIN::to_size (const std::string_view s, size_t &offset)
-	{
-		return _to_size (s, offset);
+		return v;
 	}
 
 	void BIN::from_size (const size_t sze, std::string &s)
@@ -1231,7 +1020,7 @@ namespace shaga {
 			s.push_back (static_cast<uint8_t> ( sze & 0xFF ));
 		}
 		else {
-			cThrow ("Unable to encode size larger than 0xFFFFFFF");
+			cThrow ("Unable to encode size larger than 0xFFFFFFF"sv);
 		}
 	}
 

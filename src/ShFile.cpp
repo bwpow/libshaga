@@ -129,7 +129,7 @@ namespace shaga {
 
 		_fd = ::open (s_c_str (_filename), flags, _mask);
 		if (_fd < 0) {
-			cFoThrow ("Error opening file '{}': {}", _filename, strerror (errno));
+			cThrow ("Error opening file '{}': {}", _filename, strerror (errno));
 		}
 
 		if (_mode & mAPPEND) {
@@ -157,12 +157,12 @@ namespace shaga {
 #ifndef OS_WIN
 		if (true == also_metadata) {
 			if (::fsync (_fd) == -1) {
-				cThrow ("Sync error in file '%s': %s", _filename, strerror (errno));
+				cThrow ("Sync error in file '{}': {}", _filename, strerror (errno));
 			}
 		}
 		else {
 			if (::fdatasync (_fd) == -1) {
-				cThrow ("Sync error in file '%s': %s", _filename, strerror (errno));
+				cThrow ("Sync error in file '{}': {}", _filename, strerror (errno));
 			}
 		}
 #endif // OS_WIN
@@ -172,10 +172,10 @@ namespace shaga {
 	{
 		const ssize_t ret = ::write (_fd, data.data (), std::min (len, data.size()));
 		if (ret < 0) {
-			cThrow ("Error writing to file '%s': %s", _filename, strerror (errno));
+			cThrow ("Error writing to file '{}': {}", _filename, strerror (errno));
 		}
 		if (static_cast<size_t> (ret) != len) {
-			cThrow ("Error writing to file '%s': Not all bytes written", _filename);
+			cThrow ("Error writing to file '{}': Not all bytes written", _filename);
 		}
 	}
 
@@ -188,10 +188,10 @@ namespace shaga {
 	{
 		const ssize_t ret = ::write (_fd, buf, len);
 		if (ret < 0) {
-			cThrow ("Error writing to file '%s': %s", _filename, strerror (errno));
+			cThrow ("Error writing to file '{}': {}", _filename, strerror (errno));
 		}
 		if (static_cast<size_t> (ret) != len) {
-			cThrow ("Error writing to file '%s': Not all bytes were written", _filename);
+			cThrow ("Error writing to file '{}': Not all bytes were written", _filename);
 		}
 	}
 
@@ -209,12 +209,12 @@ namespace shaga {
 	bool ShFile::read (std::string &data, const size_t len, const bool thr_eof)
 	{
 		if (len > SSIZE_MAX) {
-			cThrow ("Error reading from file '%s': Too many bytes requested", _filename);
+			cThrow ("Error reading from file '{}': Too many bytes requested", _filename);
 		}
 
 		data.resize (len);
 		if (data.capacity () < len) {
-			cThrow ("Error reading from file '%s': Unable to allocate buffer", _filename);
+			cThrow ("Error reading from file '{}': Unable to allocate buffer", _filename);
 		}
 
 		/* Note: Since C++11, std::string::data memory must be continuous */
@@ -225,18 +225,18 @@ namespace shaga {
 			const ssize_t ret = ::read (_fd, data.data (), len);
 		#endif // OS_WIN
 		if (ret < 0) {
-			cThrow ("Error reading from file '%s': %s", _filename, strerror (errno));
+			cThrow ("Error reading from file '{}': {}", _filename, strerror (errno));
 		}
 		else if (0 == ret) {
 			/* EOF */
 			if (true == thr_eof) {
-				cThrow ("Error reading from file '%s': EOF", _filename);
+				cThrow ("Error reading from file '{}': EOF", _filename);
 			}
 			data.resize (0);
 			return false;
 		}
 		else if (static_cast<size_t>(ret) != len) {
-			cThrow ("Error reading from file '%s': Not enough bytes, requested = %zu, read = %zu", _filename, len, static_cast<size_t> (ret));
+			cThrow ("Error reading from file '{}': Not enough bytes, requested = {}, read = {}", _filename, len, ret);
 		}
 
 		return true;
@@ -252,7 +252,7 @@ namespace shaga {
 	bool ShFile::read (char *buf, const size_t len, const bool thr_eof)
 	{
 		if (len > SSIZE_MAX) {
-			cThrow ("Error reading from file '%s': Too many bytes requested", _filename);
+			cThrow ("Error reading from file '{}': Too many bytes requested", _filename);
 		}
 
 		#ifdef OS_WIN
@@ -261,17 +261,17 @@ namespace shaga {
 			const ssize_t ret = ::read (_fd, buf, len);
 		#endif // OS_WIN
 		if (ret < 0) {
-			cThrow ("Error reading from file '%s': %s", _filename, strerror (errno));
+			cThrow ("Error reading from file '{}': {}", _filename, strerror (errno));
 		}
 		else if (0 == ret) {
 			/* EOF */
 			if (true == thr_eof) {
-				cThrow ("Error reading from file '%s': EOF", _filename);
+				cThrow ("Error reading from file '{}': EOF", _filename);
 			}
 			return false;
 		}
 		else if (static_cast<size_t>(ret) != len) {
-			cThrow ("Error reading from file '%s': Not enough bytes, requested = %zu, read = %zu", _filename, len, static_cast<size_t> (ret));
+			cThrow ("Error reading from file '{}': Not enough bytes, requested = {}, read = {}", _filename, len, ret);
 		}
 
 		return true;
@@ -281,7 +281,7 @@ namespace shaga {
 	{
 		char buf[1];
 		if (read (buf, 1) == false) {
-			cThrow ("Error reading from file '%s': EOF", _filename);
+			cThrow ("Error reading from file '{}': EOF", _filename);
 		}
 		return static_cast<uint8_t> (buf[0]);
 	}
@@ -362,7 +362,7 @@ namespace shaga {
 
 
 		if (ret == static_cast<off64_t>(-1)) {
-			cThrow ("Seek error in file '%s': %s", _filename, strerror (errno));
+			cThrow ("Seek error in file '{}': {}", _filename, strerror (errno));
 		}
 
 		return ret;
@@ -384,15 +384,15 @@ namespace shaga {
 
 		if (is_opened () == true) {
 			if (::fstat (_fd, &ret) == -1) {
-				cFoThrow ("Stat error in file '{}': {}", _filename, strerror (errno));
+				cThrow ("Stat error in file '{}': {}", _filename, strerror (errno));
 			}
 		}
 		else {
 			if (_filename.empty () == true) {
-				cFoThrow ("Filename is not set");
+				cThrow ("Filename is not set");
 			}
 			if (::stat (_filename.c_str (), &ret) == -1) {
-				cFoThrow ("Stat error in file '{}': {}", _filename, strerror (errno));
+				cThrow ("Stat error in file '{}': {}", _filename, strerror (errno));
 			}
 		}
 

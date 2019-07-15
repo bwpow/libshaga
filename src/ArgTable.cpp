@@ -21,7 +21,7 @@ namespace shaga {
 		std::string s;
 
 		if (key_short != 0) {
-			s.append (fmt::sprintf ("-%c", key_short));
+			s.append (fmt::format ("-{:c}", key_short));
 			if (has_param == true) {
 				s.append ("<" + param_type + ">");
 			}
@@ -52,9 +52,9 @@ namespace shaga {
 		}
 
 		if (key_long.empty () == true) {
-			cThrow ("Unknown option '-%c'", key_short);
+			cThrow ("Unknown option '-{:c}'", key_short);
 		}
-		cThrow ("Unknown option '--%s'", key_long);
+		cThrow ("Unknown option '--{}'", key_long);
 	}
 
 	void ArgTable::process_entry (Entry &e, const std::string_view var)
@@ -85,14 +85,14 @@ namespace shaga {
 				/* There is no '=', so let's check if there should be parameter */
 				_actual_entry = find_entry_by_key (data.substr (2), 0);
 				if (true == _actual_entry->has_param) {
-					cThrow ("Option '%s' is missing parameter", data);
+					cThrow ("Option '{}' is missing parameter", data);
 				}
 				process_entry (*_actual_entry, "");
 			}
 			else {
 				_actual_entry = find_entry_by_key (data.substr (2, pos - 2), 0);
 				if (false == _actual_entry->has_param) {
-					cThrow ("Option '%s' shouldn't have parameter", data);
+					cThrow ("Option '{}' shouldn't have parameter", data);
 				}
 				process_entry (*_actual_entry, data.substr (pos + 1));
 			}
@@ -116,7 +116,7 @@ namespace shaga {
 			}
 		}
 		else {
-			cThrow ("Unknown option '%s'", data);
+			cThrow ("Unknown option '{}'", data);
 		}
 	}
 
@@ -140,24 +140,24 @@ namespace shaga {
 
 	std::string ArgTable::get_usage_string (void) const
 	{
-		std::string s = "Usage: ";
+		std::string s = "Usage: "s;
 
 		if (_argv0.empty () == false) {
 			s.append (_argv0);
 		}
 		else {
-			s.append ("executable");
+			s.append ("executable"s);
 		}
 
 		for (const auto &e : _entries) {
 			s.append (" ");
 			switch (e.incidence) {
 				case INCIDENCE::ANY:
-					s.append ("[" + e.get_str () + " ...]");
+					s.append ("["s + e.get_str () + " ...]"s);
 					break;
 
 				case INCIDENCE::ZERO_OR_ONE:
-					s.append ("[" + e.get_str () + "]");
+					s.append ("["s + e.get_str () + "]"s);
 					break;
 
 				case INCIDENCE::ONE:
@@ -165,7 +165,7 @@ namespace shaga {
 					break;
 
 				case INCIDENCE::AT_LEAST_ONE:
-					s.append (e.get_str () + " [" + e.get_str () + " ...]");
+					s.append (e.get_str () + " ["s + e.get_str () + " ...]"s);
 					break;
 
 			}
@@ -193,7 +193,7 @@ namespace shaga {
 	std::string ArgTable::get_help_string (void) const
 	{
 		const COMMON_COMMON_VECTOR v = get_help_vector ();
-		std::string s = "Options:";
+		std::string s = "Options:"s;
 
 		size_t cc = 0;
 		for (const auto &e : v) {
@@ -203,10 +203,10 @@ namespace shaga {
 		}
 
 		for (const auto &e : v) {
-			s.append ("\n    ");
+			s.append ("\n    "s);
 			s.append (e[0]);
 			s.append (std::string (cc - e[0].size (), ' '));
-			s.append (" : ");
+			s.append (" : "s);
 			s.append (e[1]);
 		}
 
@@ -215,12 +215,12 @@ namespace shaga {
 
 	void ArgTable::print_usage (void) const
 	{
-		std::cout << get_usage_string () << "\n\n" << get_help_string () << std::endl;
+		std::cout << get_usage_string () << "\n\n"s << get_help_string () << std::endl;
 	}
 
 	std::ostream& operator<< (std::ostream& stream, const ArgTable& t)
 	{
-		stream << t.get_usage_string () << "\n\n" << t.get_help_string ();
+		stream << t.get_usage_string () << "\n\n"s << t.get_help_string ();
 		return stream;
 	}
 
@@ -229,10 +229,10 @@ namespace shaga {
 	{
 		for (const auto &e : _entries) {
 			if (e.key_long.empty () == false && key_long == e.key_long) {
-				cThrow ("Option '--%s' is duplicated", key_long);
+				cThrow ("Option '--{}' is duplicated", key_long);
 			}
 			if (e.key_short != 0 && key_short == e.key_short) {
-				cThrow ("Option '-%c' is duplicated", key_short);
+				cThrow ("Option '-{:c}' is duplicated", key_short);
 			}
 		}
 
@@ -245,7 +245,7 @@ namespace shaga {
 		e.incidence = incidence;
 
 		if (param_type.empty () == true) {
-			e.param_type.assign ("PARAM");
+			e.param_type.assign ("PARAM"s);
 		}
 		else {
 			e.param_type.assign (param_type);
@@ -282,7 +282,7 @@ namespace shaga {
 			}
 
 			if (true == _next_entry_is_param) {
-				cThrow ("Option '%s' is missing parameter", v.back());
+				cThrow ("Option '{}' is missing parameter", v.back());
 			}
 
 			/* Check for correct incidence */
@@ -293,19 +293,19 @@ namespace shaga {
 
 					case INCIDENCE::ZERO_OR_ONE:
 						if (e.vars.size () > 1) {
-							cThrow ("Option '%s' must be used at most once", e.get_str ());
+							cThrow ("Option '{}' must be used at most once", e.get_str ());
 						}
 						break;
 
 					case INCIDENCE::ONE:
 						if (e.vars.size () != 1) {
-							cThrow ("Option '%s' must be used exactly once", e.get_str ());
+							cThrow ("Option '{}' must be used exactly once", e.get_str ());
 						}
 						break;
 
 					case INCIDENCE::AT_LEAST_ONE:
 						if (e.vars.size () < 1) {
-							cThrow ("Option '%s' must be used at least once", e.get_str ());
+							cThrow ("Option '{}' must be used at least once", e.get_str ());
 						}
 						break;
 				}
@@ -316,7 +316,7 @@ namespace shaga {
 				if (e.checker != nullptr) {
 					for (const auto &v : e.vars) {
 						if (e.checker (v) == false) {
-							cThrow ("Parameter '%s' is not valid for option '%s'", v, e.get_str ());
+							cThrow ("Parameter '{}' is not valid for option '{}'", v, e.get_str ());
 						}
 					}
 				}
@@ -338,11 +338,11 @@ namespace shaga {
 			process (v, true);
 		}
 		catch (const std::exception &e) {
-			error.assign ("Error: " + std::string (e.what ()));
+			error.assign ("Error: "s + std::string (e.what ()));
 			return false;
 		}
 		catch (...) {
-			error.assign ("Error: Unable to parse options");
+			error.assign ("Error: Unable to parse options"s);
 			return false;
 		}
 
@@ -354,7 +354,7 @@ namespace shaga {
 		std::string s;
 
 		if (section.empty () == false) {
-			s.append ("[" + std::string (section) + "]\n");
+			s.append ("["s + std::string (section) + "]\n"s);
 		}
 
 		for (const auto &e : _entries) {
@@ -365,7 +365,7 @@ namespace shaga {
 				else {
 					s.append (e.key_long);
 				}
-				s.append ("[]=" + v + "\n");
+				s.append ("[]="s + v + "\n"s);
 			}
 		}
 

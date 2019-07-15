@@ -16,13 +16,13 @@ namespace shaga {
 	void signal_handler (int sgn)
 	{
 		if (SIGINT == sgn) {
-			P::printf ("Caught signal: CTRL+C signal");
+			P::print ("Caught signal: CTRL+C signal");
 		}
 		else if (SIGTERM == sgn) {
-			P::printf ("Caught signal: Termination request");
+			P::print ("Caught signal: Termination request");
 		}
 		else {
-			P::printf ("Caught signal: %d", sgn);
+			P::print ("Caught signal: {}", sgn);
 		}
 		TRY_TO_SHUTDOWN ();
 	}

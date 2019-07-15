@@ -46,14 +46,14 @@ namespace shaga {
 	{
 		if (_fd < 0) {
 			if (errno > 0) {
-				cThrow ("Unable to create socket: %s", strerror (errno));
+				cThrow ("Unable to create socket: {}", strerror (errno));
 			}
 			else {
 				cThrow ("Unable to use empty socket");
 			}
 		}
 
-		P::debug_printf ("Opening socket %d", _fd);
+		P::debug_print ("Opening socket {}", _fd);
 	}
 
 	ShSocket::ShSocket (const int domain, const int type, const int protocol) :
@@ -63,7 +63,7 @@ namespace shaga {
 	ShSocket::~ShSocket ()
 	{
 		if (_fd >= 0) {
-			P::debug_printf ("Closing socket %d", _fd);
+			P::debug_print ("Closing socket {}", _fd);
 			::close (_fd);
 		}
 	}

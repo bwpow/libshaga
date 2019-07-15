@@ -18,61 +18,50 @@ namespace shaga::STR {
 	#define NEWLINESZERO std::string_view ("\n\r\0", 3)
 
 	template <typename... Args>
-	std::string sprintf (const char *format, const Args & ... args)
+	std::string concat (const Args & ... args)
 	{
-		return fmt::sprintf (format, args...);
+		const std::array<std::string_view,sizeof...(Args)> vin {args...};
+		std::string out;
+
+		size_t len = 0;
+		for (const auto &entry : vin) {
+			len += entry.size ();
+		}
+
+		out.reserve (len);
+		for (const auto &entry : vin) {
+			out.append (entry);
+		}
+
+		return out;
 	}
 
 	template <typename... Args>
-	void sprintf (std::string &vout, const char *format, const Args & ... args)
-	{
-		vout.assign (fmt::sprintf (format, args...));
-	}
-
-	template <typename... Args>
-	void sprintf (COMMON_VECTOR &vout, const char *format, const Args & ... args)
-	{
-		vout.push_back (fmt::sprintf (format, args...));
-	}
-
-	template <typename... Args>
-	void sprintf (COMMON_LIST &vout, const char *format, const Args & ... args)
-	{
-		vout.push_back (fmt::sprintf (format, args...));
-	}
-
-	template <typename... Args>
-	void sprintf (COMMON_DEQUE &vout, const char *format, const Args & ... args)
-	{
-		vout.push_back (fmt::sprintf (format, args...));
-	}
-
-	template <typename... Args>
-	std::string format (const char *format, const Args & ... args)
+	std::string sprintf (const std::string_view format, const Args & ... args)
 	{
 		return fmt::format (format, args...);
 	}
 
 	template <typename... Args>
-	void format (std::string &vout, const char *format, const Args & ... args)
+	void sprintf (std::string &vout, const std::string_view format, const Args & ... args)
 	{
 		vout.assign (fmt::format (format, args...));
 	}
 
 	template <typename... Args>
-	void format (COMMON_VECTOR &vout, const char *format, const Args & ... args)
+	void sprintf (COMMON_VECTOR &vout, const std::string_view format, const Args & ... args)
 	{
 		vout.push_back (fmt::format (format, args...));
 	}
 
 	template <typename... Args>
-	void format (COMMON_LIST &vout, const char *format, const Args & ... args)
+	void sprintf (COMMON_LIST &vout, const std::string_view format, const Args & ... args)
 	{
 		vout.push_back (fmt::format (format, args...));
 	}
 
 	template <typename... Args>
-	void format (COMMON_DEQUE &vout, const char *format, const Args & ... args)
+	void sprintf (COMMON_DEQUE &vout, const std::string_view format, const Args & ... args)
 	{
 		vout.push_back (fmt::format (format, args...));
 	}

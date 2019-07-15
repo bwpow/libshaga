@@ -95,25 +95,23 @@ namespace shaga {
 	{
 		if (enabled) {
 			if (_dir_log.empty () || _name_log.empty () || _app_name.empty ()) {
-				cThrow ("Can't enable P::printf, variables are not set.");
+				cThrow ("Can't enable P::print, variables are not set."sv);
 			}
 
-			if (STR::icompare (_dir_log, "syslog") == true) {
+			if (STR::icompare (_dir_log, "syslog"sv) == true) {
 				_dir_log_enum = _DirLogEnum::SYSLOG;
 			}
-			else if (STR::icompare (_dir_log, "-") == true || STR::icompare (_dir_log, "stdout") == true) {
+			else if (STR::icompare (_dir_log, "-"sv) == true || STR::icompare (_dir_log, "stdout"sv) == true) {
 				_dir_log_enum = _DirLogEnum::STDOUT;
 			}
-			else if (STR::icompare (_dir_log, "stderr") == true) {
+			else if (STR::icompare (_dir_log, "stderr"sv) == true) {
 				_dir_log_enum = _DirLogEnum::STDERR;
 			}
 			else {
 				_dir_log_enum = _DirLogEnum::FILE;
 			}
 		}
-
 		_enabled = enabled;
-
 		_printf_file.close ();
 	}
 
@@ -127,7 +125,12 @@ namespace shaga {
 		return (true == _enabled && false == _disabled_permanently);
 	}
 
-	void P::_printf (const char *message, const char *prefix) noexcept
+	void P::_print (const std::string &message, const char *prefix) noexcept
+	{
+		_print (message.c_str (), prefix);
+	}
+
+	void P::_print (const char *message, const char *prefix) noexcept
 	{
 		if (false == _enabled || true == _disabled_permanently) {
 			return;
@@ -145,7 +148,7 @@ namespace shaga {
 
 #ifndef OS_WIN
 			if (true == _printf_ms) {
-				_printf_time = fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d}.{:03} {} : ",
+				_printf_time = fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d}.{:03} {} : "sv,
 					local_tm.tm_year + 1900,
 					local_tm.tm_mon + 1,
 					local_tm.tm_mday,
@@ -156,7 +159,7 @@ namespace shaga {
 					local_tm.tm_zone);
 			}
 			else {
-				_printf_time = fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d} {} : ",
+				_printf_time = fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d} {} : "sv,
 					local_tm.tm_year + 1900,
 					local_tm.tm_mon + 1,
 					local_tm.tm_mday,
@@ -167,7 +170,7 @@ namespace shaga {
 			}
 #else
 			if (true == _printf_ms) {
-				_printf_time = fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d}.{:03} : ",
+				_printf_time = fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d}.{:03} : "sv,
 					local_tm.tm_year + 1900,
 					local_tm.tm_mon + 1,
 					local_tm.tm_mday,
@@ -177,7 +180,7 @@ namespace shaga {
 					rt % 1'000);
 			}
 			else {
-				_printf_time = fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d} : ",
+				_printf_time = fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d} : "sv,
 					local_tm.tm_year + 1900,
 					local_tm.tm_mon + 1,
 					local_tm.tm_mday,
@@ -245,13 +248,13 @@ namespace shaga {
 					const off64_t st_size = _printf_file.get_file_size ();
 					if (_limit_soft != 0 && st_size >= _limit_soft) {
 						if (false == _soft_limit_reached) {
-							_printf_entries.push_back ("Log file is getting too large. Soft limit reached.");
+							_printf_entries.push_back ("Log file is getting too large. Soft limit reached."s);
 							_soft_limit_reached = true;
 						}
 					}
 
 					if (_limit_hard != 0 && st_size >= _limit_hard) {
-						_printf_entries.push_back ("Log file is too large. Shutting down!");
+						_printf_entries.push_back ("Log file is too large. Shutting down!"s);
 						_disabled_permanently = true;
 					}
 				}

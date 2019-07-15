@@ -146,7 +146,7 @@ namespace shaga {
 			const struct sockaddr_in* addr4 = (struct sockaddr_in*)&addr;
 			char str_ip4[INET_ADDRSTRLEN + 1];
 			if (::inet_ntop (AF_INET, (void *) &(addr4->sin_addr), str_ip4, sizeof (str_ip4)) == NULL) {
-				cThrow ("Unable to get IPv4 address: %s", strerror (errno));
+				cThrow ("Unable to get IPv4 address: {}", strerror (errno));
 			}
 			return std::string (str_ip4);
 		}
@@ -154,12 +154,12 @@ namespace shaga {
 			const struct sockaddr_in6* addr6 = (struct sockaddr_in6*)&addr;
 			char str_ip6[INET6_ADDRSTRLEN + 1];
 			if (::inet_ntop (AF_INET6, (void *) &(addr6->sin6_addr), str_ip6, sizeof (str_ip6)) == NULL) {
-				cThrow ("Unable to get IPv6 address: %s", strerror (errno));
+				cThrow ("Unable to get IPv6 address: {}", strerror (errno));
 			}
 			return std::string (str_ip6);
 		}
 		else {
-			cThrow ("Unknown protocol family or unrecognized address");
+			cThrow ("Unknown protocol family or unrecognized address"sv);
 		}
 	}
 
@@ -203,7 +203,7 @@ namespace shaga {
 	void IPHelper::test (void) const
 	{
 		if (_mask < 0 || _mask > _max_mask) {
-			cThrow ("Mask out of range, expected value between 0 and %d", _max_mask);
+			cThrow ("Mask out of range, expected value between 0 and {}", _max_mask);
 		}
 
 		if (_af == AF_INET) {
@@ -211,17 +211,17 @@ namespace shaga {
 			if (addr4->sin_family != _af) {
 				cThrow ("Incorrect protocol family set. Expected IPv4.");
 			}
-			P::debug_printf ("IPHelper: IPv4 address '%s' port %" PRIu16 " mask %d", get_ip_string (_af, _addr), ntohs (addr4->sin_port), _mask);
+			P::debug_print ("IPHelper: IPv4 address '{}' port {} mask {}", get_ip_string (_af, _addr), ntohs (addr4->sin_port), _mask);
 		}
 		else if (_af == AF_INET6) {
 			const struct sockaddr_in6* addr6 = (struct sockaddr_in6*)&_addr;
 			if (addr6->sin6_family != _af) {
 				cThrow ("Incorrect protocol family set. Expected IPv6.");
 			}
-			P::debug_printf ("IPHelper: IPv6 address '%s' port %" PRIu16 " mask %d", get_ip_string (_af, _addr), ntohs (addr6->sin6_port), _mask);
+			P::debug_print ("IPHelper: IPv6 address '{}' port {} mask {}", get_ip_string (_af, _addr), ntohs (addr6->sin6_port), _mask);
 		}
 		else {
-			cThrow ("Unknown protocol family or unrecognized address");
+			cThrow ("Unknown protocol family or unrecognized address"sv);
 		}
 	}
 
@@ -310,7 +310,7 @@ namespace shaga {
 					port = STR::to_uint16 (str_port.substr (1));
 				}
 				else {
-					cThrow ("Malformed port specification '%s'", str_port);
+					cThrow ("Malformed port specification '{}'", str_port);
 				}
 			}
 		}
@@ -333,7 +333,7 @@ namespace shaga {
 		}
 
 		if (ok == false) {
-			cThrow ("String '%s' not recognized as valid IP address", buf);
+			cThrow ("String '{}' not recognized as valid IP address", buf);
 		}
 
 		if (_mask < 0) {
@@ -380,7 +380,7 @@ namespace shaga {
 				_mask = _max_mask = 32;
 				addr4->sin_family = AF_INET;
 				if (sze < sizeof (addr4->sin_addr)) {
-					cThrow ("Buffer too small. Expected at least %d bytes", sizeof (addr4->sin_addr));
+					cThrow ("Buffer too small. Expected at least {} bytes", sizeof (addr4->sin_addr));
 				}
 				memcpy (&(addr4->sin_addr), buf, sizeof (addr4->sin_addr));
 				break;
@@ -390,7 +390,7 @@ namespace shaga {
 				_mask = _max_mask = 128;
 				addr6->sin6_family = AF_INET6;
 				if (sze < sizeof (addr6->sin6_addr)) {
-					cThrow ("Buffer too small. Expected at least %d bytes", sizeof (addr6->sin6_addr));
+					cThrow ("Buffer too small. Expected at least {} bytes", sizeof (addr6->sin6_addr));
 				}
 				memcpy (&(addr6->sin6_addr), buf, sizeof (addr6->sin6_addr));
 				break;
@@ -526,7 +526,7 @@ namespace shaga {
 		std::string out = get_ip_string (_af, _addr);
 
 		if (append_mask == true) {
-			out.append ("/" + STR::from_int (_mask));
+			out.append ("/"s + STR::from_int (_mask));
 		}
 
 		return out;
@@ -542,7 +542,7 @@ namespace shaga {
 		std::string out = get_ip_string (_af, get_subnet_struct ());
 
 		if (append_mask == true) {
-			out.append ("/" + STR::from_int (_mask));
+			out.append ("/"s + STR::from_int (_mask));
 		}
 
 		return out;
@@ -558,7 +558,7 @@ namespace shaga {
 		std::string out = get_ip_string (_af, get_broadcast_struct ());
 
 		if (append_mask == true) {
-			out.append ("/" + STR::from_int (_mask));
+			out.append ("/"s + STR::from_int (_mask));
 		}
 
 		return out;

@@ -112,7 +112,7 @@ namespace shaga {
 			set_crypto (opts_get<CRYPTO> (opts, 5, 2));
 		}
 		catch (const std::exception &e) {
-			cThrow ("Unable to decode message: %s", e.what());
+			cThrow ("Unable to decode message: {}", e.what());
 		}
 		catch (...) {
 			throw;
@@ -166,7 +166,7 @@ namespace shaga {
 				}
 				vals.append (v.first);
 			}
-			cThrow ("Unknown digest. Possible values: %s", vals);
+			cThrow ("Unknown digest. Possible values: {}", vals);
 		}
 
 		_used_digest = res->second;
@@ -197,7 +197,7 @@ namespace shaga {
 				}
 				vals.append (v.first);
 			}
-			cThrow ("Unknown crypto. Possible values: %s", vals);
+			cThrow ("Unknown crypto. Possible values: {}", vals);
 		}
 
 		_used_crypto = res->second;

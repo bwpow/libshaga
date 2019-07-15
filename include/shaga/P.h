@@ -23,39 +23,22 @@ namespace shaga::P {
 	void show_ms (const bool enabled) noexcept;
 	bool is_enabled (void) noexcept;
 
-	void _printf (const char *message, const char *prefix = nullptr) noexcept;
+	void _print (const std::string &message, const char *prefix = nullptr) noexcept;
+	void _print (const char *message, const char *prefix = nullptr) noexcept;
 
 	template <typename... Args>
-	void printf (const char *format, const Args & ... args) noexcept
+	void print (const char *format, const Args & ... args) noexcept
 	{
-		if (is_enabled ()) {
+		if (true == is_enabled ()) {
 			if (sizeof...(Args) == 0) {
-				_printf (format);
+				_print (format);
 			}
 			else {
 				try {
-					_printf (fmt::sprintf (format, args...).c_str ());
+					_print (fmt::format (format, args...));
 				}
 				catch (...) {
-					_printf (format, "FORMAT ERROR: ");
-				}
-			}
-		}
-	}
-
-	template <typename... Args>
-	void format (const char *format, const Args & ... args) noexcept
-	{
-		if (is_enabled ()) {
-			if (sizeof...(Args) == 0) {
-				_printf (format);
-			}
-			else {
-				try {
-					_printf (fmt::format (format, args...).c_str ());
-				}
-				catch (...) {
-					_printf (format, "FORMAT ERROR: ");
+					_print (format, "(!FORMAT ERROR!) ");
 				}
 			}
 		}
@@ -65,36 +48,18 @@ namespace shaga::P {
 	bool debug_is_enabled (void) noexcept;
 
 	template <typename... Args>
-	void debug_printf (const char *format, const Args & ... args) noexcept
+	void debug_print (const char *format, const Args & ... args) noexcept
 	{
-		if (debug_is_enabled ()) {
+		if (true == debug_is_enabled ()) {
 			if (sizeof...(Args) == 0) {
-				_printf (format);
+				_print (format);
 			}
 			else {
 				try {
-					_printf (fmt::sprintf (format, args...).c_str (), "[DEBUG] ");
+					_print (fmt::format (format, args...), "[DEBUG] ");
 				}
 				catch (...) {
-					_printf (format, "DEBUG FORMAT ERROR: ");
-				}
-			}
-		}
-	}
-
-	template <typename... Args>
-	void debug_format (const char *format, const Args & ... args) noexcept
-	{
-		if (debug_is_enabled ()) {
-			if (sizeof...(Args) == 0) {
-				_printf (format);
-			}
-			else {
-				try {
-					_printf (fmt::format (format, args...).c_str (), "[DEBUG] ");
-				}
-				catch (...) {
-					_printf (format, "DEBUG FORMAT ERROR: ");
+					_print (format, "[DEBUG] (!FORMAT ERROR!) ");
 				}
 			}
 		}

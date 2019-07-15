@@ -28,11 +28,11 @@ namespace shaga {
 		if (epoll_ctl (epoll_fd, EPOLL_CTL_ADD, sock, &e) == -1) {
 			if (EEXIST == errno && true == should_modify_if_exists) {
 				if (epoll_ctl (epoll_fd, EPOLL_CTL_MOD, sock, &e) == -1) {
-					cThrow ("Unable to modify file descriptor in epoll: %s", strerror (errno));
+					cThrow ("Unable to modify file descriptor in epoll: {}", strerror (errno));
 				}
 			}
 			else {
-				cThrow ("Unable to add new file descriptor to epoll: %s", strerror (errno));
+				cThrow ("Unable to add new file descriptor to epoll: {}", strerror (errno));
 			}
 		}
 	}
@@ -49,7 +49,7 @@ namespace shaga {
 		e.data.fd = sock;
 
 		if (epoll_ctl (epoll_fd, EPOLL_CTL_MOD, sock, &e) == -1) {
-			cThrow ("Unable to modify file descriptor in epoll: %s", strerror (errno));
+			cThrow ("Unable to modify file descriptor in epoll: {}", strerror (errno));
 		}
 	}
 
@@ -61,7 +61,7 @@ namespace shaga {
 
 		if (epoll_ctl (epoll_fd, EPOLL_CTL_DEL, sock, nullptr) == -1) {
 			if (false == ignore_failure) {
-				cThrow ("Unable to remove file descriptor from epoll: %s", strerror (errno));
+				cThrow ("Unable to remove file descriptor from epoll: {}", strerror (errno));
 			}
 		}
 	}
@@ -92,7 +92,7 @@ namespace shaga {
 				}
 			}
 			else {
-				cThrow ("getpwnam_r error: %s", strerror (ret));
+				cThrow ("getpwnam_r error: {}", strerror (ret));
 			}
 		}
 		catch (...) {
@@ -130,7 +130,7 @@ namespace shaga {
 				}
 			}
 			else {
-				cThrow ("getgrnam_r error: %s", strerror (ret));
+				cThrow ("getgrnam_r error: {}", strerror (ret));
 			}
 		}
 		catch (...) {

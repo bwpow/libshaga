@@ -19,7 +19,7 @@ namespace shaga {
 	static int _random_for_mbedtls (void *p_rng, unsigned char *output, size_t output_len)
 	{
 		if (nullptr == p_rng) {
-			cThrow ("DiSig error: Null pointer in random");
+			cThrow ("DiSig error: Null pointer in random"sv);
 		}
 		randutils::mt19937_r_rng *_rng = reinterpret_cast<randutils::mt19937_r_rng *> (p_rng);
 		_rng->generate_n<uint8_t> (output, output_len, 0x00, 0xff);
@@ -32,14 +32,14 @@ namespace shaga {
 			char buf[256];
 			::memset (buf, 0, sizeof (buf));
 			::mbedtls_strerror (err, buf, sizeof (buf) - 1);
-			cThrow ("DiSig error: %s", buf);
+			cThrow ("DiSig error: {}"sv, buf);
 		}
 	}
 
 	void DiSig::can_do (mbedtls_pk_context &ctx)
 	{
 		if (::mbedtls_pk_can_do (&ctx, MBEDTLS_PK_ECDSA) != 1) {
-			cThrow ("DiSig error: Key is not suitable for ECDSA");
+			cThrow ("DiSig error: Key is not suitable for ECDSA"sv);
 		}
 	}
 
@@ -53,7 +53,7 @@ namespace shaga {
 
 		const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (s_c_str (curve_type));
 		if (nullptr == curve_info) {
-			cThrow ("DiSig error: Unknown curve '%s'", curve_type);
+			cThrow ("DiSig error: Unknown curve '{}'"sv, curve_type);
 		}
 
 		mbedtls_pk_free (&_ctx);
@@ -70,7 +70,7 @@ namespace shaga {
 
 		auto func = [&](mbedtls_mpi *P) -> void {
 			if (pos + len > key.size ()) {
-				cThrow ("DiSig error: Raw data too short");
+				cThrow ("DiSig error: Raw data too short"sv);
 			}
 
 			ret = ::mbedtls_mpi_read_binary (P, reinterpret_cast<const uint8_t *>(key.data () + pos), len);
@@ -84,7 +84,7 @@ namespace shaga {
 		mbedtls_mpi_lset (&ec->Q.Z, 1);
 
 		if (pos != key.size ()) {
-			cThrow ("DiSig error: Extra raw data for selected curve type");
+			cThrow ("DiSig error: Extra raw data for selected curve type"sv);
 		}
 
 		return 0;
@@ -119,7 +119,7 @@ namespace shaga {
 	}
 
 	DiSig::DEC_CTX_ENTRY::DEC_CTX_ENTRY (const std::string_view key, const std::string_view name, const DiSig::_TYPE type) :
-		DEC_CTX_ENTRY (key, name, type, "")
+		DEC_CTX_ENTRY (key, name, type, ""sv)
 	{ }
 
 	DiSig::DEC_CTX_ENTRY::~DEC_CTX_ENTRY ()
@@ -149,11 +149,11 @@ namespace shaga {
 	{
 		const mbedtls_md_info_t *info = ::mbedtls_md_info_from_type (md_alg);
 		if (nullptr == info) {
-			cThrow ("DiSig error: Unknown hash type");
+			cThrow ("DiSig error: Unknown hash type"sv);
 		}
 
 		if (info->size != static_cast<int> (hsh.size ())) {
-			cThrow ("DiSig error: Hash %s expects %d bytes but %d bytes provided", info->name, static_cast<int> (info->size), static_cast<int> (hsh.size ()));
+			cThrow ("DiSig error: Hash {} expects {} bytes but {} bytes provided"sv, info->name, static_cast<int> (info->size), static_cast<int> (hsh.size ()));
 		}
 	}
 
@@ -296,7 +296,7 @@ namespace shaga {
 	std::string DiSig::get_encryption_key_raw (void)
 	{
 		if (mbedtls_pk_get_type (&_enc_ctx) != MBEDTLS_PK_ECKEY) {
-			cThrow ("DiSig error: Raw export is only supported for EC keys");
+			cThrow ("DiSig error: Raw export is only supported for EC keys"sv);
 		}
 		const mbedtls_ecp_keypair *ec = mbedtls_pk_ec (_enc_ctx);
 
@@ -304,7 +304,7 @@ namespace shaga {
 		const size_t len = ::mbedtls_mpi_size (&ec->d);
 
 		if (len != expected_len) {
-			cThrow ("DiSig error: Output size does not match expected length");
+			cThrow ("DiSig error: Output size does not match expected length"sv);
 		}
 
 		const int ret = ::mbedtls_mpi_write_binary (&ec->d, _output_buf, sizeof (_output_buf));
@@ -333,7 +333,7 @@ namespace shaga {
 	std::string DiSig::get_encryption_pubkey_raw (void)
 	{
 		if (mbedtls_pk_get_type (&_enc_ctx) != MBEDTLS_PK_ECKEY) {
-			cThrow ("DiSig error: Raw export is only supported for EC keys");
+			cThrow ("DiSig error: Raw export is only supported for EC keys"sv);
 		}
 		const mbedtls_ecp_keypair *ec = mbedtls_pk_ec (_enc_ctx);
 
@@ -353,7 +353,7 @@ namespace shaga {
 		func (&ec->Q.Y);
 
 		if (output.size () != expected_len) {
-			cThrow ("DiSig error: Output size does not match expected length");
+			cThrow ("DiSig error: Output size does not match expected length"sv);
 		}
 
 		return output;
@@ -366,7 +366,7 @@ namespace shaga {
 
 	void DiSig::add_decryption_key_pem (const std::string_view key)
 	{
-		const std::string name = "deckey" + STR::from_int (_dec_ctx_list.size ());
+		const std::string name = "deckey"s + STR::from_int (_dec_ctx_list.size ());
 		_dec_ctx_list.emplace_back (key, name, _TYPE::PEM);
 	}
 
@@ -377,7 +377,7 @@ namespace shaga {
 
 	void DiSig::add_decryption_key_der (const std::string_view key)
 	{
-		const std::string name = "deckey" + STR::from_int (_dec_ctx_list.size ());
+		const std::string name = "deckey"s + STR::from_int (_dec_ctx_list.size ());
 		_dec_ctx_list.emplace_back (key, name, _TYPE::DER);
 	}
 
@@ -388,7 +388,7 @@ namespace shaga {
 
 	void DiSig::add_decryption_key_raw (const std::string_view curve_type, const std::string_view key)
 	{
-		const std::string name = "deckey" + STR::from_int (_dec_ctx_list.size ());
+		const std::string name = "deckey"s + STR::from_int (_dec_ctx_list.size ());
 		_dec_ctx_list.emplace_back (key, name, _TYPE::RAW, curve_type);
 	}
 
@@ -434,7 +434,7 @@ namespace shaga {
 
 		const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (s_c_str (curve_type));
 		if (nullptr == curve_info) {
-			cThrow ("Unknown curve '%s'", curve_type);
+			cThrow ("Unknown curve '{}'", curve_type);
 		}
 
 		ret = ::mbedtls_pk_setup (&_enc_ctx, ::mbedtls_pk_info_from_type (MBEDTLS_PK_ECKEY));

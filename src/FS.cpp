@@ -40,7 +40,7 @@ namespace shaga {
 	{
 		struct stat st;
 		if (::stat (s_c_str (fname), &st) != 0) {
-			cFoThrow ("Unable to get file stat of '{}'", fname);
+			cThrow ("Unable to get file stat of '{}'", fname);
 		}
 
 		return st;
@@ -50,7 +50,7 @@ namespace shaga {
 	{
 		struct stat st;
 		if (::stat (s_c_str (fname), &st) != 0) {
-			cFoThrow ("Unable to get file size of '{}'", fname);
+			cThrow ("Unable to get file size of '{}'", fname);
 		}
 
 		return st.st_size;
@@ -60,7 +60,7 @@ namespace shaga {
 	{
 		struct stat st;
 		if (::stat (s_c_str (fname), &st) != 0) {
-			cFoThrow ("Unable to get file mtime of '{}'", fname);
+			cThrow ("Unable to get file mtime of '{}'", fname);
 		}
 
 		return st.st_mtime;
@@ -126,12 +126,12 @@ namespace shaga {
 					return;
 				}
 				else if (ret == GLOB_NOSPACE) {
-					cThrow ("glob error for pattern '%s': Out of memory", pattern);
+					cThrow ("glob error for pattern '{}': Out of memory", pattern);
 				}
 				else if (ret == GLOB_ABORTED ) {
-					cThrow ("glob error for pattern '%s': Read error", pattern);
+					cThrow ("glob error for pattern '{}': Read error", pattern);
 				}
-				cThrow ("glob error for pattern '%s': Unknown error", pattern);
+				cThrow ("glob error for pattern '{}': Unknown error", pattern);
 			}
 			for(size_t i = 0 ; i < glob_result.gl_pathc; i++) {
 				callback (glob_result.gl_pathv[i]);
@@ -143,7 +143,7 @@ namespace shaga {
 			throw;
 		}
 #else
-		cThrow ("This function is not supported in this OS");
+		cThrow ("This function is not supported in this OS"sv);
 #endif // OS_WIN
 	}
 
@@ -153,7 +153,7 @@ namespace shaga {
 
 		infile.open (std::string (fname), std::ifstream::in);
 		if (infile.is_open () == false) {
-			cThrow ("Unable to open file '%s'", fname);
+			cThrow ("Unable to open file '{}'", fname);
 		}
 
 		std::string line;
@@ -166,7 +166,7 @@ namespace shaga {
 		}
 
 		if (infile.fail () == true && infile.eof () == false) {
-			cFoThrow ("Error reading from file '{}'", fname);
+			cThrow ("Error reading from file '{}'", fname);
 		}
 	}
 }

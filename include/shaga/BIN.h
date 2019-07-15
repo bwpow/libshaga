@@ -67,7 +67,7 @@ namespace shaga::BIN {
 	void endian_detect (void);
 	bool is_little_endian (void);
 	bool is_big_endian (void);
-	std::string endian_to_string (void);
+	std::string_view endian_to_string (void);
 
 	void OR (std::string &lhs, const std::string_view rhs);
 	void XOR (std::string &lhs, const std::string_view rhs);
@@ -112,58 +112,26 @@ namespace shaga::BIN {
 	std::string be_from_int32 (const int32_t v);
 	std::string be_from_int64 (const int64_t v);
 
-	uint8_t be_to_uint8 (const std::string &s, size_t &offset);
 	uint8_t be_to_uint8 (const std::string_view s, size_t &offset);
-
-	uint16_t be_to_uint16 (const std::string &s, size_t &offset);
 	uint16_t be_to_uint16 (const std::string_view s, size_t &offset);
-
-	uint32_t be_to_uint24 (const std::string &s, size_t &offset);
 	uint32_t be_to_uint24 (const std::string_view s, size_t &offset);
-
-	uint32_t be_to_uint32 (const std::string &s, size_t &offset);
 	uint32_t be_to_uint32 (const std::string_view s, size_t &offset);
-
-	uint64_t be_to_uint64 (const std::string &s, size_t &offset);
 	uint64_t be_to_uint64 (const std::string_view s, size_t &offset);
 
-	uint8_t be_to_uint8 (const std::string &s);
 	uint8_t be_to_uint8 (const std::string_view s);
-
-	uint16_t be_to_uint16 (const std::string &s);
 	uint16_t be_to_uint16 (const std::string_view s);
-
-	uint32_t be_to_uint24 (const std::string &s);
 	uint32_t be_to_uint24 (const std::string_view s);
-
-	uint32_t be_to_uint32 (const std::string &s);
 	uint32_t be_to_uint32 (const std::string_view s);
-
-	uint64_t be_to_uint64 (const std::string &s);
 	uint64_t be_to_uint64 (const std::string_view s);
 
-	int8_t be_to_int8 (const std::string &s, size_t &offset);
 	int8_t be_to_int8 (const std::string_view s, size_t &offset);
-
-	int16_t be_to_int16 (const std::string &s, size_t &offset);
 	int16_t be_to_int16 (const std::string_view s, size_t &offset);
-
-	int32_t be_to_int32 (const std::string &s, size_t &offset);
 	int32_t be_to_int32 (const std::string_view s, size_t &offset);
-
-	int64_t be_to_int64 (const std::string &s, size_t &offset);
 	int64_t be_to_int64 (const std::string_view s, size_t &offset);
 
-	int8_t be_to_int8 (const std::string &s);
 	int8_t be_to_int8 (const std::string_view s);
-
-	int16_t be_to_int16 (const std::string &s);
 	int16_t be_to_int16 (const std::string_view s);
-
-	int32_t be_to_int32 (const std::string &s);
 	int32_t be_to_int32 (const std::string_view s);
-
-	int64_t be_to_int64 (const std::string &s);
 	int64_t be_to_int64 (const std::string_view s);
 
 	/* little endian */
@@ -187,62 +155,29 @@ namespace shaga::BIN {
 	std::string from_int32 (const int32_t v);
 	std::string from_int64 (const int64_t v);
 
-	uint8_t to_uint8 (const std::string &s, size_t &offset);
 	uint8_t to_uint8 (const std::string_view s, size_t &offset);
-
-	uint16_t to_uint16 (const std::string &s, size_t &offset);
 	uint16_t to_uint16 (const std::string_view s, size_t &offset);
-
-	uint32_t to_uint24 (const std::string &s, size_t &offset);
 	uint32_t to_uint24 (const std::string_view s, size_t &offset);
-
-	uint32_t to_uint32 (const std::string &s, size_t &offset);
 	uint32_t to_uint32 (const std::string_view s, size_t &offset);
-
-	uint64_t to_uint64 (const std::string &s, size_t &offset);
 	uint64_t to_uint64 (const std::string_view s, size_t &offset);
 
-	uint8_t to_uint8 (const std::string &s);
 	uint8_t to_uint8 (const std::string_view s);
-
-	uint16_t to_uint16 (const std::string &s);
 	uint16_t to_uint16 (const std::string_view s);
-
-	uint32_t to_uint24 (const std::string &s);
 	uint32_t to_uint24 (const std::string_view s);
-
-	uint32_t to_uint32 (const std::string &s);
 	uint32_t to_uint32 (const std::string_view s);
-
-	uint64_t to_uint64 (const std::string &s);
 	uint64_t to_uint64 (const std::string_view s);
 
-	int8_t to_int8 (const std::string &s, size_t &offset);
 	int8_t to_int8 (const std::string_view s, size_t &offset);
-
-	int16_t to_int16 (const std::string &s, size_t &offset);
 	int16_t to_int16 (const std::string_view s, size_t &offset);
-
-	int32_t to_int32 (const std::string &s, size_t &offset);
 	int32_t to_int32 (const std::string_view s, size_t &offset);
-
-	int64_t to_int64 (const std::string &s, size_t &offset);
 	int64_t to_int64 (const std::string_view s, size_t &offset);
 
-	int8_t to_int8 (const std::string &s);
 	int8_t to_int8 (const std::string_view s);
-
-	int16_t to_int16 (const std::string &s);
 	int16_t to_int16 (const std::string_view s);
-
-	int32_t to_int32 (const std::string &s);
 	int32_t to_int32 (const std::string_view s);
-
-	int64_t to_int64 (const std::string &s);
 	int64_t to_int64 (const std::string_view s);
 
 	/* size */
-	size_t to_size (const std::string &s, size_t &offset);
 	size_t to_size (const std::string_view s, size_t &offset);
 
 	void from_size (const size_t sze, std::string &s);

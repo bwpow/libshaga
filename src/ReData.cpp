@@ -243,7 +243,7 @@ namespace shaga {
 			/* Fail, truncate out and return offset to original value */
 			out.resize (0);
 			offset = orig_offset;
-			cThrow ("Unable to decode message: %s", e.what());
+			cThrow ("Unable to decode message: {}", e.what());
 		}
 		catch (...) {
 			/* Fail, truncate out and return offset to original value */
@@ -276,7 +276,7 @@ namespace shaga {
 		}
 		catch (const std::exception &e) {
 			out.resize (original_size);
-			cThrow ("Unable to encode message: %s", e.what());
+			cThrow ("Unable to encode message: {}", e.what());
 		}
 		catch (...) {
 			out.resize (original_size);

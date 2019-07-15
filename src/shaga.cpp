@@ -110,7 +110,7 @@ namespace shaga {
 			#endif // SHAGA_THREADING
 				/* This function is already being executed, clearly from one of the callback functions. */
 				::fprintf (stderr, "FATAL ERROR: Exit executed recursively from callback function.\n");
-				P::_printf ("FATAL ERROR: Exit executed recursively from callback function.");
+				P::print ("FATAL ERROR: Exit executed recursively from callback function.");
 				::exit (EXIT_FAILURE);
 			}
 
@@ -134,10 +134,10 @@ namespace shaga {
 			lst.clear ();
 
 			if (text != nullptr && ::strlen (text) > 0) {
-				P::format ("Exit message: {}", text);
-				fprintf (stderr, "%s\n", text);
+				P::print ("Exit message: {}", text);
+				::fprintf (stderr, "%s\n", text);
 			}
-			P::format ("Application exit with errorcode {}", rcode);
+			P::print ("Application exit with errorcode {}", rcode);
 
 			if (nullptr != _final_call) {
 				_final_call (text, rcode);
@@ -150,7 +150,7 @@ namespace shaga {
 		}
 		catch (...) {
 			::fprintf (stderr, "FATAL ERROR: Exception caught in exit.\n");
-			P::_printf ("FATAL ERROR: Exception caught in exit.");
+			P::print ("FATAL ERROR: Exception caught in exit.");
 			::exit (rcode);
 		}
 	}
@@ -190,7 +190,7 @@ namespace shaga {
 		#else
 		if (std::exchange (_is_shutdown, true) == false) {
 		#endif // SHAGA_THREADING
-			P::format ("Shutdown requested from {}: {} line {}", file, funct, line);
+			P::print ("Shutdown requested from {}: {} line {}", file, funct, line);
 
 			#ifdef SHAGA_THREADING
 			std::unique_lock<std::mutex> lck (_callback_mutex);

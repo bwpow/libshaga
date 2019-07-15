@@ -23,14 +23,14 @@ namespace shaga {
 			return c - 'A';
 		}
 		else {
-			cThrow ("Key must contain only capital letters");
+			cThrow ("Key must contain only capital letters"sv);
 		}
 	}
 
 	static void _check_key_validity (uint32_t bkey, uint8_t *chars = nullptr)
 	{
 		if (bkey < Chunk::key_type_min || bkey > Chunk::key_type_max) {
-			cThrow ("Unrecognized key value %" PRIX32, bkey);
+			cThrow ("Unrecognized key value {:X}"sv, bkey);
 		}
 
 		if (chars != nullptr) {
@@ -52,7 +52,7 @@ namespace shaga {
 	uint32_t Chunk::key_to_bin (const std::string_view key)
 	{
 		if (key.size () != 4) {
-			cThrow ("Key must be 4 characters long");
+			cThrow ("Key must be 4 characters long"sv);
 		}
 
 		uint32_t val = 0;
@@ -126,7 +126,7 @@ namespace shaga {
 	Chunk::Chunk (const std::string_view bin, size_t &offset)
 	{
 		if (should_continue (bin, offset) == false) {
-			cThrow ("Buffer is empty");
+			cThrow ("Buffer is empty"sv);
 		}
 		_reset ();
 
@@ -179,7 +179,7 @@ namespace shaga {
 		}
 
 		if (offset > bin.size ()) {
-			cThrow ("Not enough data in buffer");
+			cThrow ("Not enough data in buffer"sv);
 		}
 
 		meta.from_bin (bin, offset);
@@ -195,7 +195,7 @@ namespace shaga {
 	Chunk::Chunk (const HWID hwid_source, const uint32_t type)
 	{
 		if (type < Chunk::key_type_min || type > Chunk::key_type_max) {
-			cThrow ("Unrecognized key value %" PRIX32, type);
+			cThrow ("Unrecognized key value {:X}", type);
 		}
 
 		_reset ();
@@ -298,7 +298,7 @@ namespace shaga {
 		return _prio;
 	}
 
-	std::string Chunk::get_prio_text (void) const
+	std::string_view Chunk::get_prio_text (void) const
 	{
 		return priority_to_string (_prio);
 	}
@@ -320,7 +320,7 @@ namespace shaga {
 		return _trust;
 	}
 
-	std::string Chunk::get_trustlevel_text (void) const
+	std::string_view Chunk::get_trustlevel_text (void) const
 	{
 		return trustlevel_to_string (_trust);
 	}
@@ -561,19 +561,19 @@ namespace shaga {
 		return std::underlying_type<Chunk::TrustLevel>::type (v);
 	}
 
-	std::string trustlevel_to_string (const Chunk::TrustLevel level)
+	std::string_view trustlevel_to_string (const Chunk::TrustLevel level)
 	{
 		switch (level) {
 			case Chunk::TrustLevel::INTERNAL:
-				return "internal";
+				return "internal"sv;
 			case Chunk::TrustLevel::TRUSTED:
-				return "trusted";
+				return "trusted"sv;
 			case Chunk::TrustLevel::FRIEND:
-				return "friend";
+				return "friend"sv;
 			case Chunk::TrustLevel::UNTRUSTED:
-				return "untrusted";
+				return "untrusted"sv;
 		}
-		cThrow ("Unknown Trustlevel");
+		cThrow ("Unknown Trustlevel"sv);
 	}
 
 	Chunk::TrustLevel string_to_trustlevel (const std::string_view str)
@@ -583,7 +583,7 @@ namespace shaga {
 				return t;
 			}
 		}
-		cThrow ("Value out of range");
+		cThrow ("Value out of range"sv);
 	}
 
 	Chunk::Priority uint8_to_priority (const uint8_t v)
@@ -600,19 +600,19 @@ namespace shaga {
 		return std::underlying_type<Chunk::Priority>::type (v);
 	}
 
-	std::string priority_to_string (const Chunk::Priority prio)
+	std::string_view priority_to_string (const Chunk::Priority prio)
 	{
 		switch (prio) {
 			case Chunk::Priority::pCRITICAL:
-				return "CRITICAL";
+				return "CRITICAL"sv;
 			case Chunk::Priority::pMANDATORY:
-				return "MANDATORY";
+				return "MANDATORY"sv;
 			case Chunk::Priority::pOPTIONAL:
-				return "OPTIONAL";
+				return "OPTIONAL"sv;
 			case Chunk::Priority::pDEBUG:
-				return "DEBUG";
+				return "DEBUG"sv;
 		}
-		cThrow ("Unknown Priority");
+		cThrow ("Unknown Priority"sv);
 	}
 
 	Chunk::TTL uint8_to_ttl (const uint8_t v)
@@ -621,7 +621,7 @@ namespace shaga {
 		if (Chunk::_TTL_first <= t && t <= Chunk::_TTL_last) {
 			return t;
 		}
-		cThrow ("Value out of range");
+		cThrow ("Value out of range"sv);
 	}
 
 	uint8_t ttl_to_uint8 (const Chunk::TTL v)
@@ -650,14 +650,14 @@ namespace shaga {
 		}
 	}
 
-	std::string channel_to_string (const Chunk::Channel channel)
+	std::string_view channel_to_string (const Chunk::Channel channel)
 	{
 		switch (channel) {
 			case Chunk::Channel::PRIMARY:
-				return "Primary";
+				return "Primary"sv;
 
 			case Chunk::Channel::SECONDARY:
-				return "Secondary";
+				return "Secondary"sv;
 		}
 	}
 
@@ -743,7 +743,7 @@ namespace shaga {
 			iter->to_bin (temp);
 			if (max_size > 0 && (temp.size () + sze) > max_size) {
 				if (cnt == 0) {
-					cThrow ("Unable to add first chunk.");
+					cThrow ("Unable to add first chunk."sv);
 				}
 				break;
 			}
@@ -819,10 +819,10 @@ namespace shaga {
 			if (max_size > 0 && (temp.size () + sze) > max_size) {
 				if (true == thr) {
 					if (0 == cnt) {
-						cThrow ("Unable to add first chunk.");
+						cThrow ("Unable to add first chunk."sv);
 					}
 					if (iter->get_prio () == Chunk::Priority::pCRITICAL || iter->get_prio () == Chunk::Priority::pMANDATORY) {
-						cThrow ("Unable to add critical and mandatory chunks. Buffer is full.");
+						cThrow ("Unable to add critical and mandatory chunks. Buffer is full."sv);
 					}
 				}
 				break;

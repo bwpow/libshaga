@@ -107,6 +107,8 @@ All rights reserved.
 #include <iomanip>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <any>
 
 #include <random>
 #include <chrono>
@@ -160,7 +162,6 @@ All rights reserved.
 /* https://github.com/fmtlib/fmt */
 #define FMT_HEADER_ONLY
 #include "3rdparty/fmt/format.h"
-#include "3rdparty/fmt/printf.h"
 
 #ifndef INT64_C
 	#define INT64_C(c) (c ## LL)
@@ -221,8 +222,19 @@ All rights reserved.
 	#define SHAGA_NODISCARD
 #endif
 
+#if __has_cpp_attribute(always_inline)
+	#define SHAGA_INLINE __attribute__((always_inline))
+#else
+	#define SHAGA_INLINE inline
+#endif
+
+/* Use literals for ""s and ""sv */
 using namespace std::literals;
 
+/* Concat function taking string and string_view and returning new string */
+#define _CC(x,...) shaga::STR::concat(x,##__VA_ARGS__)
+
+/* Helper to convert string_vieew to C-style string */
 #define s_c_str(x) std::string(x).c_str()
 
 /* Needed first for P::_printf used in CommonException */
@@ -249,11 +261,13 @@ namespace shaga
 	{
 		private:
 			std::string _text;
-			size_t _info_pos;
+			size_t _info_pos {0};
 		public:
 			template <typename... Args>
-			CommonException (const bool log, const bool is_format, const char *str_file, const char *str_function, int str_line, const char *format, const Args & ... args) noexcept
+			CommonException (const bool log, const std::string_view str_file, const std::string_view str_function, int str_line, const std::string_view format, const Args & ... args) noexcept
 			{
+				_text.reserve (16 + (format.size () * 2));
+
 				try {
 					_text = fmt::format ("{}({}): {}: ", str_file, str_line, str_function);
 					_info_pos = _text.size ();
@@ -261,23 +275,20 @@ namespace shaga
 					if (sizeof...(Args) == 0) {
 						_text.append (format);
 					}
-					else if (true == is_format) {
-						_text.append (fmt::format (format, args...));
-					}
 					else {
-						_text.append (fmt::sprintf (format, args...));
+						_text.append (fmt::format (format, args...));
 					}
 				}
 				catch (...) {
-					_text.append ("(format error) ");
 					_text.append (format);
+					_text.append (" (!format error!)");
 				}
 
 				if (true == log) {
-					P::_printf (_text.c_str (), "Exception thrown: ");
+					P::_print (_text, "Exception thrown: ");
 				}
 				else if (true == P::debug_is_enabled ()) {
-					P::_printf (_text.c_str (), "Exception thrown: ");
+					P::_print (_text, "Exception thrown: ");
 				}
 			}
 
@@ -285,11 +296,8 @@ namespace shaga
 			const char *debugwhat () const noexcept;
 	};
 
-	#define cLogThrow(format, ...) throw shaga::CommonException(true, false, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
-	#define cThrow(format, ...) throw shaga::CommonException(false, false, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
-
-	#define cFoLogThrow(format, ...) throw shaga::CommonException(true, true, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
-	#define cFoThrow(format, ...) throw shaga::CommonException(false, true, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
+	#define cLogThrow(format, ...) throw shaga::CommonException(true, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
+	#define cThrow(format, ...) throw shaga::CommonException(false, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
 
 	void add_at_exit_callback (std::function<void (void)> func);
 	[[noreturn]] void _exit (const char *text = nullptr, const int rcode = EXIT_FAILURE) noexcept;
@@ -301,7 +309,12 @@ namespace shaga
 	[[noreturn]] void exit (const int rcode, const char *format, const Args & ... args) noexcept
 	{
 		try {
-			_exit (fmt::sprintf (format, args...).c_str (), rcode);
+			if (sizeof...(Args) == 0) {
+				_exit (format, rcode);
+			}
+			else {
+				_exit (fmt::format (format, args...).c_str (), rcode);
+			}
 		}
 		catch (...) {
 			_exit ("Exit failed with exception", EXIT_FAILURE);
@@ -312,7 +325,12 @@ namespace shaga
 	[[noreturn]] void exit (const char *format, const Args & ... args) noexcept
 	{
 		try {
-			_exit (fmt::sprintf (format, args...).c_str (), EXIT_FAILURE);
+			if (sizeof...(Args) == 0) {
+				_exit (format, EXIT_FAILURE);
+			}
+			else {
+				_exit (fmt::format (format, args...).c_str (), EXIT_FAILURE);
+			}
 		}
 		catch (...) {
 			_exit ("Exit failed with exception", EXIT_FAILURE);
@@ -336,11 +354,11 @@ namespace shaga
 	{
 		#ifdef SHAGA_THREADING
 			if (false == _shaga_compiled_with_threading) {
-				cThrow ("Shaga threading mismatch, compiled without threading and used with threading");
+				cThrow ("Shaga threading mismatch, compiled without threading and used with threading"sv);
 			}
 		#else
 			if (true == _shaga_compiled_with_threading) {
-				cThrow ("Shaga threading mismatch, compiled with threading and used without threading");
+				cThrow ("Shaga threading mismatch, compiled with threading and used without threading"sv);
 			}
 		#endif // SHAGA_THREADING
 	}
@@ -349,11 +367,11 @@ namespace shaga
 	{
 		#if defined SHAGA_LITE
 			if (true == _shaga_compiled_full) {
-				cThrow ("Shaga library version mismatch, compiled as full and used as lite");
+				cThrow ("Shaga library version mismatch, compiled as full and used as lite"sv);
 			}
 		#elif defined SHAGA_FULL
 			if (false == _shaga_compiled_full) {
-				cThrow ("Shaga library version mismatch, compiled as lite and used as full");
+				cThrow ("Shaga library version mismatch, compiled as lite and used as full"sv);
 			}
 		#else
 			#error Unable to detect version of the library
@@ -375,7 +393,7 @@ namespace shaga
 		return 127; \
 	} \
 	catch (const std::exception &e) { \
-		shaga::exit ("FATAL ERROR: %s", e.what ()); \
+		shaga::exit ("FATAL ERROR: {}", e.what ()); \
 	} \
 	catch (...) { \
 		shaga::exit ("FATAL ERROR: Unknown failure"); \
@@ -448,7 +466,7 @@ namespace shaga
 		container_from_bin (out, buf, offset);
 
 		if (offset != buf.size ()) {
-			cThrow ("Extra data at the end of buffer");
+			cThrow ("Extra data at the end of buffer"sv);
 		}
 	}
 

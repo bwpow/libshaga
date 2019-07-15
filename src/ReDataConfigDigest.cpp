@@ -314,7 +314,7 @@ namespace shaga {
 		}
 		else if (DIGEST_HMAC_TYPE::SIPHASH == hmac_type) {
 			if (key.size () != blocksize) {
-				cThrow ("Wrong digest key size. Expected %" PRIu32 " bytes, got %" PRIu32 " bytes.", static_cast<uint32_t> (blocksize), static_cast<uint32_t> (key.size ()));
+				cThrow ("Wrong digest key size. Expected {} bytes, got {} bytes.", blocksize, key.size ());
 			}
 
 			if (_cache_digest.digest != _used_digest || _cache_digest.key != key) {

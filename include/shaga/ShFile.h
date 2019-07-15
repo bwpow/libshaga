@@ -71,22 +71,16 @@ namespace shaga {
 			void write (const char *buf);
 			void write (const uint8_t val);
 
+			template <typename... Args>
+			void print (const std::string_view format, const Args & ... args)
+			{
+				write (fmt::format (format, args...));
+			}
+
 			bool read (std::string &data, const size_t len, const bool thr_eof = true);
 			std::string read (const size_t len, const bool thr_eof = true);
 			bool read (char *buf, const size_t len, const bool thr_eof = true);
 			uint8_t read (void);
-
-			template <typename... Args>
-			void printf (const char *format, const Args & ... args)
-			{
-				write (fmt::sprintf (format, args...));
-			}
-
-			template <typename... Args>
-			void format (const char *format, const Args & ... args)
-			{
-				write (fmt::format (format, args...));
-			}
 
 			void set_file_name (const std::string_view filename, const uint8_t mode);
 			void set_file_name (const std::string_view filename);

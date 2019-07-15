@@ -21,7 +21,7 @@ namespace shaga {
 
 	void signal_handler (int sgn)
 	{
-		P::printf ("Caught signal: %s", strsignal (sgn));
+		P::print ("Caught signal: {}", strsignal (sgn));
 		TRY_TO_SHUTDOWN ();
 	}
 
@@ -44,7 +44,7 @@ namespace shaga {
 		::memset (hostname, 0, sizeof (hostname));
 
 		if (::gethostname (hostname, sizeof (hostname)) != 0) {
-			cThrow ("Could not read hostname: %s", strerror (errno));
+			cThrow ("Could not read hostname: {}", strerror (errno));
 		}
 		hostname[sizeof (hostname) - 1] = '\0';
 
@@ -78,7 +78,7 @@ namespace shaga {
 		if (pidfile.empty () == false) {
 			pidf = ::fopen (s_c_str (pidfile), "w");
 			if (nullptr == pidf) {
-				cThrow ("Could not open PID file '%s' for writing", pidfile);
+				cThrow ("Could not open PID file '{}' for writing", pidfile);
 			}
 		}
 
@@ -140,7 +140,7 @@ namespace shaga {
 
 		errno = 0;
 		if (::setpriority (PRIO_PGRP, static_cast<int>(id), prio) != 0){
-			cThrow ("Could not lower priority: %s", strerror (errno));
+			cThrow ("Could not lower priority: {}", strerror (errno));
 		}
 	}
 
@@ -152,7 +152,7 @@ namespace shaga {
 
 		const int prio = ini->get_uint8 (""sv, "renice"sv, UINT8_MAX);
 		if (prio != UINT8_MAX) {
-			P::printf ("Changing priority to %d", prio);
+			P::print ("Changing priority to {}", prio);
 			renice (prio);
 		}
 	}
@@ -165,7 +165,7 @@ namespace shaga {
 
 		const int prio = ini->get_uint8 (""sv, "renice"sv, UINT8_MAX);
 		if (prio != UINT8_MAX) {
-			P::printf ("Changing priority to %d", prio);
+			P::print ("Changing priority to {}", prio);
 			renice (prio);
 		}
 	}

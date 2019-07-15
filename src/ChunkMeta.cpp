@@ -22,14 +22,14 @@ namespace shaga {
 			return c - 'A';
 		}
 		else {
-			cThrow ("Key must contain only capital letters or underscore");
+			cThrow ("Key must contain only capital letters or underscore"sv);
 		}
 	}
 
 	static void _check_key_validity (uint16_t bkey, uint8_t *chars = nullptr)
 	{
 		if (bkey < ChunkMeta::key_type_min || bkey > ChunkMeta::key_type_max) {
-			cThrow ("Unrecognized key value %" PRIX16, bkey);
+			cThrow ("Unrecognized key value {:X}"sv, bkey);
 		}
 
 		if (chars != nullptr) {
@@ -49,7 +49,7 @@ namespace shaga {
 	uint16_t ChunkMeta::key_to_bin (const std::string_view key)
 	{
 		if (key.size () != 3) {
-			cThrow ("Key must be 3 characters long");
+			cThrow ("Key must be 3 characters long"sv);
 		}
 
 		uint16_t val = 0;
@@ -360,7 +360,7 @@ namespace shaga {
 			_data.insert (std::make_pair (next_key, s.substr (offset, len)));
 			offset += len;
 			if (offset > s.size ()) {
-				cThrow ("Not enough data in buffer");
+				cThrow ("Not enough data in buffer"sv);
 			}
 		}
 

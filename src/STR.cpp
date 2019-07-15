@@ -10,39 +10,6 @@ All rights reserved.
 #include <cstdarg>
 
 namespace shaga {
-/*
-	static const size_t _operator_cache_max_size {6};
-	#ifdef SHAGA_THREADING
-		static thread_local size_t _operator_cache_now {0};
-		static thread_local std::array<std::string, _operator_cache_max_size> _operator_cache;
-	#else
-		static size_t _operator_cache_now {0};
-		static std::array<std::string, _operator_cache_max_size> _operator_cache;
-	#endif // SHAGA_THREADING
-
-	static const char _null_terminated_empty_str[1] = {'\0'};
-
-	const char* operator~ (const std::string &src)
-	{
-		return src.c_str ();
-	}
-
-	const char* operator~ (const std::string_view &src)
-	{
-		if (src.empty ()) {
-			return _null_terminated_empty_str;
-		}
-		else if (src.back () == '\0') {
-			return src.data ();
-		}
-		else {
-			++_operator_cache_now;
-			_operator_cache_now %= _operator_cache_max_size;
-			_operator_cache[_operator_cache_now].assign (src);
-			return _operator_cache[_operator_cache_now].c_str ();
-		}
-	}
-*/
 
 	static inline void _to_uint_process_char (uint64_t &result, const uint8_t chr, const uint64_t base)
 	{
@@ -57,11 +24,11 @@ namespace shaga {
 			digit = chr - 'a' + 10;
 		}
 		else {
-			cThrow ("Unrecognized character '%c'", chr);
+			cThrow ("Unrecognized character '{:c}'", chr);
 		}
 
 		if (digit >= base) {
-			cThrow ("Unrecognized character '%c'", chr);
+			cThrow ("Unrecognized character '{:c}'", chr);
 		}
 
 		if (result > (UINT64_MAX / base) || (result * base) > (UINT64_MAX - digit)) {
@@ -72,7 +39,7 @@ namespace shaga {
 	}
 
 	template <typename T>
-	static void _to_uint_process (T &result, std::string_view src, const int base, const char *type)
+	static void _to_uint_process (T &result, const std::string_view src, const int base, const std::string_view type)
 	{
 		if (base < 2) {
 			cThrow ("Base must be at least 2");
@@ -160,74 +127,74 @@ namespace shaga {
 			}
 		}
 		catch (const std::exception &e) {
-			cThrow ("Could not convert '%s' to %s: %s", src, type, e.what ());
+			cThrow ("Could not convert '{}' to {}: {}", src, type, e.what ());
 		}
 	}
 
 	bool STR::to_bool (const std::string_view s, [[maybe_unused]] const int base)
 	{
-		if (icompare (s, "true") == true || icompare (s, "on") == true || icompare (s, "yes") == true || s == "1") {
+		if (icompare (s, "true"sv) == true || icompare (s, "on"sv) == true || icompare (s, "yes"sv) == true || s == "1"sv) {
 			return true;
 		}
-		else if (icompare (s, "false") == true || icompare (s, "off") == true || icompare (s, "no") == true || s == "0") {
+		else if (icompare (s, "false"sv) == true || icompare (s, "off"sv) == true || icompare (s, "no"sv) == true || s == "0"sv) {
 			return false;
 		}
-		cThrow ("Could not convert '%s' to bool: Not recognized", s);
+		cThrow ("Could not convert '{}' to bool: Not recognized");
 	}
 
 	uint8_t STR::to_uint8 (const std::string_view s, const int base)
 	{
 		uint8_t out;
-		_to_uint_process (out, s, base, "uint8");
+		_to_uint_process (out, s, base, "uint8"sv);
 		return out;
 	}
 
 	uint16_t STR::to_uint16 (const std::string_view s, const int base)
 	{
 		uint16_t out;
-		_to_uint_process (out, s, base, "uint16");
+		_to_uint_process (out, s, base, "uint16"sv);
 		return out;
 	}
 
 	uint32_t STR::to_uint32 (const std::string_view s, const int base)
 	{
 		uint32_t out;
-		_to_uint_process (out, s, base, "uint32");
+		_to_uint_process (out, s, base, "uint32"sv);
 		return out;
 	}
 
 	uint64_t STR::to_uint64 (const std::string_view s, const int base)
 	{
 		uint64_t out;
-		_to_uint_process (out, s, base, "uint64");
+		_to_uint_process (out, s, base, "uint64"sv);
 		return out;
 	}
 
 	int8_t STR::to_int8 (const std::string_view s, const int base)
 	{
 		int8_t out;
-		_to_uint_process (out, s, base, "int8");
+		_to_uint_process (out, s, base, "int8"sv);
 		return out;
 	}
 
 	int16_t STR::to_int16 (const std::string_view s, const int base)
 	{
 		int16_t out;
-		_to_uint_process (out, s, base, "int16");
+		_to_uint_process (out, s, base, "int16"sv);
 		return out;
 	}
 
 	int32_t STR::to_int32 (const std::string_view s, const int base)
 	{
 		int32_t out;
-		_to_uint_process (out, s, base, "int32");
+		_to_uint_process (out, s, base, "int32"sv);
 		return out;
 	}
 
 	int64_t STR::to_int64 (const std::string_view s, const int base)
 	{
 		int64_t out;
-		_to_uint_process (out, s, base, "int64");
+		_to_uint_process (out, s, base, "int64"sv);
 		return out;
 	}
 
@@ -269,7 +236,7 @@ namespace shaga {
 		}
 #ifndef OS_WIN
 		if (true == for_filename) {
-			return fmt::format ("{:04}-{:02}-{:02}_{:02}{:02}{:02d}_{}",
+			return fmt::format ("{:04}-{:02}-{:02}_{:02}{:02}{:02d}_{}"sv,
 				t.tm_year + 1900,
 				t.tm_mon + 1,
 				t.tm_mday,
@@ -279,7 +246,7 @@ namespace shaga {
 				t.tm_zone);
 		}
 		else {
-			return fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d} {}",
+			return fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d} {}"sv,
 				t.tm_year + 1900,
 				t.tm_mon + 1,
 				t.tm_mday,
@@ -290,7 +257,7 @@ namespace shaga {
 		}
 #else
 		if (true == for_filename) {
-			return fmt::format ("{:04}-{:02}-{:02}_{:02}{:02}{:02d}",
+			return fmt::format ("{:04}-{:02}-{:02}_{:02}{:02}{:02d}"sv,
 				t.tm_year + 1900,
 				t.tm_mon + 1,
 				t.tm_mday,
@@ -299,7 +266,7 @@ namespace shaga {
 				t.tm_sec);
 		}
 		else {
-			return fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d}",
+			return fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d}"sv,
 				t.tm_year + 1900,
 				t.tm_mon + 1,
 				t.tm_mday,
@@ -334,7 +301,7 @@ namespace shaga {
 			::gmtime_r (&theTime, &t);
 		}
 
-		return fmt::format ("{:04}{}{:02}{}{:02}",
+		return fmt::format ("{:04}{}{:02}{}{:02}"sv,
 			t.tm_year + 1900,
 			separatorstr,
 			t.tm_mon + 1,
@@ -492,7 +459,7 @@ namespace shaga {
 		ssize_t l = static_cast<ssize_t> (strlen (buf));
 		char *output = reinterpret_cast<char *> (::malloc (l + 2));
 		if (nullptr == output) {
-			cThrow ("Alloc failed");
+			cThrow ("Alloc failed"sv);
 		}
 		::memcpy (output, buf, l);
 		output [l] = '\0';
@@ -517,7 +484,7 @@ namespace shaga {
 	{
 		char *output = ::strdup (buf);
 		if (nullptr == output) {
-			cThrow ("strdup failed");
+			cThrow ("strdup failed"sv);
 		}
 		return output;
 	}
@@ -610,7 +577,7 @@ namespace shaga {
 					if (last_pos < cmd.size () && cmd.at (last_pos) != ' ' && cmd.at (last_pos) != '\t' && vout.empty () == false) {
 						vout.back ().append (1, 0x01);
 					}
-					split (vout, cmd.substr (last_pos), " \t");
+					split (vout, cmd.substr (last_pos), " \t"sv);
 				}
 
 				break;
@@ -629,7 +596,7 @@ namespace shaga {
 					if (last_pos < cmd.size () && cmd.at (last_pos) != ' ' && cmd.at (last_pos) != '\t' && vout.empty () == false) {
 						vout.back ().append (1, 0x01);
 					}
-					split (vout, cmd.substr (last_pos, pos - last_pos), " \t");
+					split (vout, cmd.substr (last_pos, pos - last_pos), " \t"sv);
 				}
 			}
 			else {

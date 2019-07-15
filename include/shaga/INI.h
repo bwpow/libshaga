@@ -44,7 +44,8 @@ namespace shaga {
 			void parse_buffer (INI_MAP &m, const std::string_view buf, const bool allow_include);
 			void parse_buffer (const std::string_view buf, const bool allow_include);
 
-			bool get_last_value (const INI_MAP &m, const INI_KEY &key, std::string &val) const;
+			std::optional<std::string_view> get_last_value (const INI_MAP &m, const INI_KEY &key) const;
+
 		public:
 			INI ();
 			INI (const INI &other);
@@ -74,23 +75,40 @@ namespace shaga {
 			size_t get_list_size (const std::string_view section, const std::string_view key, const bool thr = false) const;
 
 			template <typename T>
-			auto get_value (const std::string_view section, const std::string_view key, const T defvalue, const bool thr = false) const -> T
+			T get_int (const std::string_view section, const std::string_view key, const T defvalue, const bool thr = false) const
 			{
-				std::string s;
-				if (get_last_value (_map, get_key (section, key), s) == true) {
-					return STR::to_int<T> (s);
+				if (auto val = get_last_value (_map, get_key (section, key))) {
+					return STR::to_int<T> (*val);
 				}
 
 				if (true == thr) {
-					cThrow ("Nonexistent entry %s/%s requested", section, key);
+					cThrow ("Nonexistent entry {}/{} requested", section, key);
 				}
 
 				return defvalue;
 			}
 
-			template <typename T> void set_value (const std::string_view section, const std::string_view key, const T val, const bool append = false)
+			template <typename T = std::string_view>
+			T get_string (const std::string_view section, const std::string_view key, const std::string_view defvalue, const bool thr = false) const
 			{
-				set_string (section, key, STR::from_int (val), append);
+				if (auto val = get_last_value (_map, get_key (section, key))) {
+					return T (*val);
+				}
+
+				if (true == thr) {
+					cThrow ("Nonexistent entry {}/{} requested", section, key);
+				}
+
+				return T (defvalue);
+			}
+
+			template <typename T = std::string_view>
+			T get_string (const std::string_view section, const std::string_view key) const
+			{
+				if (auto val = get_last_value (_map, get_key (section, key))) {
+					return T (*val);
+				}
+				return T();
 			}
 
 			bool get_bool (const std::string_view section, const std::string_view key, const bool defvalue, const bool thr = false) const;
@@ -103,8 +121,11 @@ namespace shaga {
 			int32_t get_int32 (const std::string_view section, const std::string_view key, const int32_t defvalue, const bool thr = false) const;
 			int64_t get_int64 (const std::string_view section, const std::string_view key, const int64_t defvalue, const bool thr = false) const;
 
-			std::string get_string (const std::string_view section, const std::string_view key, const std::string_view defvalue, const bool thr = false) const;
-			std::string get_string (const std::string_view section, const std::string_view key) const;
+			template <typename T>
+			void set_int (const std::string_view section, const std::string_view key, const T val, const bool append = false)
+			{
+				set_string (section, key, STR::from_int (val), append);
+			}
 
 			void set_string (const std::string_view section, const std::string_view key, const std::string_view val, const bool append = false);
 			void set_vector (const std::string_view section, const std::string_view key, const COMMON_VECTOR &val, const bool append);
