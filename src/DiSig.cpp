@@ -434,7 +434,7 @@ namespace shaga {
 
 		const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (s_c_str (curve_type));
 		if (nullptr == curve_info) {
-			cThrow ("Unknown curve '{}'", curve_type);
+			cThrow ("Unknown curve '{}'"sv, curve_type);
 		}
 
 		ret = ::mbedtls_pk_setup (&_enc_ctx, ::mbedtls_pk_info_from_type (MBEDTLS_PK_ECKEY));

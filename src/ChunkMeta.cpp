@@ -365,5 +365,4 @@ namespace shaga {
 		}
 
 	}
-
 }

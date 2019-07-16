@@ -90,7 +90,7 @@ namespace shaga {
 
 	INI_MAP::iterator INI::begin_of_section (INI_MAP &m, const std::string_view section) const
 	{
-		return m.lower_bound (get_key (section, ""));
+		return m.lower_bound (get_key (section, ""sv));
 	}
 
 	bool INI::is_same_section (const INI_KEY &key, const std::string_view section) const
@@ -98,22 +98,19 @@ namespace shaga {
 		return (key.section == section);
 	}
 
-	void INI::parse_line (INI_MAP &m, const std::string_view line, std::string &active_section, const bool allow_include)
+	void INI::parse_line (INI_MAP &m, std::string_view line, std::string &active_section, const bool allow_include)
 	{
+		STR::trim (line);
+
 		if (line.empty () == true) {
 			return;
 		}
 
-		const size_t firstchar = line.find_first_not_of (" \t\n\r"sv);
-		if (firstchar == std::string_view::npos) {
+		if (line.front () == ';' || line.front () == '#') {
 			return;
 		}
 
-		if (line.at (firstchar) == ';' || line.at (firstchar) == '#') {
-			return;
-		}
-
-		if (line.at (firstchar) == '@') {
+		if (line.front () == '@') {
 			if (active_section.empty () == false) {
 				cThrow ("Special directives allowed only in global section");
 			}
@@ -126,8 +123,8 @@ namespace shaga {
 			std::string_view line_key = line.substr (0, pos);
 			std::string_view line_val = line.substr (pos + 1);
 
-			STR::trim (line_key);
-			STR::trim (line_val);
+			STR::rtrim (line_key);
+			STR::ltrim (line_val);
 
 			if (STR::icompare (line_key, "@include"sv) == true) {
 				if (false == allow_include) {
@@ -152,15 +149,15 @@ namespace shaga {
 			return;
 		}
 
-		if (line.at (firstchar) == '[') {
-			active_section.assign (line);
-			STR::trim (active_section);
-			if (active_section.at (0) != '[' || active_section.at (active_section.size () - 1) != ']') {
+		if (line.front () == '[') {
+			if (line.back () != ']') {
 				cThrow ("Malformed line '{}'", line);
 			}
-			active_section.erase (0, 1);
-			active_section.erase (active_section.size () - 1);
 
+			line.remove_prefix (1);
+			line.remove_suffix (1);
+
+			active_section.assign (line);
 			return;
 		}
 
@@ -172,8 +169,8 @@ namespace shaga {
 		std::string_view line_key = line.substr (0, pos);
 		std::string_view line_val = line.substr (pos + 1);
 
-		STR::trim (line_key);
-		STR::trim (line_val);
+		STR::rtrim (line_key);
+		STR::ltrim (line_val);
 
 		bool append = false;
 		bool refer = false;
