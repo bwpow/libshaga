@@ -21,13 +21,13 @@ namespace shaga::STR {
 	std::string concat (const Args & ... args)
 	{
 		const std::array<std::string_view,sizeof...(Args)> vin {args...};
-		std::string out;
 
 		size_t len = 0;
 		for (const auto &entry : vin) {
 			len += entry.size ();
 		}
 
+		std::string out;
 		out.reserve (len);
 		for (const auto &entry : vin) {
 			out.append (entry);
@@ -37,31 +37,33 @@ namespace shaga::STR {
 	}
 
 	template <typename... Args>
-	std::string sprintf (const std::string_view format, const Args & ... args)
+	void sprint (std::string &append_to, const std::string_view format, const Args & ... args)
+	{
+		const size_t sze = fmt::formatted_size (format, args...);
+		append_to.reserve (append_to.size () + sze);
+		fmt::format_to (std::back_inserter(append_to), format, args...);
+	}
+
+	template <typename... Args>
+	std::string sprint (const std::string_view format, const Args & ... args)
 	{
 		return fmt::format (format, args...);
 	}
 
 	template <typename... Args>
-	void sprintf (std::string &vout, const std::string_view format, const Args & ... args)
-	{
-		vout.assign (fmt::format (format, args...));
-	}
-
-	template <typename... Args>
-	void sprintf (COMMON_VECTOR &vout, const std::string_view format, const Args & ... args)
+	void sprint (COMMON_VECTOR &vout, const std::string_view format, const Args & ... args)
 	{
 		vout.push_back (fmt::format (format, args...));
 	}
 
 	template <typename... Args>
-	void sprintf (COMMON_LIST &vout, const std::string_view format, const Args & ... args)
+	void sprint (COMMON_LIST &vout, const std::string_view format, const Args & ... args)
 	{
 		vout.push_back (fmt::format (format, args...));
 	}
 
 	template <typename... Args>
-	void sprintf (COMMON_DEQUE &vout, const std::string_view format, const Args & ... args)
+	void sprint (COMMON_DEQUE &vout, const std::string_view format, const Args & ... args)
 	{
 		vout.push_back (fmt::format (format, args...));
 	}
@@ -91,9 +93,6 @@ namespace shaga::STR {
 		else if (std::is_same<T, uint32_t>::value) {
 			return to_uint32 (s, base);
 		}
-		else if (std::is_same<T, uint64_t>::value) {
-			return to_uint64 (s, base);
-		}
 		else if (std::is_same<T, int8_t>::value) {
 			return to_int8 (s, base);
 		}
@@ -107,7 +106,7 @@ namespace shaga::STR {
 			return to_int64 (s, base);
 		}
 		else {
-			cThrow ("Unknown type");
+			return to_uint64 (s, base);
 		}
 	}
 
@@ -118,10 +117,10 @@ namespace shaga::STR {
 
 		if (std::is_same <T, bool>::value) {
 			if (t == true) {
-				ss << "true";
+				ss << "true"sv;
 			}
 			else {
-				ss << "false";
+				ss << "false"sv;
 			}
 		}
 		else if (std::is_same <T, int8_t>::value || std::is_same <T, uint8_t>::value || std::is_same <T, int16_t>::value || std::is_same <T, uint16_t>::value) {
@@ -191,10 +190,12 @@ namespace shaga::STR {
 	}
 
 	void format_time (std::string &out, const time_t theTime, const bool local, const bool for_filename = false);
+	void format_time (std::string &out, const bool local, const bool for_filename = false);
 	std::string format_time (const time_t theTime, const bool local, const bool for_filename = false);
 	std::string format_time (const bool local, const bool for_filename = false);
 
 	void format_date (std::string &out, const time_t theTime, const bool local, const std::string_view separatorstr = DASH);
+	void format_date (std::string &out, const bool local, const std::string_view separatorstr = DASH);
 	std::string format_date (const time_t theTime, const bool local, const std::string_view separatorstr = DASH);
 	std::string format_date (const bool local, const std::string_view separatorstr = DASH);
 

@@ -7,8 +7,6 @@ All rights reserved.
 *******************************************************************************/
 #include "shaga/common.h"
 
-#include <cstdarg>
-
 namespace shaga {
 
 	#ifdef SHAGA_THREADING
@@ -78,16 +76,6 @@ namespace shaga {
 		bool _is_in_exit {false};
 	#endif // SHAGA_THREADING
 
-	const char * CommonException::debugwhat () const throw ()
-	{
-		return _text.c_str ();
-	}
-
-	const char * CommonException::what () const throw ()
-	{
-		return (_text.c_str ()) + _info_pos;
-	}
-
 	void add_at_exit_callback (std::function<void (void)> func)
 	{
 		#ifdef SHAGA_THREADING
@@ -104,13 +92,14 @@ namespace shaga {
 			#endif // SHAGA_THREADING
 
 			#ifdef SHAGA_THREADING
-			if (_is_in_exit.exchange (true) == true) {
+			if (_is_in_exit.exchange (true) == true)
 			#else
-			if (std::exchange (_is_in_exit, true) == true) {
+			if (std::exchange (_is_in_exit, true) == true)
 			#endif // SHAGA_THREADING
+			{
 				/* This function is already being executed, clearly from one of the callback functions. */
 				::fprintf (stderr, "FATAL ERROR: Exit executed recursively from callback function.\n");
-				P::print ("FATAL ERROR: Exit executed recursively from callback function.");
+				P::_print ("FATAL ERROR: Exit executed recursively from callback function."sv, ""sv);
 				::exit (EXIT_FAILURE);
 			}
 
@@ -150,7 +139,7 @@ namespace shaga {
 		}
 		catch (...) {
 			::fprintf (stderr, "FATAL ERROR: Exception caught in exit.\n");
-			P::print ("FATAL ERROR: Exception caught in exit.");
+			P::_print ("FATAL ERROR: Exception caught in exit."sv, ""sv);
 			::exit (rcode);
 		}
 	}
@@ -186,10 +175,11 @@ namespace shaga {
 	void _try_to_shutdown (const char *file, const char *funct, const int line)
 	{
 		#ifdef SHAGA_THREADING
-		if (_is_shutdown.exchange (true) == false) {
+		if (_is_shutdown.exchange (true) == false)
 		#else
-		if (std::exchange (_is_shutdown, true) == false) {
+		if (std::exchange (_is_shutdown, true) == false)
 		#endif // SHAGA_THREADING
+		{
 			P::print ("Shutdown requested from {}: {} line {}", file, funct, line);
 
 			#ifdef SHAGA_THREADING

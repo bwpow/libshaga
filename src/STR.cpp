@@ -220,7 +220,63 @@ namespace shaga {
 
 	void STR::format_time (std::string &out, const time_t theTime, const bool local, const bool for_filename)
 	{
-		out.assign (format_time (theTime, local, for_filename));
+		struct tm t;
+		::memset (&t, 0, sizeof (t));
+
+		if (local == true) {
+			::localtime_r (&theTime, &t);
+		}
+		else {
+			::gmtime_r (&theTime, &t);
+		}
+#ifndef OS_WIN
+		if (true == for_filename) {
+			STR::sprint (out, "{:04}-{:02}-{:02}_{:02}{:02}{:02d}_{}"sv,
+				t.tm_year + 1900,
+				t.tm_mon + 1,
+				t.tm_mday,
+				t.tm_hour,
+				t.tm_min,
+				t.tm_sec,
+				t.tm_zone);
+		}
+		else {
+			STR::sprint (out, "{:04}-{:02}-{:02} {:02}:{:02}:{:02d} {}"sv,
+				t.tm_year + 1900,
+				t.tm_mon + 1,
+				t.tm_mday,
+				t.tm_hour,
+				t.tm_min,
+				t.tm_sec,
+				t.tm_zone);
+		}
+#else
+		if (true == for_filename) {
+			STR::sprint (out, "{:04}-{:02}-{:02}_{:02}{:02}{:02d}"sv,
+				t.tm_year + 1900,
+				t.tm_mon + 1,
+				t.tm_mday,
+				t.tm_hour,
+				t.tm_min,
+				t.tm_sec);
+		}
+		else {
+			STR::sprint (out, "{:04}-{:02}-{:02} {:02}:{:02}:{:02d}"sv,
+				t.tm_year + 1900,
+				t.tm_mon + 1,
+				t.tm_mday,
+				t.tm_hour,
+				t.tm_min,
+				t.tm_sec);
+		}
+#endif // OS_WIN
+	}
+
+	void STR::format_time (std::string &out, const bool local, const bool for_filename)
+	{
+		time_t theTime;
+		::time (&theTime);
+		return format_time (out, theTime, local, for_filename);
 	}
 
 	std::string STR::format_time (const time_t theTime, const bool local, const bool for_filename)
@@ -286,7 +342,29 @@ namespace shaga {
 
 	void STR::format_date (std::string &out, const time_t theTime, const bool local, const std::string_view separatorstr)
 	{
-		out.assign (format_date (theTime, local, separatorstr));
+		struct tm t;
+		::memset (&t, 0, sizeof (t));
+
+		if (local == true) {
+			::localtime_r (&theTime, &t);
+		}
+		else {
+			::gmtime_r (&theTime, &t);
+		}
+
+		STR::sprint (out, "{:04}{}{:02}{}{:02}"sv,
+			t.tm_year + 1900,
+			separatorstr,
+			t.tm_mon + 1,
+			separatorstr,
+			t.tm_mday);
+	}
+
+	void STR::format_date (std::string &out, const bool local, const std::string_view separatorstr)
+	{
+		time_t theTime;
+		::time (&theTime);
+		return format_date (out, theTime, local, separatorstr);
 	}
 
 	std::string STR::format_date (const time_t theTime, const bool local, const std::string_view separatorstr)

@@ -84,7 +84,12 @@ namespace shaga {
 
 			void set_file_name (const std::string_view filename, const uint8_t mode);
 			void set_file_name (const std::string_view filename);
-			std::string get_file_name (void) const;
+
+			template <typename T = std::string_view>
+			T get_file_name (void) const
+			{
+				return T (_filename);
+			}
 
 			void set_mode (const uint8_t mode);
 			void set_mode_read (void);

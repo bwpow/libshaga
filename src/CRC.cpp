@@ -576,7 +576,7 @@ namespace shaga {
 	//  SHA-256  ////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	std::string CRC::sha256 (const char *buf, const size_t len)
+	std::string CRC::sha256 ([[maybe_unused]] const char *buf, [[maybe_unused]] const size_t len)
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = 32;
@@ -584,13 +584,11 @@ namespace shaga {
 		::mbedtls_sha256 (reinterpret_cast<const unsigned char *> (buf), len, output, 0);
 		return std::string (reinterpret_cast<const char *> (output), sze);
 #else
-		(void) buf;
-		(void) len;
 		cThrow ("Digest is not supported in lite version");
 #endif // SHAGA_FULL
 	}
 
-	std::string CRC::sha256 (const uint8_t *buf, const size_t len)
+	std::string CRC::sha256 ([[maybe_unused]] const uint8_t *buf, [[maybe_unused]] const size_t len)
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = 32;
@@ -598,8 +596,6 @@ namespace shaga {
 		::mbedtls_sha256 (buf, len, output, 0);
 		return std::string (reinterpret_cast<const char *> (output), sze);
 #else
-		(void) buf;
-		(void) len;
 		cThrow ("Digest is not supported in lite version");
 #endif // SHAGA_FULL
 	}
@@ -608,7 +604,7 @@ namespace shaga {
 	//  SHA-512  ////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	std::string CRC::sha512 (const char *buf, const size_t len)
+	std::string CRC::sha512 ([[maybe_unused]] const char *buf, [[maybe_unused]] const size_t len)
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = 64;
@@ -616,13 +612,11 @@ namespace shaga {
 		::mbedtls_sha512 (reinterpret_cast<const unsigned char *> (buf), len, output, 0);
 		return std::string (reinterpret_cast<const char *> (output), sze);
 #else
-		(void) buf;
-		(void) len;
 		cThrow ("Digest is not supported in lite version");
 #endif // SHAGA_FULL
 	}
 
-	std::string CRC::sha512 (const uint8_t *buf, const size_t len)
+	std::string CRC::sha512 ([[maybe_unused]] const uint8_t *buf, [[maybe_unused]] const size_t len)
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = 64;
@@ -630,8 +624,6 @@ namespace shaga {
 		::mbedtls_sha512 (buf, len, output, 0);
 		return std::string (reinterpret_cast<const char *> (output), sze);
 #else
-		(void) buf;
-		(void) len;
 		cThrow ("Digest is not supported in lite version");
 #endif // SHAGA_FULL
 	}

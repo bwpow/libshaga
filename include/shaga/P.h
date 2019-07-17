@@ -10,7 +10,26 @@ All rights reserved.
 
 #include "common.h"
 
+/* Concat function taking string and string_view and returning new string */
+#define _CC(x,...) shaga::STR::concat(x,##__VA_ARGS__)
+
+/* Helper to convert string_vieew to C-style string */
+#define s_c_str(x) std::string(x).c_str()
+
+/* Throwing CommonException helpers */
+#define cLogThrow(format, ...) throw shaga::CommonException(true, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
+#define cThrow(format, ...) throw shaga::CommonException(false, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
+
+#define MACRO_CONCAT2(x, y) x ## y
+#define MACRO_CONCAT(x, y) MACRO_CONCAT2(x, y)
+
+/* Create scoped variable that will keep CommonException muted */
+#define cMute shaga::CommonExceptionMute MACRO_CONCAT(_common_exception_mute_, __LINE__)()
+
 namespace shaga::P {
+	/* Cache to avoid allocation for every P::print */
+	typedef std::array<char, 256> P_CACHE_TYPE;
+
 	void set_dir_log (const std::string_view var);
 	void set_name_log (const std::string_view var);
 	void set_app_name (const std::string_view var);
@@ -23,24 +42,37 @@ namespace shaga::P {
 	void show_ms (const bool enabled) noexcept;
 	bool is_enabled (void) noexcept;
 
-	void _print (const std::string &message, const char *prefix = nullptr) noexcept;
-	void _print (const char *message, const char *prefix = nullptr) noexcept;
+	P_CACHE_TYPE* p_cache_lock (void) noexcept;
+	void p_cache_release (void) noexcept;
+
+	void _print (const std::string_view message, const std::string_view prefix) noexcept;
 
 	template <typename... Args>
-	void print (const char *format, const Args & ... args) noexcept
+	void print (const std::string_view format, const Args & ... args) noexcept
 	{
-		if (true == is_enabled ()) {
-			if (sizeof...(Args) == 0) {
-				_print (format);
-			}
-			else {
-				try {
-					_print (fmt::format (format, args...));
+		if (false == is_enabled ()) {
+			return;
+		}
+
+		if (sizeof...(Args) == 0) {
+			_print (format, ""sv);
+		}
+		else {
+			P_CACHE_TYPE *cache = p_cache_lock ();
+			try {
+				const size_t sze = fmt::format_to_n (cache->begin (), cache->size (), format, args...).size;
+				if (sze < cache->size ()) {
+					(*cache)[sze] = '\0';
 				}
-				catch (...) {
-					_print (format, "(!FORMAT ERROR!) ");
+				else {
+					cache->back () = '\0';
 				}
+				_print (cache->data (), ""sv);
 			}
+			catch (...) {
+				_print (format, "(!FORMAT ERROR!) "sv);
+			}
+			p_cache_release ();
 		}
 	}
 
@@ -48,22 +80,130 @@ namespace shaga::P {
 	bool debug_is_enabled (void) noexcept;
 
 	template <typename... Args>
-	void debug_print (const char *format, const Args & ... args) noexcept
+	void debug_print (const std::string_view format, const Args & ... args) noexcept
 	{
-		if (true == debug_is_enabled ()) {
-			if (sizeof...(Args) == 0) {
-				_print (format);
-			}
-			else {
-				try {
-					_print (fmt::format (format, args...), "[DEBUG] ");
+		if (false == debug_is_enabled ()) {
+			return;
+		}
+
+		if (sizeof...(Args) == 0) {
+			_print (format, "[DEBUG] "sv);
+		}
+		else {
+			P_CACHE_TYPE *cache = p_cache_lock ();
+			try {
+				const size_t sze = fmt::format_to_n (cache->begin (), cache->size (), format, args...).size;
+				if (sze < cache->size ()) {
+					(*cache)[sze] = '\0';
 				}
-				catch (...) {
-					_print (format, "[DEBUG] (!FORMAT ERROR!) ");
+				else {
+					cache->back () = '\0';
 				}
+				_print (cache->data (), "[DEBUG] "sv);
 			}
+			catch (...) {
+				_print (format, "[DEBUG] (!FORMAT ERROR!) "sv);
+			}
+			p_cache_release ();
 		}
 	}
+}
+
+namespace shaga {
+	bool commonexception_is_muted (void) noexcept;
+	void commonexception_set_muted (const bool state) noexcept;
+
+	class CommonExceptionMute
+	{
+		private:
+			const bool _previous_state {false};
+			bool _active {false};
+
+		public:
+			explicit CommonExceptionMute () : _previous_state (commonexception_is_muted ())
+			{
+				if (false == P::debug_is_enabled ()) {
+					_active = true;
+					commonexception_set_muted (true);
+				}
+			}
+
+			~CommonExceptionMute ()
+			{
+				reset ();
+			}
+
+			void reset (void)
+			{
+				if (true == _active) {
+					commonexception_set_muted (_previous_state);
+					_active = false;
+				}
+			}
+	};
+
+	class CommonException : public std::exception
+	{
+		private:
+			std::string _text;
+			size_t _info_pos {0};
+
+		public:
+			template <typename... Args>
+			CommonException (const bool log, const std::string_view str_file, const std::string_view str_function, const int str_line, const std::string_view format, const Args & ... args) noexcept
+			{
+				if (false == log && true == commonexception_is_muted ()) {
+					/* If logging is not enabled and exceptions are muted, don't do anything */
+					return;
+				}
+
+				_text.reserve (str_file.size () + str_function.size () + 16 + (format.size () * 3));
+
+				_text.assign (str_file);
+				_text.append ("("sv);
+				_text.append (STR::from_int (str_line));
+				_text.append ("): "sv);
+				_text.append (str_function);
+				_text.append (": "sv);
+
+				_info_pos = _text.size ();
+
+				if (sizeof...(Args) == 0) {
+					_text.append (format);
+				}
+				try {
+					STR::sprint (_text, format, args...);
+				}
+				catch (...) {
+					_text.append (format);
+					_text.append (" (!format error!)"sv);
+				}
+
+				if (true == log || true == P::debug_is_enabled ()) {
+					P::_print (_text, "{Exception} "sv);
+				}
+			}
+
+			const char *what () const noexcept
+			{
+				if (_text.empty ()) {
+					return "CommonException muted";
+				}
+				else {
+					return (_text.c_str ()) + _info_pos;
+				}
+			}
+
+			const char *debugwhat () const noexcept
+			{
+				if (_text.empty ()) {
+					return "CommonException muted";
+				}
+				else {
+					return _text.c_str ();
+				}
+			}
+	};
 }
 
 #endif // HEAD_shaga_P

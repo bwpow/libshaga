@@ -127,7 +127,7 @@ namespace shaga {
 			cThrow ("Flags mNOCREAT and mEXCL cannot be used together");
 		}
 
-		_fd = ::open (s_c_str (_filename), flags, _mask);
+		_fd = ::open (_filename.c_str (), flags, _mask);
 		if (_fd < 0) {
 			cThrow ("Error opening file '{}': {}", _filename, strerror (errno));
 		}
@@ -298,11 +298,6 @@ namespace shaga {
 			cThrow ("File is already opened");
 		}
 		_filename.assign (filename);
-	}
-
-	std::string ShFile::get_file_name (void) const
-	{
-		return _filename;
 	}
 
 	void ShFile::set_mode (const uint8_t mode)

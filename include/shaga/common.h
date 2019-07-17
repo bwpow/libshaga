@@ -163,6 +163,9 @@ All rights reserved.
 #define FMT_HEADER_ONLY
 #include "3rdparty/fmt/format.h"
 
+/* Use literals for ""s and ""sv */
+using namespace std::literals;
+
 #ifndef INT64_C
 	#define INT64_C(c) (c ## LL)
 #endif
@@ -228,18 +231,6 @@ All rights reserved.
 	#define SHAGA_INLINE inline
 #endif
 
-/* Use literals for ""s and ""sv */
-using namespace std::literals;
-
-/* Concat function taking string and string_view and returning new string */
-#define _CC(x,...) shaga::STR::concat(x,##__VA_ARGS__)
-
-/* Helper to convert string_vieew to C-style string */
-#define s_c_str(x) std::string(x).c_str()
-
-/* Needed first for P::_printf used in CommonException */
-#include "P.h"
-
 namespace shaga
 {
 	typedef std::map <std::string, std::string> COMMON_MAP;
@@ -256,49 +247,15 @@ namespace shaga
 	typedef std::set <std::string_view> VIEW_SET;
 	typedef std::list <std::string_view> VIEW_LIST;
 	typedef std::deque <std::string_view> VIEW_DEQUE;
+}
 
-	class CommonException: public std::exception
-	{
-		private:
-			std::string _text;
-			size_t _info_pos {0};
-		public:
-			template <typename... Args>
-			CommonException (const bool log, const std::string_view str_file, const std::string_view str_function, int str_line, const std::string_view format, const Args & ... args) noexcept
-			{
-				_text.reserve (16 + (format.size () * 2));
+/* Needed first for P::_printf used in CommonException */
+#include "STR.h"
+#include "P.h"
 
-				try {
-					_text = fmt::format ("{}({}): {}: ", str_file, str_line, str_function);
-					_info_pos = _text.size ();
-
-					if (sizeof...(Args) == 0) {
-						_text.append (format);
-					}
-					else {
-						_text.append (fmt::format (format, args...));
-					}
-				}
-				catch (...) {
-					_text.append (format);
-					_text.append (" (!format error!)");
-				}
-
-				if (true == log) {
-					P::_print (_text, "Exception thrown: ");
-				}
-				else if (true == P::debug_is_enabled ()) {
-					P::_print (_text, "Exception thrown: ");
-				}
-			}
-
-			const char *what () const noexcept;
-			const char *debugwhat () const noexcept;
-	};
-
-	#define cLogThrow(format, ...) throw shaga::CommonException(true, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
-	#define cThrow(format, ...) throw shaga::CommonException(false, __FILE__, __PRETTY_FUNCTION__, __LINE__, format, ##__VA_ARGS__)
-
+namespace shaga
+{
+	/* Shutdown and exit handling */
 	void add_at_exit_callback (std::function<void (void)> func);
 	[[noreturn]] void _exit (const char *text = nullptr, const int rcode = EXIT_FAILURE) noexcept;
 	[[noreturn]] void exit (const int rcode) noexcept;
@@ -308,32 +265,28 @@ namespace shaga
 	template <typename... Args>
 	[[noreturn]] void exit (const int rcode, const char *format, const Args & ... args) noexcept
 	{
+		if (sizeof...(Args) == 0) {
+			_exit (format, rcode);
+		}
 		try {
-			if (sizeof...(Args) == 0) {
-				_exit (format, rcode);
-			}
-			else {
-				_exit (fmt::format (format, args...).c_str (), rcode);
-			}
+			_exit (fmt::format (format, args...).c_str (), rcode);
 		}
 		catch (...) {
-			_exit ("Exit failed with exception", EXIT_FAILURE);
+			_exit (format, rcode);
 		}
 	}
 
 	template <typename... Args>
 	[[noreturn]] void exit (const char *format, const Args & ... args) noexcept
 	{
+		if (sizeof...(Args) == 0) {
+			_exit (format, EXIT_FAILURE);
+		}
 		try {
-			if (sizeof...(Args) == 0) {
-				_exit (format, EXIT_FAILURE);
-			}
-			else {
-				_exit (fmt::format (format, args...).c_str (), EXIT_FAILURE);
-			}
+			_exit (fmt::format (format, args...).c_str (), EXIT_FAILURE);
 		}
 		catch (...) {
-			_exit ("Exit failed with exception", EXIT_FAILURE);
+			_exit (format, EXIT_FAILURE);
 		}
 }
 
@@ -380,14 +333,9 @@ namespace shaga
 
 	#define LOG_REGISTER
 
-	#define SHAGA_MAIN(a) int main (int argc, char **argv) try { \
-		(void) argc; \
-		(void) argv; \
-		shaga_check_threading (); \
-		shaga_check_version (); \
-		BIN::endian_detect (); \
-		LOG_REGISTER; \
-		a \
+	#define SHAGA_MAIN(body) int main ([[maybe_unused]] int argc, [[maybe_unused]] char **argv) try { \
+		{ shaga_check_threading (); shaga_check_version (); BIN::endian_detect (); LOG_REGISTER; } \
+		{ body } \
 		shaga::exit (); \
 		cThrow ("Fell over the edge of the world"); \
 		return 127; \
@@ -398,7 +346,6 @@ namespace shaga
 	catch (...) { \
 		shaga::exit ("FATAL ERROR: Unknown failure"); \
 	} \
-
 
 	int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime);
 	int64_t timespec_diff_msec (const struct timespec &starttime, const struct timespec &finishtime);
@@ -417,7 +364,6 @@ namespace shaga
 
 #include "hwid.h"
 #include "CRC.h"
-#include "STR.h"
 #include "ShSocket.h"
 #include "ShFile.h"
 #include "FS.h"

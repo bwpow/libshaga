@@ -363,6 +363,5 @@ namespace shaga {
 				cThrow ("Not enough data in buffer"sv);
 			}
 		}
-
 	}
 }

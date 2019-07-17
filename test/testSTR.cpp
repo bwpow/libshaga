@@ -82,14 +82,17 @@ TEST (STR, format)
 {
 	std::string str;
 
-	str = fmt::format ("{:d} {:X} {:g} {:c}", 100, 0x100, 100.100d, 'x');
+	str = fmt::format ("{:d} {:X} {:g} {:c}"sv, 100, 0x100, 100.100d, 'x');
 	EXPECT_TRUE (str == "100 100 100.1 x") << str;
 
-	str = fmt::format ("1234567");
+	str = fmt::format ("1234567"sv);
 	EXPECT_TRUE (str == "1234567") << str;
 
-	str = fmt::format ("{}", "12345678");
+	str = fmt::format ("{}"sv, "12345678");
 	EXPECT_TRUE (str == "12345678") << str;
+
+	STR::sprint (str, "{:03d}"sv, 1);
+	EXPECT_TRUE (str == "12345678001") << str;
 }
 
 TEST (STR, bool)

@@ -179,6 +179,7 @@ namespace shaga {
 					const size_t len = std::max (_hmac_keys.size (), _crypto_keys.size ());
 					for (size_t i = 0; i < len; ++i) {
 						try {
+							cMute;
 							decode_message (msg, offset, out, (i + _key_id) % len, use_mixed);
 							/* If it didn't throw exception, decode is successfull */
 							_key_id = (i + _key_id) % len;
@@ -218,6 +219,7 @@ namespace shaga {
 
 					case MixKeysUse::BOTH_NORMAL_FIRST:
 						try {
+							cMute;
 							_decode (false);
 						}
 						catch (...) {
@@ -227,6 +229,7 @@ namespace shaga {
 
 					case MixKeysUse::BOTH_MIXED_FIRST:
 						try {
+							cMute;
 							_decode (true);
 						}
 						catch (...) {
