@@ -126,12 +126,12 @@ namespace shaga {
 					return;
 				}
 				else if (ret == GLOB_NOSPACE) {
-					cThrow ("glob error for pattern '{}': Out of memory", pattern);
+					cThrow ("glob error for pattern '{}': Out of memory"sv, pattern);
 				}
 				else if (ret == GLOB_ABORTED ) {
-					cThrow ("glob error for pattern '{}': Read error", pattern);
+					cThrow ("glob error for pattern '{}': Read error"sv, pattern);
 				}
-				cThrow ("glob error for pattern '{}': Unknown error", pattern);
+				cThrow ("glob error for pattern '{}': Unknown error"sv, pattern);
 			}
 			for(size_t i = 0 ; i < glob_result.gl_pathc; i++) {
 				callback (glob_result.gl_pathv[i]);

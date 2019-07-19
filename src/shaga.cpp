@@ -213,18 +213,14 @@ namespace shaga {
 
 	int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime)
 	{
-		int64_t msec;
-		msec = (static_cast<int64_t> (finishtime.tv_sec) - static_cast<int64_t> (starttime.tv_sec)) * 1'000;
-		msec += (static_cast<int64_t> (finishtime.tv_usec) - static_cast<int64_t> (starttime.tv_usec)) / 1'000;
-		return msec;
+		return ((static_cast<int64_t> (finishtime.tv_sec) - static_cast<int64_t> (starttime.tv_sec)) * 1'000) +
+			(static_cast<int64_t> (finishtime.tv_usec) - static_cast<int64_t> (starttime.tv_usec)) / 1'000;
 	}
 
 	int64_t timespec_diff_msec (const struct timespec &starttime, const struct timespec &finishtime)
 	{
-		int64_t msec;
-		msec = (static_cast<int64_t> (finishtime.tv_sec) - static_cast<int64_t> (starttime.tv_sec)) * 1'000;
-		msec += (static_cast<int64_t> (finishtime.tv_nsec / 1'000'000) - static_cast<int64_t> (starttime.tv_nsec / 1'000'000));
-		return msec;
+		return ((static_cast<int64_t> (finishtime.tv_sec) - static_cast<int64_t> (starttime.tv_sec)) * 1'000) +
+			(static_cast<int64_t> (finishtime.tv_nsec / 1'000'000) - static_cast<int64_t> (starttime.tv_nsec / 1'000'000));
 	}
 
 	uint64_t get_monotime_sec (void)
