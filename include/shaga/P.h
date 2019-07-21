@@ -31,6 +31,7 @@ namespace shaga::P {
 	typedef std::array<char, 256> P_CACHE_TYPE;
 
 	void set_dir_log (const std::string_view var);
+	void set_dir_log (const COMMON_DEQUE &lst);
 	void set_name_log (const std::string_view var);
 	void set_app_name (const std::string_view var);
 
@@ -38,12 +39,13 @@ namespace shaga::P {
 	void set_max_size_mb (const int soft, const int hard) noexcept;
 	bool soft_limit_reached (void) noexcept;
 
+	void rescan_available_directories (void);
 	void set_enabled (const bool enabled);
 	void show_ms (const bool enabled) noexcept;
 	bool is_enabled (void) noexcept;
 
-	P_CACHE_TYPE* p_cache_lock (void) noexcept;
-	void p_cache_release (void) noexcept;
+	P_CACHE_TYPE& _p_cache_lock (void) noexcept;
+	void _p_cache_release (void) noexcept;
 
 	void _print (const std::string_view message, const std::string_view prefix) noexcept;
 
@@ -58,21 +60,15 @@ namespace shaga::P {
 			_print (format, ""sv);
 		}
 		else {
-			P_CACHE_TYPE *cache = p_cache_lock ();
+			P_CACHE_TYPE &cache = _p_cache_lock ();
 			try {
-				const size_t sze = fmt::format_to_n (cache->begin (), cache->size (), format, args...).size;
-				if (sze < cache->size ()) {
-					(*cache)[sze] = '\0';
-				}
-				else {
-					cache->back () = '\0';
-				}
-				_print (cache->data (), ""sv);
+				const size_t sze = fmt::format_to_n (cache.begin (), cache.size (), format, args...).size;
+				_print (std::string_view (cache.data (), std::min (sze, cache.size ())), ""sv);
 			}
 			catch (...) {
 				_print (format, "(!FORMAT ERROR!) "sv);
 			}
-			p_cache_release ();
+			_p_cache_release ();
 		}
 	}
 
@@ -90,21 +86,15 @@ namespace shaga::P {
 			_print (format, "[DEBUG] "sv);
 		}
 		else {
-			P_CACHE_TYPE *cache = p_cache_lock ();
+			P_CACHE_TYPE &cache = _p_cache_lock ();
 			try {
-				const size_t sze = fmt::format_to_n (cache->begin (), cache->size (), format, args...).size;
-				if (sze < cache->size ()) {
-					(*cache)[sze] = '\0';
-				}
-				else {
-					cache->back () = '\0';
-				}
-				_print (cache->data (), "[DEBUG] "sv);
+				const size_t sze = fmt::format_to_n (cache.begin (), cache.size (), format, args...).size;
+				_print (std::string_view (cache.data (), std::min (sze, cache.size ())), "[DEBUG] "sv);
 			}
 			catch (...) {
 				_print (format, "[DEBUG] (!FORMAT ERROR!) "sv);
 			}
-			p_cache_release ();
+			_p_cache_release ();
 		}
 	}
 }

@@ -30,7 +30,7 @@ namespace shaga::P {
 	static off64_t _limit_hard {0};
 
 	#ifdef SHAGA_THREADING
-		static std::mutex _printf_mutex;
+		static std::mutex _print_mutex;
 		static std::mutex _p_cache_mutex;
 
 		static volatile bool _disabled_permanently {false};
@@ -44,7 +44,9 @@ namespace shaga::P {
 		static bool _debug_enabled {false};
 	#endif // SHAGA_THREADING
 
-	static std::string _dir_log;
+	static COMMON_DEQUE _dir_log;
+	static size_t _dir_log_pos {0};
+
 	static std::string _name_log;
 	static std::string _app_name;
 
@@ -59,10 +61,20 @@ namespace shaga::P {
 	static COMMON_DEQUE _printf_entries;
 }
 
-namespace shaga {
+namespace shaga
+{
 	void P::set_dir_log (const std::string_view var)
 	{
-		_dir_log.assign (var);
+		_dir_log.empty ();
+		_dir_log.emplace_back (var);
+		_dir_log_pos = 0;
+	}
+
+	void P::set_dir_log (const COMMON_DEQUE &lst)
+	{
+		_dir_log.empty ();
+		std::copy (lst.cbegin (), lst.cend (), std::back_inserter (_dir_log));
+		_dir_log_pos = 0;
 	}
 
 	void P::set_name_log (const std::string_view var)
@@ -99,24 +111,47 @@ namespace shaga {
 
 	/////////////////////////////////////////////////////////////
 
+	void P::rescan_available_directories (void)
+	{
+		#ifdef SHAGA_THREADING
+		std::lock_guard<std::mutex> lock (_print_mutex);
+		#endif // SHAGA_THREADING
+
+		if (_dir_log_enum != _DirLogEnum::FILE) {
+			cThrow ("Logging is not set to output to files");
+		}
+
+		_dir_log_pos = SIZE_MAX;
+		for (size_t pos = 0; pos < _dir_log.size (); ++pos) {
+			if (FS::is_dir (_dir_log[pos])) {
+				_dir_log_pos = pos;
+				return;
+			}
+		}
+
+		cThrow ("All directories in list are unavailable");
+	}
+
 	void P::set_enabled (const bool enabled)
 	{
+
 		if (enabled) {
-			if (_dir_log.empty () || _name_log.empty () || _app_name.empty ()) {
+			if (_dir_log.empty () || _dir_log.front().empty () ||  _name_log.empty () || _app_name.empty ()) {
 				cThrow ("Can't enable P::print, variables are not set."sv);
 			}
 
-			if (STR::icompare (_dir_log, "syslog"sv) == true) {
+			if (STR::icompare (_dir_log.front(), "syslog"sv) == true) {
 				_dir_log_enum = _DirLogEnum::SYSLOG;
 			}
-			else if (STR::icompare (_dir_log, "-"sv) == true || STR::icompare (_dir_log, "stdout"sv) == true) {
+			else if (STR::icompare (_dir_log.front(), "-"sv) == true || STR::icompare (_dir_log.front(), "stdout"sv) == true) {
 				_dir_log_enum = _DirLogEnum::STDOUT;
 			}
-			else if (STR::icompare (_dir_log, "stderr"sv) == true) {
+			else if (STR::icompare (_dir_log.front(), "stderr"sv) == true) {
 				_dir_log_enum = _DirLogEnum::STDERR;
 			}
 			else {
 				_dir_log_enum = _DirLogEnum::FILE;
+				rescan_available_directories ();
 			}
 		}
 		_enabled = enabled;
@@ -133,16 +168,16 @@ namespace shaga {
 		return (true == _enabled && false == _disabled_temporarily && false == _disabled_permanently);
 	}
 
-	P::P_CACHE_TYPE* P::p_cache_lock (void) noexcept
+	P::P_CACHE_TYPE& P::_p_cache_lock (void) noexcept
 	{
 		#ifdef SHAGA_THREADING
 		_p_cache_mutex.lock ();
 		#endif // SHAGA_THREADING
 
-		return &_p_cache;
+		return _p_cache;
 	}
 
-	void P::p_cache_release (void) noexcept
+	void P::_p_cache_release (void) noexcept
 	{
 		#ifdef SHAGA_THREADING
 		_p_cache_mutex.unlock ();
@@ -157,7 +192,7 @@ namespace shaga {
 
 		#ifdef SHAGA_THREADING
 		// Since we can write logs to non-POSIX filesystems, let's do locking here instead on FS level.
-		std::lock_guard<std::mutex> lock (_printf_mutex);
+		std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
 		struct tm local_tm;
@@ -241,7 +276,7 @@ namespace shaga {
 		}
 		else {
 			sze = fmt::format_to_n (_p_cache_fname.begin (), _p_cache_fname.size (), "{}/{}_{:04}-{:02}-{:02}.log"sv,
-				_dir_log,
+				_dir_log.at (_dir_log_pos),
 				_name_log,
 				local_tm.tm_year + 1900,
 				local_tm.tm_mon + 1,
