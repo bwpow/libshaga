@@ -84,7 +84,7 @@ namespace shaga {
 		_at_exit_callback_list.push_back (func);
 	}
 
-	[[noreturn]] void _exit (const char *text, const int rcode) noexcept
+	[[noreturn]] void _exit (const std::string_view text, const int rcode, const std::string_view prefix) noexcept
 	{
 		try {
 			#ifdef SHAGA_THREADING
@@ -98,8 +98,8 @@ namespace shaga {
 			#endif // SHAGA_THREADING
 			{
 				/* This function is already being executed, clearly from one of the callback functions. */
-				::fprintf (stderr, "FATAL ERROR: Exit executed recursively from callback function.\n");
-				P::_print ("FATAL ERROR: Exit executed recursively from callback function."sv, ""sv);
+				P::_print ("Exit executed recursively from callback function."sv, "FATAL ERROR: "sv, true);
+				P::set_enabled (false);
 				::exit (EXIT_FAILURE);
 			}
 
@@ -122,10 +122,10 @@ namespace shaga {
 			}
 			lst.clear ();
 
-			if (text != nullptr && ::strlen (text) > 0) {
-				P::print ("Exit message: {}", text);
-				::fprintf (stderr, "%s\n", text);
+			if (text.empty () == false || prefix.empty () == false) {
+				P::_print (text, prefix, true);
 			}
+
 			P::print ("Application exit with errorcode {}", rcode);
 
 			if (nullptr != _final_call) {
@@ -134,13 +134,12 @@ namespace shaga {
 			}
 
 			P::set_enabled (false);
-
 			::exit (rcode);
 		}
 		catch (...) {
-			::fprintf (stderr, "FATAL ERROR: Exception caught in exit.\n");
-			P::_print ("FATAL ERROR: Exception caught in exit."sv, ""sv);
-			::exit (rcode);
+			P::_print ("Exception caught in exit."sv, "FATAL ERROR: "sv, true);
+			P::set_enabled (false);
+			::exit (EXIT_FAILURE);
 		}
 	}
 

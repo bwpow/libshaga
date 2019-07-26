@@ -184,9 +184,16 @@ namespace shaga
 		#endif // SHAGA_THREADING
 	}
 
-	void P::_print (const std::string_view message, const std::string_view prefix) noexcept
+	void P::_print (const std::string_view message, const std::string_view prefix, const bool also_to_stderr) noexcept
 	{
 		if (false == is_enabled ()) {
+			if (true == also_to_stderr) {
+				/* Printing is not yet enabled, but output to stderr is requested */
+				::fwrite (prefix.data (), 1, prefix.size (), stderr);
+				::fwrite (message.data (), 1, message.size (), stderr);
+				::fputc ('\n', stderr);
+				::fflush (stderr);
+			}
 			return;
 		}
 
@@ -258,23 +265,25 @@ namespace shaga
 			::syslog (LOG_NOTICE, message.data (), message.size ());
 			::closelog ();
 		}
-		else
 #endif // OS_WIN
-		if (_DirLogEnum::STDOUT == _dir_log_enum) {
+
+		if (_DirLogEnum::STDOUT == _dir_log_enum && false == also_to_stderr) {
 			::fwrite (str_time.data (), 1, str_time.size (), stdout);
 			::fwrite (prefix.data (), 1, prefix.size (), stdout);
 			::fwrite (message.data (), 1, message.size (), stdout);
 			::fputc ('\n', stdout);
 			::fflush (stdout);
 		}
-		else if (_DirLogEnum::STDERR == _dir_log_enum) {
+
+		if (_DirLogEnum::STDERR == _dir_log_enum || true == also_to_stderr) {
 			::fwrite (str_time.data (), 1, str_time.size (), stderr);
 			::fwrite (prefix.data (), 1, prefix.size (), stderr);
 			::fwrite (message.data (), 1, message.size (), stderr);
 			::fputc ('\n', stderr);
 			::fflush (stderr);
 		}
-		else {
+
+		if (_DirLogEnum::FILE == _dir_log_enum) {
 			sze = fmt::format_to_n (_p_cache_fname.begin (), _p_cache_fname.size (), "{}/{}_{:04}-{:02}-{:02}.log"sv,
 				_dir_log.at (_dir_log_pos),
 				_name_log,

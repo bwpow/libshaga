@@ -257,40 +257,40 @@ namespace shaga
 {
 	/* Shutdown and exit handling */
 	void add_at_exit_callback (std::function<void (void)> func);
-	[[noreturn]] void _exit (const char *text = nullptr, const int rcode = EXIT_FAILURE) noexcept;
+	[[noreturn]] void _exit (const std::string_view text = ""sv, const int rcode = EXIT_FAILURE, const std::string_view prefix = ""sv) noexcept;
 	[[noreturn]] void exit (const int rcode) noexcept;
 	[[noreturn]] void exit_failure (void) noexcept;
 	[[noreturn]] void exit (void) noexcept;
 
 	template <typename... Args>
-	[[noreturn]] void exit (const int rcode, const char *format, const Args & ... args) noexcept
+	[[noreturn]] void exit (const int rcode, const std::string_view format, const Args & ... args) noexcept
 	{
 		if (sizeof...(Args) == 0) {
-			_exit (format, rcode);
+			shaga::_exit (format, rcode);
 		}
 		try {
-			_exit (fmt::format (format, args...).c_str (), rcode);
+			shaga::_exit (fmt::format (format, args...), rcode);
 		}
 		catch (...) {
-			_exit (format, rcode);
+			shaga::_exit (format, rcode);
 		}
 	}
 
 	template <typename... Args>
-	[[noreturn]] void exit (const char *format, const Args & ... args) noexcept
+	[[noreturn]] void exit (const std::string_view format, const Args & ... args) noexcept
 	{
 		if (sizeof...(Args) == 0) {
-			_exit (format, EXIT_FAILURE);
+			shaga::_exit (format, EXIT_FAILURE);
 		}
 		try {
-			_exit (fmt::format (format, args...).c_str (), EXIT_FAILURE);
+			shaga::_exit (fmt::format (format, args...), EXIT_FAILURE);
 		}
 		catch (...) {
-			_exit (format, EXIT_FAILURE);
+			shaga::_exit (format, EXIT_FAILURE);
 		}
 }
 
-	typedef std::function<void (const char *, const int)> FINAL_CALL;
+	typedef std::function<void (const std::string_view, const int)> FINAL_CALL;
 	void set_final_call (FINAL_CALL func);
 
 	#define TRY_TO_SHUTDOWN() _try_to_shutdown(__FILE__, __PRETTY_FUNCTION__, __LINE__)
@@ -333,19 +333,18 @@ namespace shaga
 
 	#define LOG_REGISTER
 
-	#define SHAGA_MAIN(body) int main ([[maybe_unused]] int argc, [[maybe_unused]] char **argv) try { \
+	#define SHAGA_MAIN(body) int main ([[maybe_unused]] int argc, [[maybe_unused]] char **argv) try \
+	{ \
 		{ shaga_check_threading (); shaga_check_version (); BIN::endian_detect (); LOG_REGISTER; } \
 		{ body } \
 		shaga::exit (); \
-		cThrow ("Fell over the edge of the world"); \
-		return 127; \
 	} \
 	catch (const std::exception &e) { \
-		shaga::exit ("FATAL ERROR: {}", e.what ()); \
+		shaga::_exit (e.what (), EXIT_FAILURE, "FATAL ERROR: "sv); \
 	} \
 	catch (...) { \
-		shaga::exit ("FATAL ERROR: Unknown failure"); \
-	} \
+		shaga::_exit ("Unknown failure"sv, EXIT_FAILURE, "FATAL ERROR: "sv); \
+	}
 
 	int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime);
 	int64_t timespec_diff_msec (const struct timespec &starttime, const struct timespec &finishtime);

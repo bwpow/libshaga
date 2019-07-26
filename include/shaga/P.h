@@ -47,7 +47,7 @@ namespace shaga::P {
 	P_CACHE_TYPE& _p_cache_lock (void) noexcept;
 	void _p_cache_release (void) noexcept;
 
-	void _print (const std::string_view message, const std::string_view prefix) noexcept;
+	void _print (const std::string_view message, const std::string_view prefix = ""sv, const bool also_to_stderr = false) noexcept;
 
 	template <typename... Args>
 	void print (const std::string_view format, const Args & ... args) noexcept
@@ -57,13 +57,13 @@ namespace shaga::P {
 		}
 
 		if (sizeof...(Args) == 0) {
-			_print (format, ""sv);
+			_print (format);
 		}
 		else {
 			P_CACHE_TYPE &cache = _p_cache_lock ();
 			try {
 				const size_t sze = fmt::format_to_n (cache.begin (), cache.size (), format, args...).size;
-				_print (std::string_view (cache.data (), std::min (sze, cache.size ())), ""sv);
+				_print (std::string_view (cache.data (), std::min (sze, cache.size ())));
 			}
 			catch (...) {
 				_print (format, "(!FORMAT ERROR!) "sv);
@@ -161,12 +161,14 @@ namespace shaga {
 				if (sizeof...(Args) == 0) {
 					_text.append (format);
 				}
-				try {
-					STR::sprint (_text, format, args...);
-				}
-				catch (...) {
-					_text.append (format);
-					_text.append (" (!format error!)"sv);
+				else {
+					try {
+						STR::sprint (_text, format, args...);
+					}
+					catch (...) {
+						_text.append (format);
+						_text.append (" (!format error!)"sv);
+					}
 				}
 
 				if (true == log || true == P::debug_is_enabled ()) {
