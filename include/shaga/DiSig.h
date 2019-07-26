@@ -13,7 +13,59 @@ All rights reserved.
 #ifdef SHAGA_FULL
 
 namespace shaga {
-	class DiSig {
+	class DiSigCommon {
+		protected:
+			static void check_error (const int err, const bool allow_positive = false);
+			static void can_do (mbedtls_pk_context &ctx);
+
+			virtual void dump_to_file (const std::string_view fname, const unsigned char *buf) const;
+			virtual void dump_to_file (const std::string_view fname, const unsigned char *buf, const size_t len) const;
+			virtual void dump_to_file (const std::string_view fname, const std::string_view buf) const;
+
+			virtual void check_hash (const mbedtls_md_type_t md_alg, const std::string_view hsh) const;
+
+		public:
+	};
+
+	class DiSigPrivate : public DiSigCommon
+	{
+		private:
+			unsigned char _output_buf[16'000];
+			randutils::mt19937_r_rng _rng;
+			mbedtls_pk_context _enc_ctx;
+
+		public:
+			explicit DiSigPrivate ();
+			~DiSigPrivate ();
+
+			virtual void generate_new_keypair (const std::string_view curve_type);
+
+			virtual void set_private_key_pem (const std::string_view key, const std::string_view pass);
+			virtual void set_private_key_pem (const std::string_view key);
+
+			virtual void set_private_key_der (const std::string_view key, const std::string_view pass);
+			virtual void set_private_key_der (const std::string_view key);
+
+			virtual void load_private_key (const std::string_view fname, const std::string_view pass);
+			virtual void load_private_key (const std::string_view fname);
+
+			virtual void save_keypair_pem (const std::string_view fname_priv, const std::string_view fname_pub);
+			virtual void save_keypair_der (const std::string_view fname_priv, const std::string_view fname_pub);
+			virtual void save_keypair_raw (const std::string_view fname_priv, const std::string_view fname_pub);
+
+			virtual std::string get_private_key_pem (void);
+			virtual std::string get_private_key_der (void);
+			virtual std::string get_private_key_raw (void);
+
+			virtual std::string get_public_key_pem (void);
+			virtual std::string get_public_key_der (void);
+			virtual std::string get_public_key_raw (void);
+
+			virtual std::string sign (const mbedtls_md_type_t md_alg, const std::string_view hsh);
+	};
+
+	class DiSigVerify : public DiSigCommon
+	{
 		private:
 			enum class _TYPE {
 				PEM,
@@ -29,65 +81,30 @@ namespace shaga {
 					mbedtls_pk_context _ctx;
 					const std::string _name;
 
-					DEC_CTX_ENTRY (const std::string_view key, const std::string_view name, const DiSig::_TYPE type, const std::string_view curve_type);
-					DEC_CTX_ENTRY (const std::string_view key, const std::string_view name, const DiSig::_TYPE type);
+					DEC_CTX_ENTRY (const std::string_view key, const std::string_view name, const DiSigVerify::_TYPE type, const std::string_view curve_type);
+					DEC_CTX_ENTRY (const std::string_view key, const std::string_view name, const DiSigVerify::_TYPE type);
 					~DEC_CTX_ENTRY ();
 			};
 
-			randutils::mt19937_r_rng _rng;
-			mbedtls_pk_context _enc_ctx;
 			std::list<DEC_CTX_ENTRY> _dec_ctx_list;
-			unsigned char _output_buf[16'000];
-
-			static void check_error (const int err, const bool allow_positive = false);
-			static void can_do (mbedtls_pk_context &ctx);
-
-			void dump_to_file (const std::string_view fname, const unsigned char *buf) const;
-			void dump_to_file (const std::string_view fname, const unsigned char *buf, const size_t len) const;
-			void dump_to_file (const std::string_view fname, const std::string_view buf) const;
-
-			void check_hash (const mbedtls_md_type_t md_alg, const std::string_view hsh) const;
 
 		public:
-			explicit DiSig ();
-			~DiSig ();
+			explicit DiSigVerify ();
+			~DiSigVerify ();
 
-			void set_encryption_key_pem (const std::string_view key, const std::string_view pass);
-			void set_encryption_key_pem (const std::string_view key);
+			virtual void add_public_key_pem (const std::string_view key, const std::string_view name);
+			virtual void add_public_key_pem (const std::string_view key);
 
-			void set_encryption_key_der (const std::string_view key, const std::string_view pass);
-			void set_encryption_key_der (const std::string_view key);
+			virtual void add_public_key_der (const std::string_view key, const std::string_view name);
+			virtual void add_public_key_der (const std::string_view key);
 
-			void load_encryption_key (const std::string_view fname, const std::string_view pass);
-			void load_encryption_key (const std::string_view fname);
+			virtual void add_public_key_raw (const std::string_view curve_type, const std::string_view key, const std::string_view name);
+			virtual void add_public_key_raw (const std::string_view curve_type, const std::string_view key);
 
-			void save_encryption_keypair_pem (const std::string_view fname_priv, const std::string_view fname_pub);
-			void save_encryption_keypair_der (const std::string_view fname_priv, const std::string_view fname_pub);
-			void save_encryption_keypair_raw (const std::string_view fname_priv, const std::string_view fname_pub);
+			virtual void clear_keys (void);
 
-			std::string get_encryption_key_pem (void);
-			std::string get_encryption_key_der (void);
-			std::string get_encryption_key_raw (void);
-
-			std::string get_encryption_pubkey_pem (void);
-			std::string get_encryption_pubkey_der (void);
-			std::string get_encryption_pubkey_raw (void);
-
-			void add_decryption_key_pem (const std::string_view key, const std::string_view name);
-			void add_decryption_key_pem (const std::string_view key);
-
-			void add_decryption_key_der (const std::string_view key, const std::string_view name);
-			void add_decryption_key_der (const std::string_view key);
-
-			void add_decryption_key_raw (const std::string_view curve_type, const std::string_view key, const std::string_view name);
-			void add_decryption_key_raw (const std::string_view curve_type, const std::string_view key);
-
-			void reset_decryption_keys (void);
-
-			std::string sign (const mbedtls_md_type_t md_alg, const std::string_view hsh);
-			bool verify (const mbedtls_md_type_t md_alg, const std::string_view hsh, const std::string_view sgn, std::string &key_name_out);
-
-			void generate_new_key (const std::string_view curve_type);
+			virtual bool verify (const mbedtls_md_type_t md_alg, const std::string_view hsh, const std::string_view sgn, std::string &key_name_out);
+			virtual bool verify (const mbedtls_md_type_t md_alg, const std::string_view hsh, const std::string_view sgn);
 	};
 }
 

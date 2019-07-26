@@ -73,16 +73,16 @@ TEST (DiSig, raw)
 
 	/* Try import DER private key and export other types of key */
 	{
-		DiSig disig;
-		disig.set_encryption_key_der (ref_priv);
+		DiSigPrivate disig;
+		disig.set_private_key_der (ref_priv);
 
-		const std::string pub = disig.get_encryption_pubkey_der ();
+		const std::string pub = disig.get_public_key_der ();
 		EXPECT_TRUE (pub.compare (ref_pub) == 0);
 
-		const std::string priv_raw = disig.get_encryption_key_raw ();
+		const std::string priv_raw = disig.get_private_key_raw ();
 		EXPECT_TRUE (priv_raw.compare (ref_priv_raw) == 0);
 
-		const std::string pub_raw = disig.get_encryption_pubkey_raw ();
+		const std::string pub_raw = disig.get_public_key_raw ();
 		EXPECT_TRUE (pub_raw.compare (ref_pub_raw) == 0);
 
 		signature = disig.sign (MBEDTLS_MD_SHA256, digest);
@@ -90,14 +90,15 @@ TEST (DiSig, raw)
 
 	/* Import raw pubkey and try verify */
 	{
-		DiSig disig;
-		disig.add_decryption_key_raw ("secp256r1", ref_pub_raw);
+		DiSigVerify disig;
+		disig.add_public_key_raw ("secp256r1", ref_pub_raw);
 
 		std::string name;
 		EXPECT_TRUE (disig.verify (MBEDTLS_MD_SHA256, digest, signature, name));
 		EXPECT_FALSE (name.empty ());
-	}
 
+		EXPECT_TRUE (disig.verify (MBEDTLS_MD_SHA256, digest, signature));
+	}
 }
 
 TEST (DiSig, genkey)
@@ -107,39 +108,48 @@ TEST (DiSig, genkey)
 	const std::string hsh_other = CRC::sha256 (std::string ("different test string"));
 	const std::string hsh_bad = "abcd";
 
-	DiSig disig;
+	DiSigPrivate priv;
+	DiSigVerify pub;
 	COMMON_VECTOR vec;
 
 	const mbedtls_ecp_curve_info *curve_info;
 	for (curve_info = mbedtls_ecp_curve_list(); curve_info->grp_id != MBEDTLS_ECP_DP_NONE; curve_info++) {
 		{
-			disig.generate_new_key (curve_info->name);
-			disig.add_decryption_key_pem (disig.get_encryption_pubkey_pem ());
+			priv.generate_new_keypair (curve_info->name);
+			pub.add_public_key_pem (priv.get_public_key_pem ());
 
-			std::string test = disig.sign (MBEDTLS_MD_SHA256, hsh_ok);
-			EXPECT_THROW (disig.sign (MBEDTLS_MD_SHA256, hsh_bad), CommonException);
+			std::string test = priv.sign (MBEDTLS_MD_SHA256, hsh_ok);
+			EXPECT_THROW (priv.sign (MBEDTLS_MD_SHA256, hsh_bad), CommonException);
 
 			vec.push_back (test);
 		}
 
 		{
-			disig.generate_new_key (curve_info->name);
-			disig.add_decryption_key_der (disig.get_encryption_pubkey_der ());
+			priv.generate_new_keypair (curve_info->name);
+			pub.add_public_key_der (priv.get_public_key_der ());
 
-			std::string test = disig.sign (MBEDTLS_MD_SHA256, hsh_ok);
-			EXPECT_THROW (disig.sign (MBEDTLS_MD_SHA256, hsh_bad), CommonException);
+			std::string test = priv.sign (MBEDTLS_MD_SHA256, hsh_ok);
+			EXPECT_THROW (priv.sign (MBEDTLS_MD_SHA256, hsh_bad), CommonException);
 
 			vec.push_back (test);
 		}
 	}
 
 	for (const std::string &test: vec) {
-		EXPECT_THROW (disig.verify (MBEDTLS_MD_SHA256, hsh_bad, test, name), CommonException);
-		EXPECT_TRUE (disig.verify (MBEDTLS_MD_SHA256, hsh_ok, test, name));
-		EXPECT_FALSE (disig.verify (MBEDTLS_MD_SHA256, hsh_other, test, name));
+		EXPECT_THROW (pub.verify (MBEDTLS_MD_SHA256, hsh_bad, test), CommonException);
+		EXPECT_TRUE (pub.verify (MBEDTLS_MD_SHA256, hsh_ok, test));
+		EXPECT_FALSE (pub.verify (MBEDTLS_MD_SHA256, hsh_other, test));
+
+		EXPECT_THROW (pub.verify (MBEDTLS_MD_SHA256, hsh_bad, test, name), CommonException);
+		EXPECT_TRUE (pub.verify (MBEDTLS_MD_SHA256, hsh_ok, test, name));
+		EXPECT_FALSE (pub.verify (MBEDTLS_MD_SHA256, hsh_other, test, name));
 	}
 
-	EXPECT_FALSE (disig.verify (MBEDTLS_MD_SHA256, hsh_ok, hsh_bad, name));
-	EXPECT_FALSE (disig.verify (MBEDTLS_MD_SHA256, hsh_other, hsh_bad, name));
-	EXPECT_FALSE (disig.verify (MBEDTLS_MD_SHA256, hsh_ok, hsh_other, name));
+	EXPECT_FALSE (pub.verify (MBEDTLS_MD_SHA256, hsh_ok, hsh_bad));
+	EXPECT_FALSE (pub.verify (MBEDTLS_MD_SHA256, hsh_other, hsh_bad));
+	EXPECT_FALSE (pub.verify (MBEDTLS_MD_SHA256, hsh_ok, hsh_other));
+
+	EXPECT_FALSE (pub.verify (MBEDTLS_MD_SHA256, hsh_ok, hsh_bad, name));
+	EXPECT_FALSE (pub.verify (MBEDTLS_MD_SHA256, hsh_other, hsh_bad, name));
+	EXPECT_FALSE (pub.verify (MBEDTLS_MD_SHA256, hsh_ok, hsh_other, name));
 }
