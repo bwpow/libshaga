@@ -24,11 +24,20 @@ namespace shaga {
 		}
 	}
 
-	void DiSigCommon::can_do (mbedtls_pk_context &ctx)
+	void DiSigCommon::can_do (const mbedtls_pk_context &ctx)
 	{
 		if (::mbedtls_pk_can_do (&ctx, MBEDTLS_PK_ECDSA) != 1) {
 			cThrow ("DiSig error: Key is not suitable for ECDSA"sv);
 		}
+	}
+
+	std::string_view DiSigCommon::get_name (const mbedtls_pk_context &ctx)
+	{
+		can_do (ctx);
+		mbedtls_ecp_keypair *ec = mbedtls_pk_ec (ctx);
+		const mbedtls_ecp_group *grp = &(ec->grp);
+		const mbedtls_ecp_curve_info *info = mbedtls_ecp_curve_info_from_grp_id (grp->id);
+		return std::string_view (info->name);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -16,7 +16,8 @@ namespace shaga {
 	class DiSigCommon {
 		protected:
 			static void check_error (const int err, const bool allow_positive = false);
-			static void can_do (mbedtls_pk_context &ctx);
+			static void can_do (const mbedtls_pk_context &ctx);
+			static std::string_view get_name (const mbedtls_pk_context &ctx);
 
 			virtual void dump_to_file (const std::string_view fname, const unsigned char *buf) const;
 			virtual void dump_to_file (const std::string_view fname, const unsigned char *buf, const size_t len) const;
@@ -39,6 +40,7 @@ namespace shaga {
 			~DiSigPrivate ();
 
 			virtual void generate_new_keypair (const std::string_view curve_type);
+			virtual std::string_view get_curve_type (void) const;
 
 			virtual void set_private_key_pem (const std::string_view key, const std::string_view pass);
 			virtual void set_private_key_pem (const std::string_view key);
@@ -62,6 +64,7 @@ namespace shaga {
 			virtual std::string get_public_key_raw (void);
 
 			virtual std::string sign (const mbedtls_md_type_t md_alg, const std::string_view hsh);
+			virtual std::string sign_raw (const mbedtls_md_type_t md_alg, const std::string_view hsh);
 	};
 
 	class DiSigVerify : public DiSigCommon
@@ -86,11 +89,22 @@ namespace shaga {
 					~DEC_CTX_ENTRY ();
 			};
 
-			std::list<DEC_CTX_ENTRY> _dec_ctx_list;
+			class RAW_SIGNATURE_ENTRY {
+				public:
+					mbedtls_pk_context _ctx;
+					mbedtls_ecp_keypair *ec {nullptr};
+
+					RAW_SIGNATURE_ENTRY (const std::string_view curve_type, const std::string_view sgn_raw);
+					~RAW_SIGNATURE_ENTRY ();
+			};
+
+			std::deque<DEC_CTX_ENTRY> _dec_ctx_list;
 
 		public:
 			explicit DiSigVerify ();
 			~DiSigVerify ();
+
+			virtual std::string_view get_curve_type (const size_t key_id) const;
 
 			virtual void add_public_key_pem (const std::string_view key, const std::string_view name);
 			virtual void add_public_key_pem (const std::string_view key);
@@ -105,6 +119,9 @@ namespace shaga {
 
 			virtual bool verify (const mbedtls_md_type_t md_alg, const std::string_view hsh, const std::string_view sgn, std::string &key_name_out);
 			virtual bool verify (const mbedtls_md_type_t md_alg, const std::string_view hsh, const std::string_view sgn);
+
+			virtual bool verify_raw (const std::string_view curve_type, const mbedtls_md_type_t md_alg, const std::string_view hsh, const std::string_view sgn, std::string &key_name_out);
+			virtual bool verify_raw (const std::string_view curve_type, const mbedtls_md_type_t md_alg, const std::string_view hsh, const std::string_view sgn);
 	};
 }
 

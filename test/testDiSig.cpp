@@ -58,12 +58,70 @@ static const unsigned char _secp256r1_pub_raw[] = {
 };
 static const unsigned int _secp256r1_pub_raw_len = 64;
 
+
+TEST (DiSig, sign_raw)
+{
+	/* Private key for signature using NIST P-256 in PEM format */
+	const constexpr std::string_view privkey_pem =
+	"-----BEGIN EC PRIVATE KEY-----\n"
+	"MHgCAQEEIQDu8/a3fnHmJntEYKvRsmWWS6YKG1ztE3GaLORB9nWcTaAKBggqhkjO\n"
+	"PQMBB6FEA0IABIfNjQbUACbt/xMGK+RMA9/jdHMtHBjTHQP0it+9ad/KdsYSQPQC\n"
+	"VTs/OlxpRCpgG4k9HYTKqPmBwRFBM/PsCes=\n"
+	"-----END EC PRIVATE KEY-----\n"sv;
+
+	const constexpr std::string_view pubkey_pem =
+	"-----BEGIN PUBLIC KEY-----\n"
+	"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEh82NBtQAJu3/EwYr5EwD3+N0cy0c\n"
+	"GNMdA/SK371p38p2xhJA9AJVOz86XGlEKmAbiT0dhMqo+YHBEUEz8+wJ6w==\n"
+	"-----END PUBLIC KEY-----\n"sv;
+
+	const constexpr std::string_view curve_type = "secp256r1"sv;
+
+	/* Signature using NIST P-256 in raw (parameters r and s) format */
+	/* Source hash is 32 bytes of 0x59 */
+	const uint8_t signature_raw[64] = {
+		0xac, 0x85, 0x97, 0x6c, 0x61, 0x19, 0xba, 0x60, 0xdf, 0x8e, 0x6d, 0x4d, 0x68, 0x45, 0xad, 0x5d,
+		0x7e, 0x96, 0xe1, 0xff, 0x41, 0xbe, 0x54, 0x2a, 0xc9, 0x2e, 0x79, 0xa4, 0x23, 0x74, 0x20, 0xd4,
+		0x89, 0x0d, 0x6f, 0xa9, 0x22, 0xf4, 0x6d, 0xd9, 0xba, 0x91, 0x3a, 0x8a, 0x98, 0x8e, 0x55, 0x59,
+		0x3e, 0x8c, 0xe2, 0x4a, 0x48, 0x12, 0x51, 0xcb, 0xcd, 0xad, 0x0c, 0x64, 0x8b, 0x88, 0xf7, 0x91
+	};
+
+	const std::string_view signature_raw_original (reinterpret_cast<const char *> (signature_raw), sizeof (signature_raw));
+
+	DiSigPrivate priv;
+	priv.set_private_key_pem (privkey_pem);
+
+	DiSigVerify pub;
+	pub.add_public_key_pem (pubkey_pem);
+
+	EXPECT_TRUE (priv.get_curve_type () == curve_type);
+	EXPECT_TRUE (pub.get_curve_type (0) == curve_type);
+	EXPECT_THROW (pub.get_curve_type (1), std::exception);
+
+	const std::string digest (32, 0x59);
+	const std::string signature_raw_current = priv.sign_raw (MBEDTLS_MD_SHA256, digest);
+
+	ASSERT_TRUE (signature_raw_current.size () == signature_raw_original.size ());
+
+	EXPECT_TRUE (pub.verify_raw (curve_type, MBEDTLS_MD_SHA256, digest, signature_raw_original));
+	EXPECT_TRUE (pub.verify_raw (curve_type, MBEDTLS_MD_SHA256, digest, signature_raw_current));
+
+	std::string name1, name2;
+	EXPECT_TRUE (pub.verify_raw (curve_type, MBEDTLS_MD_SHA256, digest, signature_raw_original, name1));
+	EXPECT_TRUE (pub.verify_raw (curve_type, MBEDTLS_MD_SHA256, digest, signature_raw_current, name2));
+
+	EXPECT_TRUE (name1 == name2);
+	EXPECT_FALSE (name1.empty ());
+}
+
 TEST (DiSig, raw)
 {
 	const std::string ref_priv = std::string (reinterpret_cast<const char *> (_secp256r1_priv), _secp256r1_priv_len);
 	const std::string ref_priv_raw = std::string (reinterpret_cast<const char *> (_secp256r1_priv_raw), _secp256r1_priv_raw_len);
 	const std::string ref_pub = std::string (reinterpret_cast<const char *> (_secp256r1_pub), _secp256r1_pub_len);
 	const std::string ref_pub_raw = std::string (reinterpret_cast<const char *> (_secp256r1_pub_raw), _secp256r1_pub_raw_len);
+
+	const std::string_view curve_type ("secp256r1"sv);
 
 	std::string digest (32, '\0');
 	std::string signature;
@@ -91,7 +149,10 @@ TEST (DiSig, raw)
 	/* Import raw pubkey and try verify */
 	{
 		DiSigVerify disig;
-		disig.add_public_key_raw ("secp256r1", ref_pub_raw);
+		disig.add_public_key_raw (curve_type, ref_pub_raw);
+
+		EXPECT_TRUE (disig.get_curve_type (0) == curve_type);
+		EXPECT_THROW (disig.get_curve_type (1), std::exception);
 
 		std::string name;
 		EXPECT_TRUE (disig.verify (MBEDTLS_MD_SHA256, digest, signature, name));
@@ -104,9 +165,9 @@ TEST (DiSig, raw)
 TEST (DiSig, genkey)
 {
 	std::string name;
-	const std::string hsh_ok = CRC::sha256 (std::string ("test string"));
-	const std::string hsh_other = CRC::sha256 (std::string ("different test string"));
-	const std::string hsh_bad = "abcd";
+	const std::string hsh_ok = CRC::sha256 ("test string"sv);
+	const std::string hsh_other = CRC::sha256 ("different test string"sv);
+	const std::string hsh_bad = "abcd"s;
 
 	DiSigPrivate priv;
 	DiSigVerify pub;
