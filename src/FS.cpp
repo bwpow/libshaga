@@ -40,7 +40,7 @@ namespace shaga {
 	{
 		struct stat st;
 		if (::stat (s_c_str (fname), &st) != 0) {
-			cThrow ("Unable to get file stat of '{}'", fname);
+			cThrow ("Unable to get file stat of '{}'"sv, fname);
 		}
 
 		return st;
@@ -50,7 +50,7 @@ namespace shaga {
 	{
 		struct stat st;
 		if (::stat (s_c_str (fname), &st) != 0) {
-			cThrow ("Unable to get file size of '{}'", fname);
+			cThrow ("Unable to get file size of '{}'"sv, fname);
 		}
 
 		return st.st_size;
@@ -60,7 +60,7 @@ namespace shaga {
 	{
 		struct stat st;
 		if (::stat (s_c_str (fname), &st) != 0) {
-			cThrow ("Unable to get file mtime of '{}'", fname);
+			cThrow ("Unable to get file mtime of '{}'"sv, fname);
 		}
 
 		return st.st_mtime;
@@ -153,7 +153,7 @@ namespace shaga {
 
 		infile.open (std::string (fname), std::ifstream::in);
 		if (infile.is_open () == false) {
-			cThrow ("Unable to open file '{}'", fname);
+			cThrow ("Unable to open file '{}'"sv, fname);
 		}
 
 		std::string line;
@@ -166,7 +166,7 @@ namespace shaga {
 		}
 
 		if (infile.fail () == true && infile.eof () == false) {
-			cThrow ("Error reading from file '{}'", fname);
+			cThrow ("Error reading from file '{}'"sv, fname);
 		}
 	}
 }

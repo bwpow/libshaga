@@ -47,52 +47,52 @@ namespace shaga {
 			};
 
 			const std::map <std::string, DIGEST> DIGEST_MAP = {
-				{"crc8", DIGEST::CRC8},
-				{"crc-8", DIGEST::CRC8},
+				{"crc8"s, DIGEST::CRC8},
+				{"crc-8"s, DIGEST::CRC8},
 
-				{"crc32", DIGEST::CRC32},
-				{"crc-32", DIGEST::CRC32},
+				{"crc32"s, DIGEST::CRC32},
+				{"crc-32"s, DIGEST::CRC32},
 
-				{"crc64", DIGEST::CRC64},
-				{"crc-64", DIGEST::CRC64},
+				{"crc64"s, DIGEST::CRC64},
+				{"crc-64"s, DIGEST::CRC64},
 
-				{"sha1", DIGEST::SHA1},
-				{"sha-1", DIGEST::SHA1},
+				{"sha1"s, DIGEST::SHA1},
+				{"sha-1"s, DIGEST::SHA1},
 
-				{"sha256", DIGEST::SHA256},
-				{"sha-256", DIGEST::SHA256},
+				{"sha256"s, DIGEST::SHA256},
+				{"sha-256"s, DIGEST::SHA256},
 
-				{"sha512", DIGEST::SHA512},
-				{"sha-512", DIGEST::SHA512},
+				{"sha512"s, DIGEST::SHA512},
+				{"sha-512"s, DIGEST::SHA512},
 
-				{"hmac-ripemd160", DIGEST::HMAC_RIPEMD160},
-				{"hmac-ripemd-160", DIGEST::HMAC_RIPEMD160},
+				{"hmac-ripemd160"s, DIGEST::HMAC_RIPEMD160},
+				{"hmac-ripemd-160"s, DIGEST::HMAC_RIPEMD160},
 
-				{"hmac-sha1", DIGEST::HMAC_SHA1},
-				{"hmac-sha-1", DIGEST::HMAC_SHA1},
+				{"hmac-sha1"s, DIGEST::HMAC_SHA1},
+				{"hmac-sha-1"s, DIGEST::HMAC_SHA1},
 
-				{"hmac-sha256", DIGEST::HMAC_SHA256},
-				{"hmac-sha-256", DIGEST::HMAC_SHA256},
+				{"hmac-sha256"s, DIGEST::HMAC_SHA256},
+				{"hmac-sha-256"s, DIGEST::HMAC_SHA256},
 
-				{"hmac-sha512", DIGEST::HMAC_SHA512},
-				{"hmac-sha-512", DIGEST::HMAC_SHA512},
+				{"hmac-sha512"s, DIGEST::HMAC_SHA512},
+				{"hmac-sha-512"s, DIGEST::HMAC_SHA512},
 
-				{"siphash", DIGEST::SIPHASH24_64},
-				{"siphash24", DIGEST::SIPHASH24_64},
-				{"siphash24-64", DIGEST::SIPHASH24_64},
-				{"siphash-2-4", DIGEST::SIPHASH24_64},
-				{"siphash-2-4-64", DIGEST::SIPHASH24_64},
+				{"siphash"s, DIGEST::SIPHASH24_64},
+				{"siphash24"s, DIGEST::SIPHASH24_64},
+				{"siphash24-64"s, DIGEST::SIPHASH24_64},
+				{"siphash-2-4"s, DIGEST::SIPHASH24_64},
+				{"siphash-2-4-64"s, DIGEST::SIPHASH24_64},
 
-				{"siphash24-128", DIGEST::SIPHASH24_128},
-				{"siphash-2-4-128", DIGEST::SIPHASH24_128},
+				{"siphash24-128"s, DIGEST::SIPHASH24_128},
+				{"siphash-2-4-128"s, DIGEST::SIPHASH24_128},
 
-				{"siphash48", DIGEST::SIPHASH48_64},
-				{"siphash48-64", DIGEST::SIPHASH48_64},
-				{"siphash-4-8", DIGEST::SIPHASH48_64},
-				{"siphash-4-8-64", DIGEST::SIPHASH48_64},
+				{"siphash48"s, DIGEST::SIPHASH48_64},
+				{"siphash48-64"s, DIGEST::SIPHASH48_64},
+				{"siphash-4-8"s, DIGEST::SIPHASH48_64},
+				{"siphash-4-8-64"s, DIGEST::SIPHASH48_64},
 
-				{"siphash48-128", DIGEST::SIPHASH48_128},
-				{"siphash-4-8-128", DIGEST::SIPHASH48_128},
+				{"siphash48-128"s, DIGEST::SIPHASH48_128},
+				{"siphash-4-8-128"s, DIGEST::SIPHASH48_128},
 			};
 
 			enum class CRYPTO {
@@ -103,16 +103,16 @@ namespace shaga {
 			};
 
 			const std::map <std::string, CRYPTO> CRYPTO_MAP = {
-				{"none", CRYPTO::NONE},
+				{"none"s, CRYPTO::NONE},
 
-				{"aes", CRYPTO::AES_128_CBC},
-				{"aes128", CRYPTO::AES_128_CBC},
-				{"aes-128", CRYPTO::AES_128_CBC},
-				{"aes-128-cbc", CRYPTO::AES_128_CBC},
+				{"aes"s, CRYPTO::AES_128_CBC},
+				{"aes128"s, CRYPTO::AES_128_CBC},
+				{"aes-128"s, CRYPTO::AES_128_CBC},
+				{"aes-128-cbc"s, CRYPTO::AES_128_CBC},
 
-				{"aes256", CRYPTO::AES_256_CBC},
-				{"aes-256", CRYPTO::AES_256_CBC},
-				{"aes-256-cbc", CRYPTO::AES_256_CBC}
+				{"aes256"s, CRYPTO::AES_256_CBC},
+				{"aes-256"s, CRYPTO::AES_256_CBC},
+				{"aes-256-cbc"s, CRYPTO::AES_256_CBC}
 			};
 
 #ifdef SHAGA_FULL
@@ -188,8 +188,8 @@ namespace shaga {
 			ReDataConfig::DIGEST get_digest (void) const;
 			ReDataConfig::CRYPTO get_crypto (void) const;
 
-			std::string get_digest_text (void) const;
-			std::string get_crypto_text (void) const;
+			SHAGA_STRV std::string_view get_digest_text (void) const;
+			SHAGA_STRV std::string_view get_crypto_text (void) const;
 
 			std::string describe (void) const;
 

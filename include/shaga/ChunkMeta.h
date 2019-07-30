@@ -128,20 +128,20 @@ namespace shaga {
 			void modify_values (const uint16_t key, ValuesCallback callback);
 
 			template<typename T = std::string_view>
-			T get_value (const std::string_view key) const
+			SHAGA_STRV T get_value (const std::string_view key) const
 			{
 				return get_value<T> (key_to_bin (key));
 			}
 
 			template<typename T = std::string_view>
-			T get_value (const uint16_t key) const
+			SHAGA_STRV T get_value (const uint16_t key) const
 			{
 				ChunkMetaData::const_iterator iter = _data.find (key);
 				if (iter != _data.cend ()) {
 					return iter->second;
 				}
 
-				return T();
+				return T("");
 			}
 
 			void modify_value (const std::string_view key, ValueCallback callback);

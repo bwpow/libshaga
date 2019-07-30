@@ -68,11 +68,18 @@ namespace shaga {
 			void write (const std::string_view data, const size_t len);
 			void write (const std::string_view data);
 			void write (const char *buf, const size_t len);
+			void write (const uint8_t *buf, const size_t len);
 			void write (const char *buf);
 			void write (const uint8_t val);
 
 			template <typename... Args>
 			void print (const std::string_view format, const Args & ... args)
+			{
+				write (fmt::format (format, args...));
+			}
+
+			template <typename... Args>
+			void format (const std::string_view format, const Args & ... args)
 			{
 				write (fmt::format (format, args...));
 			}
@@ -86,7 +93,7 @@ namespace shaga {
 			void set_file_name (const std::string_view filename);
 
 			template <typename T = std::string_view>
-			T get_file_name (void) const
+			SHAGA_STRV T get_file_name (void) const
 			{
 				return T (_filename);
 			}

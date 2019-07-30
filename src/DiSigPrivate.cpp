@@ -62,7 +62,7 @@ namespace shaga {
 		check_error (ret);
 	}
 
-	std::string_view DiSigPrivate::get_curve_type (void) const
+	SHAGA_STRV std::string_view DiSigPrivate::get_curve_type (void) const
 	{
 		return get_name (_enc_ctx);
 	}

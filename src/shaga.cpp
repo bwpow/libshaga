@@ -126,7 +126,7 @@ namespace shaga {
 				P::_print (text, prefix, true);
 			}
 
-			P::print ("Application exit with errorcode {}", rcode);
+			P::print ("Application exit with errorcode {}"sv, rcode);
 
 			if (nullptr != _final_call) {
 				_final_call (text, rcode);
@@ -179,7 +179,7 @@ namespace shaga {
 		if (std::exchange (_is_shutdown, true) == false)
 		#endif // SHAGA_THREADING
 		{
-			P::print ("Shutdown requested from {}: {} line {}", file, funct, line);
+			P::print ("Shutdown requested from {}: {} line {}"sv, file, funct, line);
 
 			#ifdef SHAGA_THREADING
 			std::unique_lock<std::mutex> lck (_callback_mutex);

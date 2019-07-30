@@ -35,6 +35,10 @@ All rights reserved.
 #define _FILE_OFFSET_BITS 64
 
 /* If you want to use single thread optimalizations during compile time, define SHAGA_SINGLE_THREAD before including shaga*.h */
+#if defined(SHAGA_MULTI_THREAD) && defined(SHAGA_SINGLE_THREAD)
+	#error Both SHAGA_MULTI_THREAD and SHAGA_SINGLE_THREAD defined
+#endif // defined
+
 #ifdef SHAGA_THREADING
 	#undef SHAGA_THREADING
 #endif // SHAGA_THREADING
@@ -230,6 +234,12 @@ using namespace std::literals;
 #else
 	#define SHAGA_INLINE inline
 #endif
+
+/* This macro is used to identify methods and functions that return std::string view */
+/* Useful for static analysis to point out potentially dangerous methods. */
+#ifndef SHAGA_STRV
+	#define SHAGA_STRV
+#endif // SHAGA_STRV
 
 namespace shaga
 {

@@ -66,7 +66,7 @@ namespace shaga {
 
 			case ReDataConfig::DIGEST::_MAX: break;
 		}
-		cThrow ("Unsupported digest");
+		cThrow ("Unsupported digest"sv);
 	}
 
 
@@ -95,7 +95,7 @@ namespace shaga {
 
 			case ReDataConfig::DIGEST::_MAX: break;
 		}
-		cThrow ("Unsupported digest");
+		cThrow ("Unsupported digest"sv);
 	}
 
 	static inline std::string _calc_crc8 (const std::string_view plain, ReDataConfig::DigestCache &cache)
@@ -125,7 +125,7 @@ namespace shaga {
 #else
 		(void) plain;
 		(void) cache;
-		cThrow ("Digest is not supported in lite version");
+		cThrow ("Digest is not supported in lite version"sv);
 #endif // SHAGA_FULL
 	}
 
@@ -138,7 +138,7 @@ namespace shaga {
 #else
 		(void) plain;
 		(void) cache;
-		cThrow ("Digest is not supported in lite version");
+		cThrow ("Digest is not supported in lite version"sv);
 #endif // SHAGA_FULL
 	}
 
@@ -151,7 +151,7 @@ namespace shaga {
 #else
 		(void) plain;
 		(void) cache;
-		cThrow ("Digest is not supported in lite version");
+		cThrow ("Digest is not supported in lite version"sv);
 #endif // SHAGA_FULL
 	}
 
@@ -164,7 +164,7 @@ namespace shaga {
 #else
 		(void) plain;
 		(void) cache;
-		cThrow ("Digest is not supported in lite version");
+		cThrow ("Digest is not supported in lite version"sv);
 #endif // SHAGA_FULL
 	}
 
@@ -278,7 +278,7 @@ namespace shaga {
 		}
 
 		if (key.empty () == true) {
-			cThrow ("Key for HMAC is not provided");
+			cThrow ("Key for HMAC is not provided"sv);
 		}
 
 		const size_t blocksize = _get_digest_hmac_block_size (_used_digest);
@@ -309,12 +309,12 @@ namespace shaga {
 			/* Calculate HFUNC (OPAD + HFUNC (IPAD + TEXT)) */
 			return hfunc (_cache_digest.opad + hfunc (_cache_digest.ipad + std::string (plain), _cache_digest), _cache_digest);
 #else
-		cThrow ("Digest is not supported in lite version");
+		cThrow ("Digest is not supported in lite version"sv);
 #endif // SHAGA_FULL
 		}
 		else if (DIGEST_HMAC_TYPE::SIPHASH == hmac_type) {
 			if (key.size () != blocksize) {
-				cThrow ("Wrong digest key size. Expected {} bytes, got {} bytes.", blocksize, key.size ());
+				cThrow ("Wrong digest key size. Expected {} bytes, got {} bytes."sv, blocksize, key.size ());
 			}
 
 			if (_cache_digest.digest != _used_digest || _cache_digest.key != key) {
@@ -329,7 +329,7 @@ namespace shaga {
 			return hfunc (plain, _cache_digest);
 		}
 
-		cThrow ("Unsupported HMAC type");
+		cThrow ("Unsupported HMAC type"sv);
 	}
 
 	size_t ReDataConfig::get_digest_result_size (void) const

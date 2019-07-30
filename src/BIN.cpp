@@ -85,7 +85,7 @@ namespace shaga {
 		return (_endian == Endian::BIG);
 	}
 
-	std::string_view BIN::endian_to_string (void)
+	SHAGA_STRV std::string_view BIN::endian_to_string (void)
 	{
 		endian_detect ();
 		switch (_endian) {

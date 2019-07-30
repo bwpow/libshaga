@@ -165,7 +165,7 @@ namespace shaga {
 		_dec_ctx_list.clear ();
 	}
 
-	std::string_view DiSigVerify::get_curve_type (const size_t key_id) const
+	SHAGA_STRV std::string_view DiSigVerify::get_curve_type (const size_t key_id) const
 	{
 		return get_name (_dec_ctx_list.at (key_id)._ctx);
 	}

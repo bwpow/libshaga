@@ -215,47 +215,51 @@ namespace shaga {
 		return _used_crypto;
 	}
 
-	std::string ReDataConfig::get_digest_text (void) const
+	SHAGA_STRV std::string_view ReDataConfig::get_digest_text (void) const
 	{
 		switch (_used_digest) {
-			case DIGEST::CRC8: return "CRC-8";
-			case DIGEST::CRC32: return "CRC-32";
-			case DIGEST::CRC64: return "CRC-64";
+			case DIGEST::CRC8: return "CRC-8"sv;
+			case DIGEST::CRC32: return "CRC-32"sv;
+			case DIGEST::CRC64: return "CRC-64"sv;
 
-			case DIGEST::SHA1: return "SHA-1";
-			case DIGEST::SHA256: return "SHA-256";
-			case DIGEST::SHA512: return "SHA-512";
+			case DIGEST::SHA1: return "SHA-1"sv;
+			case DIGEST::SHA256: return "SHA-256"sv;
+			case DIGEST::SHA512: return "SHA-512"sv;
 
-			case DIGEST::HMAC_RIPEMD160: return "HMAC-RIPEMD-160";
-			case DIGEST::HMAC_SHA1: return "HMAC-SHA-1";
-			case DIGEST::HMAC_SHA256: return "HMAC-SHA-256";
-			case DIGEST::HMAC_SHA512: return "HMAC-SHA-512";
+			case DIGEST::HMAC_RIPEMD160: return "HMAC-RIPEMD-160"sv;
+			case DIGEST::HMAC_SHA1: return "HMAC-SHA-1"sv;
+			case DIGEST::HMAC_SHA256: return "HMAC-SHA-256"sv;
+			case DIGEST::HMAC_SHA512: return "HMAC-SHA-512"sv;
 
-			case DIGEST::SIPHASH24_64: return "SipHash-2-4-64";
-			case DIGEST::SIPHASH24_128: return "SipHash-2-4-128";
-			case DIGEST::SIPHASH48_64: return "SipHash-4-8-64";
-			case DIGEST::SIPHASH48_128: return "SipHash-4-8-128";
+			case DIGEST::SIPHASH24_64: return "SipHash-2-4-64"sv;
+			case DIGEST::SIPHASH24_128: return "SipHash-2-4-128"sv;
+			case DIGEST::SIPHASH48_64: return "SipHash-4-8-64"sv;
+			case DIGEST::SIPHASH48_128: return "SipHash-4-8-128"sv;
 
 			case DIGEST::_MAX: break;
 		}
-		cThrow ("Unknown digest value");
+		cThrow ("Unknown digest value"sv);
 	}
 
-	std::string ReDataConfig::get_crypto_text (void) const
+	SHAGA_STRV std::string_view ReDataConfig::get_crypto_text (void) const
 	{
 		switch (_used_crypto) {
-			case CRYPTO::NONE: return "Plaintext";
-			case CRYPTO::AES_128_CBC: return "AES-128-CBC";
-			case CRYPTO::AES_256_CBC: return "AES-256-CBC";
+			case CRYPTO::NONE: return "Plaintext"sv;
+			case CRYPTO::AES_128_CBC: return "AES-128-CBC"sv;
+			case CRYPTO::AES_256_CBC: return "AES-256-CBC"sv;
 
 			case CRYPTO::_MAX: break;
 		}
-		cThrow ("Unknown crypto value");
+		cThrow ("Unknown crypto value"sv);
 	}
 
 
 	std::string ReDataConfig::describe (void) const
 	{
-		return get_digest_text () + ", " + get_crypto_text ();
+		std::string out;
+		out.append (get_digest_text ());
+		out.append (", "sv);
+		out.append (get_crypto_text ());
+		return out;
 	}
 }

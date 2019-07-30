@@ -195,7 +195,7 @@ namespace shaga {
 	Chunk::Chunk (const HWID hwid_source, const uint32_t type)
 	{
 		if (type < Chunk::key_type_min || type > Chunk::key_type_max) {
-			cThrow ("Unrecognized key value {:X}", type);
+			cThrow ("Unrecognized key value {:X}"sv, type);
 		}
 
 		_reset ();
@@ -265,7 +265,7 @@ namespace shaga {
 
 	std::string Chunk::get_type (void) const
 	{
-		return bin_to_key(_type);
+		return bin_to_key (_type);
 	}
 
 	uint32_t Chunk::get_num_type (void) const
@@ -298,7 +298,7 @@ namespace shaga {
 		return _prio;
 	}
 
-	std::string_view Chunk::get_prio_text (void) const
+	SHAGA_STRV std::string_view Chunk::get_prio_text (void) const
 	{
 		return priority_to_string (_prio);
 	}
@@ -320,7 +320,7 @@ namespace shaga {
 		return _trust;
 	}
 
-	std::string_view Chunk::get_trustlevel_text (void) const
+	SHAGA_STRV std::string_view Chunk::get_trustlevel_text (void) const
 	{
 		return trustlevel_to_string (_trust);
 	}
@@ -553,7 +553,7 @@ namespace shaga {
 		if (Chunk::_TrustLevel_first <= t && t <= Chunk::_TrustLevel_last) {
 			return t;
 		}
-		cThrow ("Value out of range");
+		cThrow ("Value out of range"sv);
 	}
 
 	uint8_t trustlevel_to_uint8 (const Chunk::TrustLevel v)
@@ -561,7 +561,7 @@ namespace shaga {
 		return std::underlying_type<Chunk::TrustLevel>::type (v);
 	}
 
-	std::string_view trustlevel_to_string (const Chunk::TrustLevel level)
+	SHAGA_STRV std::string_view trustlevel_to_string (const Chunk::TrustLevel level)
 	{
 		switch (level) {
 			case Chunk::TrustLevel::INTERNAL:
@@ -592,7 +592,7 @@ namespace shaga {
 		if (Chunk::_Priority_first <= t && t <= Chunk::_Priority_last) {
 			return t;
 		}
-		cThrow ("Value out of range");
+		cThrow ("Value out of range"sv);
 	}
 
 	uint8_t priority_to_uint8 (const Chunk::Priority v)
@@ -600,7 +600,7 @@ namespace shaga {
 		return std::underlying_type<Chunk::Priority>::type (v);
 	}
 
-	std::string_view priority_to_string (const Chunk::Priority prio)
+	SHAGA_STRV std::string_view priority_to_string (const Chunk::Priority prio)
 	{
 		switch (prio) {
 			case Chunk::Priority::pCRITICAL:
@@ -650,7 +650,7 @@ namespace shaga {
 		}
 	}
 
-	std::string_view channel_to_string (const Chunk::Channel channel)
+	SHAGA_STRV std::string_view channel_to_string (const Chunk::Channel channel)
 	{
 		switch (channel) {
 			case Chunk::Channel::PRIMARY:
@@ -659,6 +659,7 @@ namespace shaga {
 			case Chunk::Channel::SECONDARY:
 				return "Secondary"sv;
 		}
+		cThrow ("Unknown Channel"sv);
 	}
 
 	CHUNKLIST chunkset_extract_type (const CHUNKSET &cs, const std::string_view type)

@@ -7,8 +7,6 @@ All rights reserved.
 *******************************************************************************/
 #include "shaga/common.h"
 
-#include <cstdarg>
-
 namespace shaga {
 
 	static inline void _to_uint_process_char (uint64_t &result, const uint8_t chr, const uint64_t base)
@@ -24,15 +22,15 @@ namespace shaga {
 			digit = chr - 'a' + 10;
 		}
 		else {
-			cThrow ("Unrecognized character '{:c}'", chr);
+			cThrow ("Unrecognized character '{:c}'"sv, chr);
 		}
 
 		if (digit >= base) {
-			cThrow ("Unrecognized character '{:c}'", chr);
+			cThrow ("Unrecognized character '{:c}'"sv, chr);
 		}
 
 		if (result > (UINT64_MAX / base) || (result * base) > (UINT64_MAX - digit)) {
-			cThrow ("Out of range");
+			cThrow ("Out of range"sv);
 		}
 
 		result = {(result * base) + digit};
@@ -42,7 +40,7 @@ namespace shaga {
 	static void _to_uint_process (T &result, const std::string_view src, const int base, const std::string_view type)
 	{
 		if (base < 2) {
-			cThrow ("Base must be at least 2");
+			cThrow ("Base must be at least 2"sv);
 		}
 
 		uint64_t out {0};
@@ -78,7 +76,7 @@ namespace shaga {
 
 						case Stage::DIGITS:
 						case Stage::TRAILING_SPACES:
-							cThrow ("Unrecognized character");
+							cThrow ("Unrecognized character"sv);
 					}
 
 					if ('-' == (*iter)) {
@@ -94,25 +92,25 @@ namespace shaga {
 							break;
 
 						case Stage::TRAILING_SPACES:
-							cThrow ("Unrecognized character");
+							cThrow ("Unrecognized character"sv);
 					}
 				}
 			}
 
 			if (std::numeric_limits<T>::is_signed == false && true == is_negative) {
 				/* This is not a signed type, but the parsed integer is negative */
-				cThrow ("Out of range");
+				cThrow ("Out of range"sv);
 			}
 			else if (false == is_negative) {
 				if (out > std::numeric_limits<T>::max ()) {
-					cThrow ("Out of range");
+					cThrow ("Out of range"sv);
 				}
 
 				result = static_cast<T> (out);
 			}
 			else if (std::is_same <T, int64_t>::value) {
 				if (out > static_cast<uint64_t> (-std::numeric_limits<T>::min ())) {
-					cThrow ("Out of range");
+					cThrow ("Out of range"sv);
 				}
 
 				result = -out;
@@ -120,14 +118,14 @@ namespace shaga {
 			else {
 				const int64_t nout = -static_cast<int64_t> (out);
 				if (nout < static_cast<int64_t> (std::numeric_limits<T>::min ())) {
-					cThrow ("Out of range");
+					cThrow ("Out of range"sv);
 				}
 
 				result = static_cast<T> (nout);
 			}
 		}
 		catch (const std::exception &e) {
-			cThrow ("Could not convert '{}' to {}: {}", src, type, e.what ());
+			cThrow ("Could not convert '{}' to {}: {}"sv, src, type, e.what ());
 		}
 	}
 
@@ -139,7 +137,7 @@ namespace shaga {
 		else if (icompare (s, "false"sv) == true || icompare (s, "off"sv) == true || icompare (s, "no"sv) == true || s == "0"sv) {
 			return false;
 		}
-		cThrow ("Could not convert '{}' to bool: Not recognized");
+		cThrow ("Could not convert '{}' to bool: Not recognized"sv);
 	}
 
 	uint8_t STR::to_uint8 (const std::string_view s, const int base)
@@ -715,5 +713,4 @@ namespace shaga {
 
 		return vout;
 	}
-
 }

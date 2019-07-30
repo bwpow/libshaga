@@ -11,8 +11,6 @@ All rights reserved.
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <cstdarg>
-
 namespace shaga {
 
 	static_assert (sizeof (off_t) == sizeof (off64_t), "Expected off_t to be same size as off64_t");
@@ -63,11 +61,11 @@ namespace shaga {
 	void ShFile::open (void)
 	{
 		if (_fd >= 0) {
-			cThrow ("File is already opened");
+			cThrow ("File is already opened"sv);
 		}
 
 		if (_filename.empty () == true) {
-			cThrow ("Filename is not set");
+			cThrow ("Filename is not set"sv);
 		}
 
 #ifdef O_BINARY
@@ -90,7 +88,7 @@ namespace shaga {
 			flags |= O_WRONLY | O_CREAT;
 		}
 		else {
-			cThrow ("Mode must contain at least mREAD or mWRITE flags");
+			cThrow ("Mode must contain at least mREAD or mWRITE flags"sv);
 		}
 
 		bool req_write = false;
@@ -120,16 +118,16 @@ namespace shaga {
 		}
 
 		if (true == req_write && (_mode & mWRITE) == 0) {
-			cThrow ("Flag mWRITE is required for this mode");
+			cThrow ("Flag mWRITE is required for this mode"sv);
 		}
 
 		if ((_mode & mNOCREAT) && (_mode & mEXCL)) {
-			cThrow ("Flags mNOCREAT and mEXCL cannot be used together");
+			cThrow ("Flags mNOCREAT and mEXCL cannot be used together"sv);
 		}
 
 		_fd = ::open (_filename.c_str (), flags, _mask);
 		if (_fd < 0) {
-			cThrow ("Error opening file '{}': {}", _filename, strerror (errno));
+			cThrow ("Error opening file '{}': {}"sv, _filename, strerror (errno));
 		}
 
 		if (_mode & mAPPEND) {
@@ -157,12 +155,12 @@ namespace shaga {
 #ifndef OS_WIN
 		if (true == also_metadata) {
 			if (::fsync (_fd) == -1) {
-				cThrow ("Sync error in file '{}': {}", _filename, strerror (errno));
+				cThrow ("Sync error in file '{}': {}"sv, _filename, strerror (errno));
 			}
 		}
 		else {
 			if (::fdatasync (_fd) == -1) {
-				cThrow ("Sync error in file '{}': {}", _filename, strerror (errno));
+				cThrow ("Sync error in file '{}': {}"sv, _filename, strerror (errno));
 			}
 		}
 #endif // OS_WIN
@@ -172,10 +170,10 @@ namespace shaga {
 	{
 		const ssize_t ret = ::write (_fd, data.data (), std::min (len, data.size()));
 		if (ret < 0) {
-			cThrow ("Error writing to file '{}': {}", _filename, strerror (errno));
+			cThrow ("Error writing to file '{}': {}"sv, _filename, strerror (errno));
 		}
 		if (static_cast<size_t> (ret) != len) {
-			cThrow ("Error writing to file '{}': Not all bytes written", _filename);
+			cThrow ("Error writing to file '{}': Not all bytes written"sv, _filename);
 		}
 	}
 
@@ -188,11 +186,16 @@ namespace shaga {
 	{
 		const ssize_t ret = ::write (_fd, buf, len);
 		if (ret < 0) {
-			cThrow ("Error writing to file '{}': {}", _filename, strerror (errno));
+			cThrow ("Error writing to file '{}': {}"sv, _filename, strerror (errno));
 		}
 		if (static_cast<size_t> (ret) != len) {
-			cThrow ("Error writing to file '{}': Not all bytes were written", _filename);
+			cThrow ("Error writing to file '{}': Not all bytes were written"sv, _filename);
 		}
+	}
+
+	void ShFile::write (const uint8_t *buf, const size_t len)
+	{
+		write (reinterpret_cast<const char *> (buf), len);
 	}
 
 	void ShFile::write (const char *buf)
@@ -209,12 +212,12 @@ namespace shaga {
 	bool ShFile::read (std::string &data, const size_t len, const bool thr_eof)
 	{
 		if (len > SSIZE_MAX) {
-			cThrow ("Error reading from file '{}': Too many bytes requested", _filename);
+			cThrow ("Error reading from file '{}': Too many bytes requested"sv, _filename);
 		}
 
 		data.resize (len);
 		if (data.capacity () < len) {
-			cThrow ("Error reading from file '{}': Unable to allocate buffer", _filename);
+			cThrow ("Error reading from file '{}': Unable to allocate buffer"sv, _filename);
 		}
 
 		/* Note: Since C++11, std::string::data memory must be continuous */
@@ -225,12 +228,12 @@ namespace shaga {
 			const ssize_t ret = ::read (_fd, data.data (), len);
 		#endif // OS_WIN
 		if (ret < 0) {
-			cThrow ("Error reading from file '{}': {}", _filename, strerror (errno));
+			cThrow ("Error reading from file '{}': {}"sv, _filename, strerror (errno));
 		}
 		else if (0 == ret) {
 			/* EOF */
 			if (true == thr_eof) {
-				cThrow ("Error reading from file '{}': EOF", _filename);
+				cThrow ("Error reading from file '{}': EOF"sv, _filename);
 			}
 			data.resize (0);
 			return false;
@@ -252,7 +255,7 @@ namespace shaga {
 	bool ShFile::read (char *buf, const size_t len, const bool thr_eof)
 	{
 		if (len > SSIZE_MAX) {
-			cThrow ("Error reading from file '{}': Too many bytes requested", _filename);
+			cThrow ("Error reading from file '{}': Too many bytes requested"sv, _filename);
 		}
 
 		#ifdef OS_WIN
@@ -261,17 +264,17 @@ namespace shaga {
 			const ssize_t ret = ::read (_fd, buf, len);
 		#endif // OS_WIN
 		if (ret < 0) {
-			cThrow ("Error reading from file '{}': {}", _filename, strerror (errno));
+			cThrow ("Error reading from file '{}': {}"sv, _filename, strerror (errno));
 		}
 		else if (0 == ret) {
 			/* EOF */
 			if (true == thr_eof) {
-				cThrow ("Error reading from file '{}': EOF", _filename);
+				cThrow ("Error reading from file '{}': EOF"sv, _filename);
 			}
 			return false;
 		}
 		else if (static_cast<size_t>(ret) != len) {
-			cThrow ("Error reading from file '{}': Not enough bytes, requested = {}, read = {}", _filename, len, ret);
+			cThrow ("Error reading from file '{}': Not enough bytes, requested = {}, read = {}"sv, _filename, len, ret);
 		}
 
 		return true;
@@ -281,7 +284,7 @@ namespace shaga {
 	{
 		char buf[1];
 		if (read (buf, 1) == false) {
-			cThrow ("Error reading from file '{}': EOF", _filename);
+			cThrow ("Error reading from file '{}': EOF"sv, _filename);
 		}
 		return static_cast<uint8_t> (buf[0]);
 	}
@@ -295,7 +298,7 @@ namespace shaga {
 	void ShFile::set_file_name (const std::string_view filename)
 	{
 		if (is_opened () == true) {
-			cThrow ("File is already opened");
+			cThrow ("File is already opened"sv);
 		}
 		_filename.assign (filename);
 	}
@@ -303,7 +306,7 @@ namespace shaga {
 	void ShFile::set_mode (const uint8_t mode)
 	{
 		if (is_opened () == true) {
-			cThrow ("File is already opened");
+			cThrow ("File is already opened"sv);
 		}
 
 		_mode = mode;
@@ -327,7 +330,7 @@ namespace shaga {
 	void ShFile::set_mask (const mode_t mask)
 	{
 		if (is_opened () == true) {
-			cThrow ("File is already opened");
+			cThrow ("File is already opened"sv);
 		}
 
 		_mask = mask;
@@ -357,7 +360,7 @@ namespace shaga {
 
 
 		if (ret == static_cast<off64_t>(-1)) {
-			cThrow ("Seek error in file '{}': {}", _filename, strerror (errno));
+			cThrow ("Seek error in file '{}': {}"sv, _filename, strerror (errno));
 		}
 
 		return ret;
@@ -379,15 +382,15 @@ namespace shaga {
 
 		if (is_opened () == true) {
 			if (::fstat (_fd, &ret) == -1) {
-				cThrow ("Stat error in file '{}': {}", _filename, strerror (errno));
+				cThrow ("Stat error in file '{}': {}"sv, _filename, strerror (errno));
 			}
 		}
 		else {
 			if (_filename.empty () == true) {
-				cThrow ("Filename is not set");
+				cThrow ("Filename is not set"sv);
 			}
 			if (::stat (_filename.c_str (), &ret) == -1) {
-				cThrow ("Stat error in file '{}': {}", _filename, strerror (errno));
+				cThrow ("Stat error in file '{}': {}"sv, _filename, strerror (errno));
 			}
 		}
 

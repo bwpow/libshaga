@@ -31,8 +31,9 @@ namespace shaga {
 		}
 	}
 
-	std::string_view DiSigCommon::get_name (const mbedtls_pk_context &ctx)
+	SHAGA_STRV std::string_view DiSigCommon::get_name (const mbedtls_pk_context &ctx)
 	{
+		/* mbedtls_ecp_curve_info points to static memory, it is safe to return string_view */
 		can_do (ctx);
 		mbedtls_ecp_keypair *ec = mbedtls_pk_ec (ctx);
 		const mbedtls_ecp_group *grp = &(ec->grp);

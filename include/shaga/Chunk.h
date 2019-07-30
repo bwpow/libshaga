@@ -242,19 +242,19 @@ namespace shaga {
 			void swap_payload (std::string &other);
 
 			template<typename T = std::string_view>
-			T get_payload (void) const
+			SHAGA_STRV T get_payload (void) const
 			{
 				return _payload;
 			}
 
 			void set_prio (const Priority prio);
 			Priority get_prio (void) const;
-			std::string_view get_prio_text (void) const;
+			SHAGA_STRV std::string_view get_prio_text (void) const;
 
 			void set_minimal_trustlevel (const Chunk::TrustLevel trust);
 			void set_trustlevel (const Chunk::TrustLevel trust);
 			TrustLevel get_trustlevel (void) const;
-			std::string_view get_trustlevel_text (void) const;
+			SHAGA_STRV std::string_view get_trustlevel_text (void) const;
 			bool check_maximal_trustlevel (const Chunk::TrustLevel trust) const;
 
 			void set_ttl (const uint8_t ttl);
@@ -293,19 +293,19 @@ namespace shaga {
 	Chunk::TrustLevel end (Chunk::TrustLevel r);
 	Chunk::TrustLevel uint8_to_trustlevel (const uint8_t v);
 	uint8_t trustlevel_to_uint8 (const Chunk::TrustLevel v);
-	std::string_view trustlevel_to_string (const Chunk::TrustLevel level);
+	SHAGA_STRV std::string_view trustlevel_to_string (const Chunk::TrustLevel level);
 	Chunk::TrustLevel string_to_trustlevel (const std::string_view str);
 
 	Chunk::Priority uint8_to_priority (const uint8_t v);
 	uint8_t priority_to_uint8 (const Chunk::Priority v);
-	std::string_view priority_to_string (const Chunk::Priority prio);
+	SHAGA_STRV std::string_view priority_to_string (const Chunk::Priority prio);
 
 	Chunk::TTL uint8_to_ttl (const uint8_t v);
 	uint8_t ttl_to_uint8 (const Chunk::TTL v);
 
 	Chunk::Channel bool_to_channel (const bool val);
 	bool channel_to_bool (const Chunk::Channel channel);
-	std::string_view channel_to_string (const Chunk::Channel channel);
+	SHAGA_STRV std::string_view channel_to_string (const Chunk::Channel channel);
 
 	CHUNKLIST chunkset_extract_type (const CHUNKSET &cs, const std::string_view type);
 	size_t chunkset_count_type (const CHUNKSET &cs, const std::string_view type);

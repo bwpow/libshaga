@@ -122,7 +122,7 @@ namespace shaga {
 			case ReDataConfig::CRYPTO::_MAX:
 				break;
 		}
-		cThrow ("Unsupported crypto");
+		cThrow ("Unsupported crypto"sv);
 	}
 
 	static inline void _random_string (unsigned char *str, const size_t sze, ReDataConfig::CryptoCache &cache)
@@ -133,7 +133,7 @@ namespace shaga {
 		(void) str;
 		(void) sze;
 		(void) cache;
-		cThrow ("Cryptography is not supported in lite version");
+		cThrow ("Cryptography is not supported in lite version"sv);
 #endif // SHAGA_FULL
 	}
 
@@ -164,7 +164,7 @@ namespace shaga {
 #else
 		(void) str;
 		(void) block_size;
-		cThrow ("Cryptography is not supported in lite version");
+		cThrow ("Cryptography is not supported in lite version"sv);
 #endif // SHAGA_FULL
 	}
 
@@ -182,15 +182,15 @@ namespace shaga {
 		const size_t key_size = _get_crypto_key_size (_used_crypto);
 
 		if (0 == key_size) {
-			cThrow ("No crypto algorithm selected");
+			cThrow ("No crypto algorithm selected"sv);
 		}
 		else if (key_size != key.size ()) {
-			cThrow ("Wrong crypto key size. Expected {} bytes, got {} bytes.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
+			cThrow ("Wrong crypto key size. Expected {} bytes, got {} bytes."sv, static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
 		}
 		else {
 			const size_t iv_size = _get_crypto_iv_size (_used_crypto);
 			if (iv_size > MBEDTLS_MAX_IV_LENGTH) {
-				cThrow ("IV size larger than allowed maximum");
+				cThrow ("IV size larger than allowed maximum"sv);
 			}
 
 			const size_t block_size = _get_crypto_block_size (_used_crypto);
@@ -203,7 +203,7 @@ namespace shaga {
 			else {
 				/* Use user defined IV */
 				if (_user_iv.size () != iv_size) {
-					cThrow ("User defined IV size does not match encryption IV size");
+					cThrow ("User defined IV size does not match encryption IV size"sv);
 				}
 				::memcpy (_temp_iv, _user_iv.data (), _user_iv.size ());
 			}
@@ -224,21 +224,21 @@ namespace shaga {
 		const size_t key_size = _get_crypto_key_size (_used_crypto);
 
 		if (0 == key_size) {
-			cThrow ("No crypto algorithm selected");
+			cThrow ("No crypto algorithm selected"sv);
 		}
 		else if (key_size != key.size ()) {
-			cThrow ("Wrong crypto key size. Expected {} bytes, got {} bytes.", static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
+			cThrow ("Wrong crypto key size. Expected {} bytes, got {} bytes."sv, static_cast<uint32_t> (key_size), static_cast<uint32_t> (key.size ()));
 		}
 		else {
 			/* Get IV size */
 			const size_t iv_size = _get_crypto_iv_size (_used_crypto);
 			if (iv_size > MBEDTLS_MAX_IV_LENGTH) {
-				cThrow ("IV size larger than allowed maximum");
+				cThrow ("IV size larger than allowed maximum"sv);
 			}
 
 			const size_t block_size = _get_crypto_block_size (_used_crypto);
 			if (block_size < 3) {
-				cThrow ("Block size smaller than allowed minimum");
+				cThrow ("Block size smaller than allowed minimum"sv);
 			}
 
 			/* Get crypto function */
@@ -246,7 +246,7 @@ namespace shaga {
 
 			/* IV + encrypted data are following, but are there enought bytes? */
 			if ((offset + iv_size) > msg.size ()) {
-				cThrow ("Not enough data for IV");
+				cThrow ("Not enough data for IV"sv);
 			}
 
 			/* Copy IV from message to temporary memory, that needs to be modifiable */
@@ -259,7 +259,7 @@ namespace shaga {
 			size_t decrypted_size = msg.size () - offset;
 			if (0 == decrypted_size || (decrypted_size % block_size) != 0) {
 				/* Decrypted size cannot be zero and it must be multiplication of block_size */
-				cThrow ("Decryption not possible, data not multiply of block size");
+				cThrow ("Decryption not possible, data not multiply of block size"sv);
 			}
 
 			/* Clear out */
@@ -268,7 +268,7 @@ namespace shaga {
 			decrypted_size = func (out, msg.data () + offset, decrypted_size, _temp_iv, iv_size, key, false, _cache_crypto);
 			if (0 == decrypted_size || (decrypted_size % block_size) != 0) {
 				/* Decrypted size cannot be zero and it must be multiplication of block_size */
-				cThrow ("Decryption failed");
+				cThrow ("Decryption failed"sv);
 			}
 
 			/* Last 3 bytes contain plain size */
@@ -277,7 +277,7 @@ namespace shaga {
 
 			/* Plain size cannot be larger than decrypted size minus last 3 bytes */
 			if (plain_size > (decrypted_size - 3)) {
-				cThrow ("Decryption failed, size mismatch");
+				cThrow ("Decryption failed, size mismatch"sv);
 			}
 
 			/* Strip padding from the end of decrypted data */

@@ -203,10 +203,10 @@ namespace shaga {
 		}
 
 		for (const auto &e : v) {
-			s.append ("\n    "s);
+			s.append ("\n    "sv);
 			s.append (e[0]);
 			s.append (std::string (cc - e[0].size (), ' '));
-			s.append (" : "s);
+			s.append (" : "sv);
 			s.append (e[1]);
 		}
 
@@ -263,7 +263,7 @@ namespace shaga {
 
 	ArgTable & ArgTable::add (const char key_short, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string_view help, const std::string_view param_type, CheckerCallback checker)
 	{
-		return add ("", key_short, incidence, has_param, help, param_type, checker);
+		return add (""sv, key_short, incidence, has_param, help, param_type, checker);
 	}
 
 
@@ -293,19 +293,19 @@ namespace shaga {
 
 					case INCIDENCE::ZERO_OR_ONE:
 						if (e.vars.size () > 1) {
-							cThrow ("Option '{}' must be used at most once", e.get_str ());
+							cThrow ("Option '{}' must be used at most once"sv, e.get_str ());
 						}
 						break;
 
 					case INCIDENCE::ONE:
 						if (e.vars.size () != 1) {
-							cThrow ("Option '{}' must be used exactly once", e.get_str ());
+							cThrow ("Option '{}' must be used exactly once"sv, e.get_str ());
 						}
 						break;
 
 					case INCIDENCE::AT_LEAST_ONE:
 						if (e.vars.size () < 1) {
-							cThrow ("Option '{}' must be used at least once", e.get_str ());
+							cThrow ("Option '{}' must be used at least once"sv, e.get_str ());
 						}
 						break;
 				}
@@ -316,7 +316,7 @@ namespace shaga {
 				if (e.checker != nullptr) {
 					for (const auto &v : e.vars) {
 						if (e.checker (v) == false) {
-							cThrow ("Parameter '{}' is not valid for option '{}'", v, e.get_str ());
+							cThrow ("Parameter '{}' is not valid for option '{}'"sv, v, e.get_str ());
 						}
 					}
 				}

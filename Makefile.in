@@ -4,47 +4,52 @@ TESTSRCDIR = test
 LIBSOURCES = $(wildcard $(SRCDIR)/*.cpp)
 TESTSOURCES = $(wildcard $(TESTSRCDIR)/*.cpp)
 
+FULLFLAGS = -s -Iinclude -include shaga.h
 MT_FULLDIR = $(OBJDIR)/full_mt
 MT_FULLLIB = $(LIBDIR)/libshaga.a
 MT_FULLOBJS = $(addprefix $(MT_FULLDIR)/, $(LIBSOURCES:.cpp=.o))
-MT_FULLFLAGS = -s -Iinclude -include shaga.h
+MT_FULLFLAGS = -DSHAGA_MULTI_THREAD $(FULLFLAGS)
 
 ST_FULLDIR = $(OBJDIR)/full_st
 ST_FULLLIB = $(LIBDIR)/libshaga_st.a
 ST_FULLOBJS = $(addprefix $(ST_FULLDIR)/, $(LIBSOURCES:.cpp=.o))
-ST_FULLFLAGS = -DSHAGA_SINGLE_THREAD $(MT_FULLFLAGS)
+ST_FULLFLAGS = -DSHAGA_SINGLE_THREAD $(FULLFLAGS)
 
+LITEFLAGS = -s -Iinclude -include shagalite.h
 MT_LITEDIR = $(OBJDIR)/lite_mt
 MT_LITELIB = $(LIBDIR)/libshagalite.a
 MT_LITEOBJS = $(addprefix $(MT_LITEDIR)/, $(LIBSOURCES:.cpp=.o))
-MT_LITEFLAGS = -s -Iinclude -include shagalite.h
+MT_LITEFLAGS = -DSHAGA_MULTI_THREAD $(LITEFLAGS)
 
 ST_LITEDIR = $(OBJDIR)/lite_st
 ST_LITELIB = $(LIBDIR)/libshagalite_st.a
 ST_LITEOBJS = $(addprefix $(ST_LITEDIR)/, $(LIBSOURCES:.cpp=.o))
-ST_LITEFLAGS = -DSHAGA_SINGLE_THREAD $(MT_LITEFLAGS)
+ST_LITEFLAGS = -DSHAGA_SINGLE_THREAD $(LITEFLAGS)
 
+DEBUGFLAGS = -g -Iinclude -include shaga.h
 MT_DEBUGDIR = $(OBJDIR)/debug_mt
 MT_DEBUGLIB = $(LIBDIR)/libshaga_debug.a
 MT_DEBUGOBJS = $(addprefix $(MT_DEBUGDIR)/, $(LIBSOURCES:.cpp=.o))
-MT_DEBUGFLAGS = -g -Iinclude -include shaga.h
+MT_DEBUGFLAGS = -DSHAGA_MULTI_THREAD $(DEBUGFLAGS)
 
 ST_DEBUGDIR = $(OBJDIR)/debug_st
 ST_DEBUGLIB = $(LIBDIR)/libshaga_st_debug.a
 ST_DEBUGOBJS = $(addprefix $(ST_DEBUGDIR)/, $(LIBSOURCES:.cpp=.o))
-ST_DEBUGFLAGS = -DSHAGA_SINGLE_THREAD $(MT_DEBUGFLAGS)
+ST_DEBUGFLAGS = -DSHAGA_SINGLE_THREAD $(DEBUGFLAGS)
 
+TESTFLAGS = -g -Iinclude
+TESTLIBS = -lgtest
 MT_TESTDIR = $(OBJDIR)/test_mt
 MT_TESTBIN = $(BINDIR)/test_mt.$(BINEXT)
 MT_TESTOBJS = $(addprefix $(MT_TESTDIR)/, $(TESTSOURCES:.cpp=.o))
-MT_TESTFLAGS = -g -Iinclude
-MT_TESTLIBS = -lgtest
+MT_TESTFLAGS = -DSHAGA_MULTI_THREAD $(TESTFLAGS)
+MT_TESTLIBS = $(TESTLIBS)
 
 ST_TESTDIR = $(OBJDIR)/test_st
 ST_TESTBIN = $(BINDIR)/test_st.$(BINEXT)
 ST_TESTOBJS = $(addprefix $(ST_TESTDIR)/, $(TESTSOURCES:.cpp=.o))
-ST_TESTFLAGS = -DSHAGA_SINGLE_THREAD $(MT_TESTFLAGS)
-ST_TESTLIBS = $(MT_TESTLIBS)
+ST_TESTFLAGS = -DSHAGA_SINGLE_THREAD $(TESTFLAGS)
+ST_TESTLIBS = $(TESTLIBS)
 
 .PHONY: all lib test prep clean distclean remake debug_mt debug_st full_mt full_st lite_mt lite_st test_mt test_st install install_debug
 
@@ -65,7 +70,7 @@ prep:
 	$(MKDIR) $(ST_TESTDIR)/$(TESTSRCDIR)
 	$(MKDIR) $(LIBDIR)
 	$(MKDIR) $(BINDIR)
-	@sync
+	$(SYNC)
 
 clean:
 	$(RM) -f $(MT_FULLLIB) $(MT_FULLOBJS) $(MT_LITELIB) $(MT_LITEOBJS) $(MT_DEBUGLIB) $(MT_DEBUGOBJS) $(MT_TESTBIN) $(MT_TESTOBJS)
