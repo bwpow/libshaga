@@ -129,7 +129,7 @@ namespace shaga {
 				_num_packets (num_packets)
 			{
 				if (_num_packets < 2) {
-					cThrow ("{}: Ring size must be at least 2", _name);
+					cThrow ("{}: Ring size must be at least 2"sv, _name);
 				}
 
 				_data.reserve (_num_packets);
@@ -142,7 +142,7 @@ namespace shaga {
 				/* This eventfd will work as a SEMAPHORE, so every push will increase counter by one and every read will decrease it. */
 				_eventfd = eventfd (0, EFD_NONBLOCK | EFD_SEMAPHORE);
 				if (_eventfd < 0) {
-					cThrow ("{}: Unable to init eventfd: {}", _name, strerror (errno));
+					cThrow ("{}: Unable to init eventfd: {}"sv, _name, strerror (errno));
 				}
 				_event_sock = std::make_shared<ShSocket> (_eventfd);
 				#endif // OS_LINUX
@@ -183,7 +183,7 @@ namespace shaga {
 			virtual int get_err_count (void) const final
 			{
 				#ifdef SHAGA_THREADING
-					return _err_count.load ();
+					return _err_count.load (std::memory_order_relaxed);
 				#else
 					return _err_count;
 				#endif // SHAGA_THREADING

@@ -132,6 +132,10 @@ namespace shaga {
 
 		if (_mode & mAPPEND) {
 			seek (0, SEEK::END);
+			P::debug_print ("ShFile {}: APPEND"sv, _filename);
+		}
+		else {
+			P::debug_print ("ShFile {}: OPEN {}"sv, _filename, (_mode & mWRITE) ? "READ-WRITE"sv : "READ-ONLY"sv);
 		}
 
 		if (nullptr != _callback) {
@@ -142,6 +146,7 @@ namespace shaga {
 	void ShFile::close (void) noexcept
 	{
 		if (_fd >= 0) {
+			P::debug_print ("ShFile {}: CLOSE"sv, _filename);
 			if (nullptr != _callback) {
 				_callback (*this, CallbackAction::CLOSE);
 			}
@@ -205,8 +210,12 @@ namespace shaga {
 
 	void ShFile::write (const uint8_t val)
 	{
-		const char buf[1] = { static_cast<char> (val) };
-		write (buf, 1);
+		write (&val, 1);
+	}
+
+	void ShFile::write (const char val)
+	{
+		write (&val, 1);
 	}
 
 	bool ShFile::read (std::string &data, const size_t len, const bool thr_eof)
@@ -215,6 +224,7 @@ namespace shaga {
 			cThrow ("Error reading from file '{}': Too many bytes requested"sv, _filename);
 		}
 
+		data.resize (0);
 		data.resize (len);
 		if (data.capacity () < len) {
 			cThrow ("Error reading from file '{}': Unable to allocate buffer"sv, _filename);
@@ -239,7 +249,7 @@ namespace shaga {
 			return false;
 		}
 		else if (static_cast<size_t>(ret) != len) {
-			cThrow ("Error reading from file '{}': Not enough bytes, requested = {}, read = {}", _filename, len, ret);
+			cThrow ("Error reading from file '{}': Not enough bytes, requested = {}, read = {}"sv, _filename, len, ret);
 		}
 
 		return true;
@@ -289,6 +299,22 @@ namespace shaga {
 		return static_cast<uint8_t> (buf[0]);
 	}
 
+
+	void ShFile::read_whole_file (std::string &data, const size_t max_len)
+	{
+		seek (0, SEEK::SET);
+		const uint64_t file_sze = static_cast<uint64_t> (get_file_size ());
+		const size_t sze = (max_len < file_sze) ? max_len : file_sze;
+		read (data, sze);
+	}
+
+	std::string ShFile::read_whole_file (const size_t max_len)
+	{
+		std::string out;
+		read_whole_file (out, max_len);
+		return out;
+	}
+
 	void ShFile::set_file_name (const std::string_view filename, const uint8_t mode)
 	{
 		set_file_name (filename);
@@ -308,7 +334,6 @@ namespace shaga {
 		if (is_opened () == true) {
 			cThrow ("File is already opened"sv);
 		}
-
 		_mode = mode;
 	}
 
@@ -332,7 +357,6 @@ namespace shaga {
 		if (is_opened () == true) {
 			cThrow ("File is already opened"sv);
 		}
-
 		_mask = mask;
 	}
 

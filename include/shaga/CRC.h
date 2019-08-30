@@ -34,6 +34,7 @@ namespace shaga::CRC {
 	}
 
 	size_t crc64_check (const std::string_view plain, const uint64_t startval = crc64_startval);
+	void crc64_check_and_trim (std::string_view &plain, const uint64_t startval = crc64_startval);
 	void crc64_append (std::string &plain, const uint64_t startval = crc64_startval);
 
 	/*** CRC-32 zlib compatible ***/
@@ -50,6 +51,7 @@ namespace shaga::CRC {
 	}
 
 	size_t crc32_zlib_check (const std::string_view plain, const uint32_t startval = crc32_zlib_startval);
+	void crc32_zlib_check_and_trim (std::string_view &plain, const uint32_t startval = crc32_zlib_startval);
 	void crc32_zlib_append (std::string &plain, const uint32_t startval = crc32_zlib_startval);
 
 	/*** CRC-32 Atmel CRCCU CCITT802.3 compatible ***/
@@ -65,6 +67,7 @@ namespace shaga::CRC {
 	}
 
 	size_t crc32_atmel_check (const std::string_view plain, const uint32_t startval = crc32_atmel_startval);
+	void crc32_atmel_check_and_trim (std::string_view &plain, const uint32_t startval = crc32_atmel_startval);
 	void crc32_atmel_append (std::string &plain, const uint32_t startval = crc32_atmel_startval);
 
 	/*** CRC-32-Castagnoli ***/
@@ -81,6 +84,7 @@ namespace shaga::CRC {
 	}
 
 	size_t crc32c_check (const std::string_view plain, const uint32_t startval = crc32c_startval);
+	void crc32c_check_and_trim (std::string_view &plain, const uint32_t startval = crc32c_startval);
 	void crc32c_append (std::string &plain, const uint32_t startval = crc32c_startval);
 
 	/*** CRC-16 Modbus compatible ***/
@@ -97,6 +101,7 @@ namespace shaga::CRC {
 	}
 
 	size_t crc16_modbus_check (const std::string_view plain, const uint16_t startval = crc16_modbus_startval);
+	void crc16_modbus_check_and_trim (std::string_view &plain, const uint16_t startval = crc16_modbus_startval);
 	void crc16_modbus_append (std::string &plain, const uint16_t startval = crc16_modbus_startval);
 
 	/*** CRC-8 Dallas/Maxim ***/
@@ -113,6 +118,7 @@ namespace shaga::CRC {
 	}
 
 	size_t crc8_dallas_check (const std::string_view plain, const uint8_t startval = crc8_dallas_startval);
+	void crc8_dallas_check_and_trim (std::string_view &plain, const uint8_t startval = crc8_dallas_startval);
 	void crc8_dallas_append (std::string &plain, const uint8_t startval = crc8_dallas_startval);
 
 	/*** SHA-256 ***/

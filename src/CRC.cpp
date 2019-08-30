@@ -399,6 +399,19 @@ namespace shaga {
 		return (sze - sizeof (uint64_t));
 	}
 
+	void CRC::crc64_check_and_trim (std::string_view &plain, const uint64_t startval)
+	{
+		const size_t sze = plain.size ();
+		if (sze < sizeof (uint64_t)) {
+			cThrow ("CRC-64: String is too short");
+		}
+		const uint64_t crc = crc64 (plain.data (), sze, startval);
+		if (crc64_magic != crc) {
+			cThrow ("CRC-64: String and signature does not match");
+		}
+		plain.remove_suffix (sizeof (uint64_t));
+	}
+
 	void CRC::crc64_append (std::string &plain, const uint64_t startval)
 	{
 		const uint64_t crc = crc64 (plain.data (), plain.size (), startval);
@@ -446,6 +459,19 @@ namespace shaga {
 			cThrow ("CRC-32: String and signature does not match");
 		}
 		return (sze - sizeof (uint32_t));
+	}
+
+	void CRC::crc32_zlib_check_and_trim (std::string_view &plain, const uint32_t startval)
+	{
+		const size_t sze = plain.size ();
+		if (sze < sizeof (uint32_t)) {
+			cThrow ("CRC-32: String is too short");
+		}
+		const uint32_t crc = crc32_zlib (plain.data (), sze, startval);
+		if (crc32_zlib_magic != crc) {
+			cThrow ("CRC-32: String and signature does not match");
+		}
+		plain.remove_suffix (sizeof (uint32_t));
 	}
 
 	void CRC::crc32_zlib_append (std::string &plain, const uint32_t startval)
@@ -499,6 +525,21 @@ namespace shaga {
 		return (sze - sizeof (uint32_t));
 	}
 
+	void CRC::crc32_atmel_check_and_trim (std::string_view &plain, const uint32_t startval)
+	{
+		const size_t sze = plain.size ();
+		if (sze < sizeof (uint32_t)) {
+			cThrow ("CRC-32: String is too short");
+		}
+		size_t offset = sze - sizeof (uint32_t);
+		const uint32_t crc = crc32_atmel (plain.data (), offset, startval);
+		const uint32_t crc_data = BIN::to_uint32 (plain, offset);
+		if (crc_data != crc) {
+			cThrow ("CRC-32: String and signature does not match");
+		}
+		plain.remove_suffix (sizeof (uint32_t));
+	}
+
 	void CRC::crc32_atmel_append (std::string &plain, const uint32_t startval)
 	{
 		const uint32_t crc = crc32_atmel (plain.data (), plain.size (), startval);
@@ -548,6 +589,19 @@ namespace shaga {
 		return (sze - sizeof (uint32_t));
 	}
 
+	void CRC::crc32c_check_and_trim (std::string_view &plain, const uint32_t startval)
+	{
+		const size_t sze = plain.size ();
+		if (sze < sizeof (uint32_t)) {
+			cThrow ("CRC-32: String is too short");
+		}
+		const uint32_t crc = crc32c (plain.data (), sze, startval);
+		if (crc32c_magic != crc) {
+			cThrow ("CRC-32: String and signature does not match");
+		}
+		plain.remove_suffix (sizeof (uint32_t));
+	}
+
 	void CRC::crc32c_append (std::string &plain, const uint32_t startval)
 	{
 		const uint32_t crc = crc32c (plain.data (), plain.size (), startval);
@@ -593,6 +647,19 @@ namespace shaga {
 		return (sze - sizeof (uint16_t));
 	}
 
+	void CRC::crc16_modbus_check_and_trim (std::string_view &plain, const uint16_t startval)
+	{
+		const size_t sze = plain.size ();
+		if (sze < sizeof (uint16_t)) {
+			cThrow ("CRC-16: String is too short");
+		}
+		const uint16_t crc = crc16_modbus (plain.data (), sze, startval);
+		if (crc16_modbus_magic != crc) {
+			cThrow ("CRC-16: Signature does not match");
+		}
+		plain.remove_suffix (sizeof (uint16_t));
+	}
+
 	void CRC::crc16_modbus_append (std::string &plain, const uint16_t startval)
 	{
 		const uint16_t crc = crc16_modbus (plain, startval);
@@ -636,6 +703,19 @@ namespace shaga {
 			cThrow ("CRC-8: Signature does not match");
 		}
 		return (sze - sizeof (uint8_t));
+	}
+
+	void CRC::crc8_dallas_check_and_trim (std::string_view &plain, const uint8_t startval)
+	{
+		const size_t sze = plain.size ();
+		if (sze < sizeof (uint8_t)) {
+			cThrow ("CRC-8: String is too short");
+		}
+		const uint8_t crc = crc8_dallas (plain.data (), sze, startval);
+		if (crc8_dallas_magic != crc) {
+			cThrow ("CRC-8: Signature does not match");
+		}
+		plain.remove_suffix (sizeof (uint8_t));
 	}
 
 	void CRC::crc8_dallas_append (std::string &plain, const uint8_t startval)

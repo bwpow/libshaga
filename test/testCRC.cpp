@@ -17,8 +17,14 @@ TEST (CRC, CRC64)
 
 	/* Append and check */
 	std::string str ("1234567890xyz");
+	const size_t sze = str.size ();
 	EXPECT_NO_THROW (CRC::crc64_append (str));
 	EXPECT_NO_THROW (CRC::crc64_check (str));
+
+	std::string_view view (str);
+	EXPECT_NO_THROW (CRC::crc64_check_and_trim (view));
+	EXPECT_TRUE (view.size () == sze);
+	EXPECT_THROW (CRC::crc64_check_and_trim (view), CommonException);
 
 	str.append ("xy");
 	EXPECT_THROW (CRC::crc64_check (str), CommonException);
@@ -45,8 +51,14 @@ TEST (CRC, CRC32_zlib)
 
 	/* Append and check */
 	std::string str ("1234567890xyz");
+	const size_t sze = str.size ();
 	EXPECT_NO_THROW (CRC::crc32_zlib_append (str));
 	EXPECT_NO_THROW (CRC::crc32_zlib_check (str));
+
+	std::string_view view (str);
+	EXPECT_NO_THROW (CRC::crc32_zlib_check_and_trim (view));
+	EXPECT_TRUE (view.size () == sze);
+	EXPECT_THROW (CRC::crc32_zlib_check_and_trim (view), CommonException);
 
 	str.append ("xy");
 	EXPECT_THROW (CRC::crc32_zlib_check (str), CommonException);
@@ -68,8 +80,14 @@ TEST (CRC, CRC32_atmel)
 
 	/* Append and check */
 	std::string str ("1234567890xyz");
+	const size_t sze = str.size ();
 	EXPECT_NO_THROW (CRC::crc32_atmel_append (str));
 	EXPECT_NO_THROW (CRC::crc32_atmel_check (str));
+
+	std::string_view view (str);
+	EXPECT_NO_THROW (CRC::crc32_atmel_check_and_trim (view));
+	EXPECT_TRUE (view.size () == sze);
+	EXPECT_THROW (CRC::crc32_atmel_check_and_trim (view), CommonException);
 
 	str.append ("xy");
 	EXPECT_THROW (CRC::crc32_atmel_check (str), CommonException);
@@ -96,8 +114,14 @@ TEST (CRC, CRC32C)
 
 	/* Append and check */
 	std::string str ("1234567890xyz");
+	const size_t sze = str.size ();
 	EXPECT_NO_THROW (CRC::crc32c_append (str));
 	EXPECT_NO_THROW (CRC::crc32c_check (str));
+
+	std::string_view view (str);
+	EXPECT_NO_THROW (CRC::crc32c_check_and_trim (view));
+	EXPECT_TRUE (view.size () == sze);
+	EXPECT_THROW (CRC::crc32c_check_and_trim (view), CommonException);
 
 	str.append ("xy");
 	EXPECT_THROW (CRC::crc32c_check (str), CommonException);
@@ -151,8 +175,14 @@ TEST (CRC, CRC16_modbus)
 
 	/* Append and check */
 	std::string str ("1234567890xyz");
+	const size_t sze = str.size ();
 	EXPECT_NO_THROW (CRC::crc16_modbus_append (str));
 	EXPECT_NO_THROW (CRC::crc16_modbus_check (str));
+
+	std::string_view view (str);
+	EXPECT_NO_THROW (CRC::crc16_modbus_check_and_trim (view));
+	EXPECT_TRUE (view.size () == sze);
+	EXPECT_THROW (CRC::crc16_modbus_check_and_trim (view), CommonException);
 
 	str.append ("xy");
 	EXPECT_THROW (CRC::crc16_modbus_check (str), CommonException);
@@ -191,8 +221,14 @@ TEST (CRC, CRC8_dallas)
 
 	/* Append and check */
 	std::string str ("1234567890xyz");
+	const size_t sze = str.size ();
 	EXPECT_NO_THROW (CRC::crc8_dallas_append (str));
 	EXPECT_NO_THROW (CRC::crc8_dallas_check (str));
+
+	std::string_view view (str);
+	EXPECT_NO_THROW (CRC::crc8_dallas_check_and_trim (view));
+	EXPECT_TRUE (view.size () == sze);
+	EXPECT_THROW (CRC::crc8_dallas_check_and_trim (view), CommonException);
 
 	str.append ("xy");
 	EXPECT_THROW (CRC::crc8_dallas_check (str), CommonException);

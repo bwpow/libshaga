@@ -28,7 +28,11 @@ namespace shaga::FS {
 
 	bool mkdir (const std::string_view dname);
 
-	void unlink (const std::string_view fname);
+	int unlink (const std::string_view fname, const bool should_throw = false);
+
+	int rename (const std::string_view old_fname, const std::string_view new_fname, const bool should_throw = false);
+
+	int stat (const std::string_view fname, struct stat *buf, const bool should_throw = false);
 
 	void glob (const std::string_view pattern, GLOB_CALLBACK callback);
 

@@ -174,7 +174,7 @@ namespace shaga {
 	void _try_to_shutdown (const char *file, const char *funct, const int line)
 	{
 		#ifdef SHAGA_THREADING
-		if (_is_shutdown.exchange (true) == false)
+		if (_is_shutdown.exchange (true, std::memory_order_seq_cst) == false)
 		#else
 		if (std::exchange (_is_shutdown, true) == false)
 		#endif // SHAGA_THREADING
@@ -204,7 +204,7 @@ namespace shaga {
 	SHAGA_NODISCARD bool is_shutting_down (void)
 	{
 		#ifdef SHAGA_THREADING
-		return _is_shutdown.load ();
+		return _is_shutdown.load (std::memory_order_relaxed);
 		#else
 		return _is_shutdown;
 		#endif // SHAGA_THREADING

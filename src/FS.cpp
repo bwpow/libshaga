@@ -24,7 +24,7 @@ namespace shaga {
 		::free (pth);
 
 		if (true == strip_fname) {
-			const size_t pos = out.find_last_of ("/");
+			const size_t pos = out.find_last_of ('/');
 			if (pos != std::string::npos) {
 				out.erase (pos + 1);
 			}
@@ -32,7 +32,7 @@ namespace shaga {
 
 		return out;
 #else
-		cThrow ("This function is not supported in this OS");
+		cThrow ("This function is not supported in this OS"sv);
 #endif // OS_WIN
 	}
 
@@ -40,9 +40,8 @@ namespace shaga {
 	{
 		struct stat st;
 		if (::stat (s_c_str (fname), &st) != 0) {
-			cThrow ("Unable to get file stat of '{}'"sv, fname);
+			cThrow ("Unable to get file stat of '{}': {}"sv, fname, strerror (errno));
 		}
-
 		return st;
 	}
 
@@ -52,7 +51,6 @@ namespace shaga {
 		if (::stat (s_c_str (fname), &st) != 0) {
 			cThrow ("Unable to get file size of '{}'"sv, fname);
 		}
-
 		return st.st_size;
 	}
 
@@ -62,7 +60,6 @@ namespace shaga {
 		if (::stat (s_c_str (fname), &st) != 0) {
 			cThrow ("Unable to get file mtime of '{}'"sv, fname);
 		}
-
 		return st.st_mtime;
 	}
 
@@ -108,9 +105,31 @@ namespace shaga {
 		return is_dir (dname);
 	}
 
-	void FS::unlink (const std::string_view fname)
+	int FS::unlink (const std::string_view fname, const bool should_throw)
 	{
-		::unlink (s_c_str (fname));
+		const int ret = ::unlink (s_c_str (fname));
+		if (ret != 0 && true == should_throw) {
+			cThrow ("Unable to unlink '{}': {}"sv, fname, strerror (errno));
+		}
+		return ret;
+	}
+
+	int FS::rename (const std::string_view old_fname, const std::string_view new_fname, const bool should_throw)
+	{
+		const int ret = ::rename (s_c_str (old_fname), s_c_str (new_fname));
+		if (ret != 0 && true == should_throw) {
+			cThrow ("Unable to rename '{}' to '{}': {}"sv, old_fname, new_fname, strerror (errno));
+		}
+		return ret;
+	}
+
+	int FS::stat (const std::string_view fname, struct stat *buf, const bool should_throw)
+	{
+		const int ret = ::stat (s_c_str (fname), buf);
+		if (ret != 0 && true == should_throw) {
+			cThrow ("Unable to stat '{}': {}"sv, fname, strerror (errno));
+		}
+		return ret;
 	}
 
 	void FS::glob ([[maybe_unused]] const std::string_view pattern, [[maybe_unused]] GLOB_CALLBACK callback)

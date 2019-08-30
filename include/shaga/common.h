@@ -117,6 +117,7 @@ All rights reserved.
 #include <random>
 #include <chrono>
 
+#include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef SHAGA_THREADING

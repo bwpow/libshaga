@@ -65,21 +65,25 @@ namespace shaga {
 			void close (void) noexcept;
 			void sync (const bool also_metadata = false);
 
+			/* Write substr of string_view */
 			void write (const std::string_view data, const size_t len);
+
+			/* Write string_view */
 			void write (const std::string_view data);
+
+			/* Write memory buffer of particular length */
 			void write (const char *buf, const size_t len);
 			void write (const uint8_t *buf, const size_t len);
+
+			/* Write C-style string */
 			void write (const char *buf);
+
+			/* Write single character */
 			void write (const uint8_t val);
+			void write (const char val);
 
 			template <typename... Args>
 			void print (const std::string_view format, const Args & ... args)
-			{
-				write (fmt::format (format, args...));
-			}
-
-			template <typename... Args>
-			void format (const std::string_view format, const Args & ... args)
 			{
 				write (fmt::format (format, args...));
 			}
@@ -88,6 +92,9 @@ namespace shaga {
 			std::string read (const size_t len, const bool thr_eof = true);
 			bool read (char *buf, const size_t len, const bool thr_eof = true);
 			uint8_t read (void);
+
+			void read_whole_file (std::string &data, const size_t max_len = SIZE_MAX);
+			std::string read_whole_file (const size_t max_len = SIZE_MAX);
 
 			void set_file_name (const std::string_view filename, const uint8_t mode);
 			void set_file_name (const std::string_view filename);
