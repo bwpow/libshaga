@@ -5,7 +5,6 @@ Copyright (c) 2012-2019, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#include <shaga.h>
 #include <gtest/gtest.h>
 
 using namespace shaga;
@@ -115,8 +114,6 @@ TEST (BIN, check_bit_coverage)
 
 TEST (BIN, big_endian_from)
 {
-	BIN::endian_detect ();
-
 	uint64_t val = 0;
 	for (size_t i = 0; i < 8; i++) {
 		val |= static_cast<uint64_t> ('A' + i) << (i * 8);
@@ -179,16 +176,12 @@ static void _big_endian_to (void)
 
 TEST (BIN, big_endian_to)
 {
-	BIN::endian_detect ();
-
 	_big_endian_to<std::string>();
 	_big_endian_to<std::string_view>();
 }
 
 TEST (BIN, little_endian_from)
 {
-	BIN::endian_detect ();
-
 	uint64_t val = 0;
 	for (size_t i = 0; i < 8; i++) {
 		val |= static_cast<uint64_t> ('A' + i) << (i * 8);
@@ -251,8 +244,6 @@ static void _little_endian_to (void)
 
 TEST (BIN, little_endian_to)
 {
-	BIN::endian_detect ();
-
 	_little_endian_to<std::string>();
 	_little_endian_to<std::string_view>();
 }

@@ -21,19 +21,19 @@ namespace shaga {
 		std::string s;
 
 		if (key_short != 0) {
-			s.append (fmt::format ("-{:c}", key_short));
+			s.append (fmt::format ("-{:c}"sv, key_short));
 			if (has_param == true) {
-				s.append ("<" + param_type + ">");
+				s.append ("<"s + param_type + ">"s);
 			}
 		}
 
 		if (key_long.empty () == false) {
 			if (s.empty () == false) {
-				s.append ("|");
+				s.append ("|"s);
 			}
-			s.append ("--" + key_long);
+			s.append ("--"s + key_long);
 			if (has_param == true) {
-				s.append ("=<" + param_type + ">");
+				s.append ("=<"s + param_type + ">"s);
 			}
 		}
 
@@ -52,9 +52,9 @@ namespace shaga {
 		}
 
 		if (key_long.empty () == true) {
-			cThrow ("Unknown option '-{:c}'", key_short);
+			cThrow ("Unknown option '-{:c}'"sv, key_short);
 		}
-		cThrow ("Unknown option '--{}'", key_long);
+		cThrow ("Unknown option '--{}'"sv, key_long);
 	}
 
 	void ArgTable::process_entry (Entry &e, const std::string_view var)
@@ -74,25 +74,25 @@ namespace shaga {
 	{
 		if (true == _next_entry_is_param) {
 			if (_actual_entry == _entries.end ()) {
-				cThrow ("Expected parameter, but no option is selected");
+				cThrow ("Expected parameter, but no option is selected"sv);
 			}
 			process_entry (*_actual_entry, data);
 		}
-		else if (data.substr (0, 2) == "--") {
+		else if (data.substr (0, 2) == "--"sv) {
 			/* This measn we have --key_long */
-			const size_t pos = data.find_first_of ("=", 2);
+			const size_t pos = data.find_first_of ("="s, 2);
 			if (pos == std::string::npos) {
 				/* There is no '=', so let's check if there should be parameter */
 				_actual_entry = find_entry_by_key (data.substr (2), 0);
 				if (true == _actual_entry->has_param) {
-					cThrow ("Option '{}' is missing parameter", data);
+					cThrow ("Option '{}' is missing parameter"sv, data);
 				}
 				process_entry (*_actual_entry, "");
 			}
 			else {
 				_actual_entry = find_entry_by_key (data.substr (2, pos - 2), 0);
 				if (false == _actual_entry->has_param) {
-					cThrow ("Option '{}' shouldn't have parameter", data);
+					cThrow ("Option '{}' shouldn't have parameter"sv, data);
 				}
 				process_entry (*_actual_entry, data.substr (pos + 1));
 			}
@@ -103,11 +103,11 @@ namespace shaga {
 			_next_entry_is_param = true;
 
 			while (pos < data.size ()) {
-				_actual_entry = find_entry_by_key ("", data.at (pos));
+				_actual_entry = find_entry_by_key (""sv, data.at (pos));
 				pos++;
 
 				if (false == _actual_entry->has_param) {
-					process_entry (*_actual_entry, "");
+					process_entry (*_actual_entry, ""sv);
 				}
 				else if (pos < data.size ()) {
 					process_entry (*_actual_entry, data.substr (pos));
@@ -116,7 +116,7 @@ namespace shaga {
 			}
 		}
 		else {
-			cThrow ("Unknown option '{}'", data);
+			cThrow ("Unknown option '{}'"sv, data);
 		}
 	}
 

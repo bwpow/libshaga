@@ -3,7 +3,6 @@ AR ?= ar
 RM ?= rm
 CP ?= cp
 MKDIR ?= @mkdir -p
-SYNC ?= @sync
 
 DESTINCLUDE ?= /usr/local/include/
 DESTLIB ?= /usr/local/lib/

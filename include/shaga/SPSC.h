@@ -24,8 +24,8 @@ namespace shaga {
 				std::atomic<uint_fast32_t> _pos_read {0};
 				std::atomic<uint_fast32_t> _pos_write {0};
 			#else
-				uint_fast32_t _pos_read {0};
-				uint_fast32_t _pos_write {0};
+				volatile uint_fast32_t _pos_read {0};
+				volatile uint_fast32_t _pos_write {0};
 			#endif // SHAGA_THREADING
 
 			T* const _data;
@@ -34,11 +34,11 @@ namespace shaga {
 			explicit SPSC (const uint_fast32_t sze) : _size (sze), _data (static_cast<T*> (::malloc (sizeof (T) * sze)))
 			{
 				if (sze < 2) {
-					cThrow ("Ring size must be at least 2");
+					cThrow ("Ring size must be at least 2"sv);
 				}
 
 				if (_data == nullptr) {
-					cThrow ("Ring data allocation failed");
+					cThrow ("Ring data allocation failed"sv);
 				}
 			}
 
@@ -280,8 +280,8 @@ namespace shaga {
 				std::atomic<uint_fast32_t> _pos_read {0};
 				std::atomic<uint_fast32_t> _pos_write {0};
 			#else
-				uint_fast32_t _pos_read {0};
-				uint_fast32_t _pos_write {0};
+				volatile uint_fast32_t _pos_read {0};
+				volatile uint_fast32_t _pos_write {0};
 			#endif // SHAGA_THREADING
 
 			T* const _data;
@@ -291,11 +291,11 @@ namespace shaga {
 			explicit PaSPSC (const uint_fast32_t sze, Args&&... args) : _size (sze), _data (static_cast<T*> (::malloc (sizeof (T) * sze)))
 			{
 				if (sze < 2) {
-					cThrow ("Ring size must be at least 2");
+					cThrow ("Ring size must be at least 2"sv);
 				}
 
 				if (_data == nullptr) {
-					cThrow ("Ring data allocation failed");
+					cThrow ("Ring data allocation failed"sv);
 				}
 
 				for (uint_fast32_t now = 0; now < _size; ++now) {
@@ -337,7 +337,7 @@ namespace shaga {
 				#else
 				if (next == _pos_read) {
 				#endif // SHAGA_THREADING
-					cThrow ("Ring full");
+					cThrow ("Ring full"sv);
 				}
 
 				return _data[now];
@@ -376,12 +376,12 @@ namespace shaga {
 				#ifdef SHAGA_THREADING
 					const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
 					if (now == _pos_write.load (std::memory_order_acquire)) {
-						cThrow ("Ring empty");
+						cThrow ("Ring empty"sv);
 					}
 				#else
 					const uint_fast32_t now = _pos_read;
 					if (now == _pos_write) {
-						cThrow ("Ring empty");
+						cThrow ("Ring emptysv");
 					}
 				#endif // SHAGA_THREADING
 
@@ -393,12 +393,12 @@ namespace shaga {
 				#ifdef SHAGA_THREADING
 					const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
 					if (now == _pos_write.load (std::memory_order_acquire)) {
-						cThrow ("Ring empty");
+						cThrow ("Ring empty"sv);
 					}
 				#else
 					const uint_fast32_t now = _pos_read;
 					if (now == _pos_write) {
-						cThrow ("Ring empty");
+						cThrow ("Ring empty"sv);
 					}
 				#endif // SHAGA_THREADING
 

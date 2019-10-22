@@ -5,17 +5,17 @@ Copyright (c) 2012-2019, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#include <gtest/gtest.h>
+#ifndef HEAD_shaga_full_mt
+#define HEAD_shaga_full_mt
 
-int main(int argc, char **argv) try
-{
-	::testing::InitGoogleTest(&argc, argv);
-	shaga::shaga_check ();
-	return RUN_ALL_TESTS();
-}
-catch (const std::exception &e) {
-	shaga::exit ("FATAL ERROR: {}", e.what ());
-}
-catch (...) {
-	shaga::exit ("FATAL ERROR: Unknown failure");
-}
+#ifdef SHAGA
+#error You must include only one shaga*.h
+#endif // SHAGA
+
+#define SHAGA
+#define SHAGA_FULL
+#define SHAGA_MULTI_THREAD
+
+#include "shaga/common.h"
+
+#endif // HEAD_shaga_full_mt

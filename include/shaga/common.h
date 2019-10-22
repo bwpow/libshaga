@@ -43,9 +43,9 @@ All rights reserved.
 	#undef SHAGA_THREADING
 #endif // SHAGA_THREADING
 
-#ifndef SHAGA_SINGLE_THREAD
+#ifdef SHAGA_MULTI_THREAD
 	#define SHAGA_THREADING
-#endif // SHAGA_SINGLE_THREAD
+#endif // SHAGA_MULTI_THREAD
 
 /* Detection based upon: http://nadeausoftware.com/articles/2012/01/c_c_tip_how_use_compiler_predefined_macros_detect_operating_system */
 #undef OS_WIN
@@ -203,9 +203,7 @@ using namespace std::literals;
 	#define ENDIAN_IS_LITTLE if (false) {
 	#define ENDIAN_END }
 #else
-	#define ENDIAN_IS_BIG if (BIN::Endian::BIG == BIN::_endian) {
-	#define ENDIAN_IS_LITTLE if (BIN::Endian::LITTLE == BIN::_endian) {
-	#define ENDIAN_END }
+	#error Unable to detect endian
 #endif
 
 #define ENDIAN_BSWAP16(val) val = __builtin_bswap16 (val)
@@ -309,33 +307,50 @@ namespace shaga
 	void _try_to_shutdown (const char *file, const char *funct, const int line);
 	SHAGA_NODISCARD bool is_shutting_down (void);
 
-	/* Set in shaga.cpp to constant value depending on compile-time settings */
+	/* Set in common.cpp to constant value depending on compile-time settings */
+	extern const bool _shaga_compiled_little_endian;
 	extern const bool _shaga_compiled_with_threading;
 	extern const bool _shaga_compiled_full;
 
 	/* Call from main to check if compile time settings match runtime settings */
-	inline void shaga_check_threading (void)
+	inline static void shaga_check (void)
 	{
-		#ifdef SHAGA_THREADING
+		#if defined SHAGA_MULTI_THREAD
 			if (false == _shaga_compiled_with_threading) {
-				cThrow ("Shaga threading mismatch, compiled without threading and used with threading"sv);
+				cThrow ("Threading mismatch, compiled without threading and used with threading"sv);
+			}
+		#elif defined SHAGA_SINGLE_THREAD
+			if (true == _shaga_compiled_with_threading) {
+				cThrow ("Threading mismatch, compiled with threading and used without threading"sv);
 			}
 		#else
-			if (true == _shaga_compiled_with_threading) {
-				cThrow ("Shaga threading mismatch, compiled with threading and used without threading"sv);
-			}
-		#endif // SHAGA_THREADING
-	}
+			#error Unable to detect version of the library
+		#endif
 
-	inline void shaga_check_version (void)
-	{
 		#if defined SHAGA_LITE
 			if (true == _shaga_compiled_full) {
-				cThrow ("Shaga library version mismatch, compiled as full and used as lite"sv);
+				cThrow ("Library version mismatch, compiled as full and used as lite"sv);
 			}
 		#elif defined SHAGA_FULL
 			if (false == _shaga_compiled_full) {
-				cThrow ("Shaga library version mismatch, compiled as lite and used as full"sv);
+				cThrow ("Library version mismatch, compiled as lite and used as full"sv);
+			}
+		#else
+			#error Unable to detect version of the library
+		#endif
+
+		union {
+			uint32_t i;
+			char c[4];
+		} testvar = {0x12345678};
+
+		#if BYTE_ORDER == LITTLE_ENDIAN
+			if (false == _shaga_compiled_little_endian || (testvar.c[0] != 0x78)) {
+				cThrow ("Library version mismatch, compiled with little endian and used on big endian system"sv);
+			}
+		#elif BYTE_ORDER == BIG_ENDIAN
+			if (true == _shaga_compiled_little_endian || (testvar.c[0] != 0x12)) {
+				cThrow ("Library version mismatch, compiled with big endian and used on little endian system"sv);
 			}
 		#else
 			#error Unable to detect version of the library
@@ -346,7 +361,7 @@ namespace shaga
 
 	#define SHAGA_MAIN(body) int main ([[maybe_unused]] int argc, [[maybe_unused]] char **argv) try \
 	{ \
-		{ shaga_check_threading (); shaga_check_version (); BIN::endian_detect (); LOG_REGISTER; } \
+		{ shaga_check (); LOG_REGISTER; } \
 		{ body } \
 		shaga::exit (); \
 	} \
@@ -372,13 +387,13 @@ namespace shaga
 #include "3rdparty/aho_corasick.h"
 #include "3rdparty/randutils.h"
 
+#include "BINstatic.h"
+#include "BIN.h"
 #include "hwid.h"
 #include "CRC.h"
 #include "ShSocket.h"
 #include "ShFile.h"
 #include "FS.h"
-#include "BINstatic.h"
-#include "BIN.h"
 #include "ChunkMeta.h"
 #include "Chunk.h"
 #include "ReData.h"

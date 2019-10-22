@@ -23,19 +23,18 @@ namespace shaga {
 			#ifdef SHAGA_THREADING
 				std::atomic<int> _err_count {0};
 			#else
-				int _err_count {0};
+				volatile int _err_count {0};
 			#endif // SHAGA_THREADING
 
 			std::weak_ptr<StringSPSC> _err_spsc;
 			bool _throw_at_error {false};
 
 			#ifdef OS_LINUX
-			int _eventfd {-1};
-			SHARED_SOCKET _event_sock;
+				int _eventfd {-1};
+				SHARED_SOCKET _event_sock;
+				uint64_t _eventfd_write_val {1};
+				uint64_t _eventfd_read_val {0};
 			#endif // OS_LINUX
-
-			uint64_t _eventfd_write_val {1};
-			uint64_t _eventfd_read_val {0};
 
 		protected:
 			const uint_fast32_t _max_packet_size;
@@ -50,8 +49,8 @@ namespace shaga {
 				std::atomic<uint_fast32_t> _pos_read {0};
 				std::atomic<uint_fast32_t> _pos_write {0};
 			#else
-				uint_fast32_t _pos_read {0};
-				uint_fast32_t _pos_write {0};
+				volatile uint_fast32_t _pos_read {0};
+				volatile uint_fast32_t _pos_write {0};
 			#endif // SHAGA_THREADING
 
 			virtual bool read_eventfd (void) final
@@ -62,7 +61,7 @@ namespace shaga {
 					if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
 						return false;
 					}
-					cThrow ("{}: Error reading from notice eventfd: {}", this->_name, strerror (errno));
+					cThrow ("{}: Error reading from notice eventfd: {}"sv, this->_name, strerror (errno));
 				}
 				#endif // OS_LINUX
 
@@ -74,11 +73,11 @@ namespace shaga {
 				#ifdef SHAGA_THREADING
 					_err_count.fetch_add (1);
 				#else
-					_err_count++;
+					++_err_count;
 				#endif // SHAGA_THREADING
 
 				if (true == _throw_at_error) {
-					cThrow ("{}: {}", _name, buf);
+					cThrow ("{}: {}"sv, _name, buf);
 				}
 
 				try {
@@ -99,7 +98,7 @@ namespace shaga {
 					RING (next);
 
 					if (next == _pos_read.load (std::memory_order_acquire)) {
-						cThrow ("{}: Ring full", _name);
+						cThrow ("{}: Ring full"sv, _name);
 					}
 
 					_pos_write.store (next, std::memory_order_release);
@@ -108,7 +107,7 @@ namespace shaga {
 					RING (next);
 
 					if (next == _pos_read) {
-						cThrow ("{}: Ring full", _name);
+						cThrow ("{}: Ring full"sv, _name);
 					}
 
 					_pos_write = next;
@@ -116,12 +115,14 @@ namespace shaga {
 
 				#ifdef OS_LINUX
 				if (::write (_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)) < 0) {
-					cThrow ("{}: Error writing to eventfd: {}", _name, strerror (errno));
+					cThrow ("{}: Error writing to eventfd: {}"sv, _name, strerror (errno));
 				}
 				#endif // OS_LINUX
 
 				_curdata = _data[next].get ();
 			}
+
+			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) = 0;
 
 		public:
 			DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets) :
@@ -222,7 +223,7 @@ namespace shaga {
 					const uint_fast32_t now = this->_pos_read.load (std::memory_order_relaxed);
 					if (now == this->_pos_write.load (std::memory_order_acquire)) {
 						#ifdef OS_LINUX
-						cThrow ("{}: Internal error: eventfd test passed but atomic position didn't", this->_name);
+						cThrow ("{}: Internal error: eventfd test passed but atomic position didn't"sv, this->_name);
 						#endif // OS_LINUX
 						return false;
 					}
@@ -230,7 +231,7 @@ namespace shaga {
 					const uint_fast32_t now = this->_pos_read;
 					if (now == this->_pos_write) {
 						#ifdef OS_LINUX
-						cThrow ("{}: Internal error: eventfd test passed but read/write position didn't", this->_name);
+						cThrow ("{}: Internal error: eventfd test passed but read/write position didn't"sv, this->_name);
 						#endif // OS_LINUX
 						return false;
 					}
@@ -251,8 +252,30 @@ namespace shaga {
 				return true;
 			}
 
-			virtual void push_buffer (const uint8_t *buffer, uint_fast32_t offset, const uint_fast32_t len) = 0;
-			virtual void push_buffer (const std::string_view buffer) = 0;
+			virtual void push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) final
+			{
+				this->_push_buffer (buffer, offset, len);
+			}
+
+			virtual void push_buffer (const std::string_view buffer) final
+			{
+				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
+			}
+
+			virtual void push_buffer (const uint8_t *const buffer, const uint_fast32_t len) final
+			{
+				this->_push_buffer (buffer, 0, len);
+			}
+
+			virtual void push_buffer (const char *const buffer, uint_fast32_t offset, const uint_fast32_t len) final
+			{
+				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer), offset, len);
+			}
+
+			virtual void push_buffer (const char *const buffer, const uint_fast32_t len) final
+			{
+				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer), 0, len);
+			}
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -286,20 +309,7 @@ namespace shaga {
 				return true;
 			}
 
-		public:
-			Uart8DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const uint8_t stx, const uint8_t etx, const uint8_t ntx) :
-				DecodeSPSC<T> (max_packet_size + 1, num_packets),
-				_stx (stx),
-				_etx (etx),
-				_ntx (ntx)
-			{ }
-
-			virtual void has_crc8 (const bool enabled) final
-			{
-				_has_crc8 = enabled;
-			}
-
-			virtual void push_buffer (const uint8_t *buffer, uint_fast32_t offset, const uint_fast32_t len) override final
+			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) override final
 			{
 				for (;offset < len; ++offset) {
 					if (_stx == buffer[offset]) {
@@ -351,9 +361,17 @@ namespace shaga {
 				}
 			}
 
-			virtual void push_buffer (const std::string_view buffer) override final
+		public:
+			Uart8DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const uint8_t stx, const uint8_t etx, const uint8_t ntx) :
+				DecodeSPSC<T> (max_packet_size + 1, num_packets),
+				_stx (stx),
+				_etx (etx),
+				_ntx (ntx)
+			{ }
+
+			virtual void has_crc8 (const bool enabled) final
 			{
-				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
+				_has_crc8 = enabled;
 			}
 	};
 
@@ -395,28 +413,7 @@ namespace shaga {
 				}
 			}
 
-		public:
-			Uart16DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const std::array<uint8_t,2> stx) :
-				DecodeSPSC<T> (max_packet_size + 2, num_packets),
-				_stx (stx)
-			{ }
-
-			virtual void has_crc16 (const bool enabled, const bool include_stx = false, const uint_fast16_t startval = UINT16_MAX) final
-			{
-				_has_crc16 = enabled;
-
-				if (false == include_stx) {
-					_crc16_startval = startval;
-				}
-				else {
-					uint_fast16_t crc16_val = startval;
-					crc16_val = (crc16_val >> 8) ^ CRC::_crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[0])) & 0xff];
-					crc16_val = (crc16_val >> 8) ^ CRC::_crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[1])) & 0xff];
-					_crc16_startval = crc16_val;
-				}
-			}
-
-			virtual void push_buffer (const uint8_t *buffer, uint_fast32_t offset, const uint_fast32_t len) override final
+			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) override final
 			{
 				for (;offset < len; ++offset) {
 					if (0 == _got_stx) {
@@ -484,9 +481,25 @@ namespace shaga {
 				}
 			}
 
-			virtual void push_buffer (const std::string_view buffer) override final
+		public:
+			Uart16DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const std::array<uint8_t,2> stx) :
+				DecodeSPSC<T> (max_packet_size + 2, num_packets),
+				_stx (stx)
+			{ }
+
+			virtual void has_crc16 (const bool enabled, const bool include_stx = false, const uint_fast16_t startval = UINT16_MAX) final
 			{
-				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
+				_has_crc16 = enabled;
+
+				if (false == include_stx) {
+					_crc16_startval = startval;
+				}
+				else {
+					uint_fast16_t crc16_val = startval;
+					crc16_val = (crc16_val >> 8) ^ CRC::_crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[0])) & 0xff];
+					crc16_val = (crc16_val >> 8) ^ CRC::_crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[1])) & 0xff];
+					_crc16_startval = crc16_val;
+				}
 			}
 	};
 
@@ -497,9 +510,9 @@ namespace shaga {
 	template<class T> class PacketDecodeSPSC : public DecodeSPSC<T>
 	{
 		private:
-			const char _magic[2] {5, 23};
-			const uint_fast32_t _crc_max_len {16};
-			const uint8_t _crc_start_val {19};
+			static const constexpr char _magic[2] {5, 23};
+			static const constexpr uint_fast32_t _crc_max_len {16};
+			static const constexpr uint8_t _crc_start_val {19};
 
 			uint8_t _crc8_val {0};
 			uint8_t _crc8_expected {0};
@@ -510,12 +523,7 @@ namespace shaga {
 
 			std::string _size_buf;
 
-		public:
-			PacketDecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets) :
-				DecodeSPSC<T> (max_packet_size, num_packets)
-			{ }
-
-			virtual void push_buffer (const uint8_t *buffer, uint_fast32_t offset, const uint_fast32_t len) override final
+			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) override final
 			{
 				for (;offset < len; ++offset) {
 					if (_remaining_crc > 0) {
@@ -590,10 +598,10 @@ namespace shaga {
 				}
 			}
 
-			virtual void push_buffer (const std::string_view buffer) override final
-			{
-				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
-			}
+		public:
+			PacketDecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets) :
+				DecodeSPSC<T> (max_packet_size, num_packets)
+			{ }
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -602,12 +610,8 @@ namespace shaga {
 
 	template<class T> class SeqPacketDecodeSPSC : public DecodeSPSC<T>
 	{
-		public:
-			SeqPacketDecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets) :
-				DecodeSPSC<T> (max_packet_size, num_packets)
-			{ }
-
-			virtual void push_buffer (const uint8_t *buffer, uint_fast32_t offset, const uint_fast32_t len) override final
+		private:
+			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) override final
 			{
 				const uint_fast32_t sze = len - offset;
 
@@ -616,7 +620,7 @@ namespace shaga {
 					return;
 				}
 
-				uint_fast32_t data_length = 0;
+				uint_fast32_t data_length {0};
 
 				try {
 					const std::string_view tbuf (reinterpret_cast <const char *> (buffer + offset), 3);
@@ -645,10 +649,10 @@ namespace shaga {
 				this->push ();
 			}
 
-			virtual void push_buffer (const std::string_view buffer) override final
-			{
-				this->push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
-			}
+		public:
+			SeqPacketDecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets) :
+				DecodeSPSC<T> (max_packet_size, num_packets)
+			{ }
 	};
 #undef RING
 }

@@ -61,10 +61,6 @@ namespace shaga::BIN {
 		return ((x | y) == x) && check_bit_coverage ((x & (~y)), rest...);
 	}
 
-	enum class Endian { UNKNOWN, LITTLE, BIG };
-	extern Endian _endian;
-
-	void endian_detect (void);
 	bool is_little_endian (void);
 	bool is_big_endian (void);
 	SHAGA_STRV std::string_view endian_to_string (void);

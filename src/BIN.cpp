@@ -9,7 +9,6 @@ All rights reserved.
 
 namespace shaga {
 	namespace BIN {
-		Endian _endian = Endian::UNKNOWN;
 
 		static const uint8_t _b_hex[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
@@ -24,77 +23,38 @@ namespace shaga {
 				'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 				'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_', '.' };
 		static const uint8_t _b_alt64_pad = '-';
-
-		#ifdef SHAGA_THREADING
-			static std::once_flag _endian_once_flag;
-		#else
-			static bool _endian_once_flag {false};
-		#endif // SHAGA_THREADING
-
-		static void _endian_detect_once (void)
-		{
-			const uint32_t t = htonl (0x12345678);
-			if (t == 0x12345678) {
-				_endian = Endian::BIG;
-			}
-			else if (t == 0x78563412) {
-				_endian = Endian::LITTLE;
-			}
-			else {
-				_endian = Endian::UNKNOWN;
-			}
-
-			ENDIAN_IS_BIG
-				if (Endian::BIG != _endian) {
-					exit ("Unable to continue. Library is build for big endian and little endian was detected.");
-				}
-			ENDIAN_END
-
-			ENDIAN_IS_LITTLE
-				if (Endian::LITTLE != _endian) {
-					exit ("Unable to continue. Library is build for little endian and big endian was detected.");
-				}
-			ENDIAN_END
-		}
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Endian detection  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void BIN::endian_detect (void)
-	{
-		#ifdef SHAGA_THREADING
-			std::call_once (_endian_once_flag, _endian_detect_once);
-		#else
-			if (std::exchange (_endian_once_flag, true) == false) {
-				_endian_detect_once ();
-			}
-		#endif // SHAGA_THREADING
-	}
-
 	bool BIN::is_little_endian (void)
 	{
-		endian_detect ();
-		return (_endian == Endian::LITTLE);
+		#if BYTE_ORDER == LITTLE_ENDIAN
+		return true;
+		#else
+		return false;
+		#endif // BYTE_ORDER
 	}
 
 	bool BIN::is_big_endian (void)
 	{
-		endian_detect ();
-		return (_endian == Endian::BIG);
+		#if BYTE_ORDER == BIG_ENDIAN
+		return true;
+		#else
+		return false;
+		#endif // BYTE_ORDER
 	}
 
 	SHAGA_STRV std::string_view BIN::endian_to_string (void)
 	{
-		endian_detect ();
-		switch (_endian) {
-			case Endian::UNKNOWN: return "unknown endian"sv;
-			case Endian::LITTLE: return "little endian"sv;
-			case Endian::BIG: return "big endian"sv;
+		if (is_little_endian ()) {
+			return "little endian"sv;
 		}
-
-		cThrow ("Undefined endian"sv);
+		else {
+			return "big endian"sv;
+		}
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -162,7 +122,7 @@ namespace shaga {
 				c = (b_high - 'A') + 10;
 			}
 			else {
-				cThrow ("character out of range");
+				cThrow ("character out of range"sv);
 			}
 
 			c <<= 4;
@@ -177,7 +137,7 @@ namespace shaga {
 				c |= (b_low - 'A') + 10;
 			}
 			else {
-				cThrow ("character out of range");
+				cThrow ("character out of range"sv);
 			}
 
 			return c;
@@ -233,7 +193,7 @@ namespace shaga {
 			const uint8_t b_high = *iter;
 			++iter;
 			if (iter == from.cend ()) {
-				cThrow ("Malformed data");
+				cThrow ("Malformed data"sv);
 			}
 			const uint8_t b_low = *iter;
 
@@ -273,13 +233,13 @@ namespace shaga {
 					}
 				}
 			}
-			cThrow ("Value out of range");
+			cThrow ("Value out of range"sv);
 		}
 
 		static inline uint8_t _b64_from_byte (const uint8_t b, const bool use_alt)
 		{
 			if (b >= 64) {
-				cThrow ("Value out of range");
+				cThrow ("Value out of range"sv);
 			}
 			if (use_alt) {
 				return _b_alt64_table[b];
@@ -419,7 +379,7 @@ namespace shaga {
 			}
 
 			if (len || fromp != from.cend ()) {
-				cThrow ("Malformed data");
+				cThrow ("Malformed data"sv);
 			}
 
 			append_to.erase (append_to.size () - padding, std::string::npos);
@@ -455,7 +415,7 @@ namespace shaga {
 		static inline auto _be_to_int (const S &s, size_t &offset) -> T
 		{
 			if ((offset + sizeof (T)) > s.size ()) {
-				cThrow ("Not enough bytes");
+				cThrow ("Not enough bytes"sv);
 			}
 			else if (std::is_same<T, uint8_t>::value || std::is_same<T, int8_t>::value) {
 				return static_cast<T> (s[offset++]);
@@ -470,7 +430,7 @@ namespace shaga {
 				return static_cast<T> (_be_to_uint64 (s.data (), offset));
 			}
 			else {
-				cThrow ("Unknown data type");
+				cThrow ("Unknown data type"sv);
 			}
 		}
 
@@ -493,7 +453,7 @@ namespace shaga {
 				return static_cast<T> (_to_uint64 (s.data (), offset));
 			}
 			else {
-				cThrow ("Unknown data type");
+				cThrow ("Unknown data type"sv);
 			}
 		}
 
@@ -501,7 +461,7 @@ namespace shaga {
 		static inline uint32_t _be_to_uint24 (const S &s, size_t &offset)
 		{
 			if ((offset + 3) > s.size ()) {
-				cThrow ("Not enough bytes");
+				cThrow ("Not enough bytes"sv);
 			}
 			_be_le_data = s.data () + offset;
 			offset += 3;
@@ -517,7 +477,7 @@ namespace shaga {
 		static inline uint32_t _to_uint24 (const S &s, size_t &offset)
 		{
 			if ((offset + 3) > s.size ()) {
-				cThrow ("Not enough bytes");
+				cThrow ("Not enough bytes"sv);
 			}
 			_be_le_data = s.data () + offset;
 			offset += 3;

@@ -5,16 +5,17 @@ Copyright (c) 2012-2019, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_lite
-#define HEAD_shaga_lite
+#ifndef HEAD_shaga_lite_mt
+#define HEAD_shaga_lite_mt
 
 #ifdef SHAGA
-#error You must include either shaga.h or shagalite.h, not both
+#error You must include only one shaga*.h
 #endif // SHAGA
 
 #define SHAGA
 #define SHAGA_LITE
+#define SHAGA_MULTI_THREAD
 
 #include "shaga/common.h"
 
-#endif // HEAD_shaga_full
+#endif // HEAD_shaga_lite_mt

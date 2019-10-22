@@ -5,7 +5,6 @@ Copyright (c) 2012-2019, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#include <shaga.h>
 #include <gtest/gtest.h>
 
 using namespace shaga;

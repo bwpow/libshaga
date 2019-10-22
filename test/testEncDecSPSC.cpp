@@ -5,7 +5,6 @@ Copyright (c) 2012-2019, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#include <shaga.h>
 #include <gtest/gtest.h>
 
 using namespace shaga;
@@ -50,7 +49,7 @@ template<class T> static void _uart8spsc_sizes_test (void)
 			/* No more data */
 			break;
 		}
-		decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, available);
+		decodering.push_buffer (tempbuffer, available);
 		ASSERT_NO_THROW (encodering.move_front_buffer (available));
 	}
 
@@ -105,7 +104,7 @@ template<class T> static void _uart16spsc_sizes_test (void)
 			/* No more data */
 			break;
 		}
-		decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, available);
+		decodering.push_buffer (tempbuffer, available);
 		ASSERT_NO_THROW (encodering.move_front_buffer (available));
 	}
 
@@ -167,7 +166,7 @@ template<class T> static void _packet_sizes_test (void)
 			/* No more data */
 			break;
 		}
-		decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, available);
+		decodering.push_buffer (tempbuffer, available);
 		ASSERT_NO_THROW (encodering.move_front_buffer (available));
 	}
 
@@ -227,7 +226,7 @@ template<class T> static void _seqpacket_sizes_test (void)
 			/* No more data */
 			break;
 		}
-		decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, available);
+		decodering.push_buffer (tempbuffer, available);
 
 		/* If we try to move front buffer using different value, it should fail */
 		ASSERT_TRUE (available > 1);
@@ -288,7 +287,7 @@ template<class T> static void _uart8spsc_test (void)
 		tempbuffer[4] = STX;
 		tempbuffer[5] = NTX;
 		tempbuffer[6] = ETX; /* ETX right after NTX */
-		decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, 7);
+		decodering.push_buffer (tempbuffer, 7);
 
 		ASSERT_TRUE (decodering.get_err_count_reset () == 3);
 
@@ -307,7 +306,7 @@ template<class T> static void _uart8spsc_test (void)
 			}
 
 			/* Push to decodering */
-			ASSERT_NO_THROW (decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, available));
+			ASSERT_NO_THROW (decodering.push_buffer (tempbuffer, available));
 
 			/* Move read pointer */
 			ASSERT_NO_THROW (encodering.move_front_buffer (available));
@@ -397,7 +396,7 @@ template<class T> static void _uart16spsc_test (void)
 			}
 
 			/* Push to decodering */
-			ASSERT_NO_THROW (decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, available));
+			ASSERT_NO_THROW (decodering.push_buffer (tempbuffer, available));
 
 			/* Move read pointer */
 			ASSERT_NO_THROW (encodering.move_front_buffer (available));
@@ -463,7 +462,7 @@ template<class T> static void _packetspsc_test (void)
 			}
 
 			/* Push to decodering */
-			ASSERT_NO_THROW (decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, available));
+			ASSERT_NO_THROW (decodering.push_buffer (tempbuffer, available));
 
 			/* Move read pointer */
 			ASSERT_NO_THROW (encodering.move_front_buffer (available));

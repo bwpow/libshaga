@@ -4,51 +4,51 @@ TESTSRCDIR = test
 LIBSOURCES = $(wildcard $(SRCDIR)/*.cpp)
 TESTSOURCES = $(wildcard $(TESTSRCDIR)/*.cpp)
 
-FULLFLAGS = -s -Iinclude -include shaga.h
+FULLFLAGS = -s -Iinclude
 MT_FULLDIR = $(OBJDIR)/full_mt
-MT_FULLLIB = $(LIBDIR)/libshaga.a
+MT_FULLLIB = $(LIBDIR)/libshaga_mt.a
 MT_FULLOBJS = $(addprefix $(MT_FULLDIR)/, $(LIBSOURCES:.cpp=.o))
-MT_FULLFLAGS = -DSHAGA_MULTI_THREAD $(FULLFLAGS)
+MT_FULLFLAGS = $(FULLFLAGS) -include shaga_mt.h
 
 ST_FULLDIR = $(OBJDIR)/full_st
 ST_FULLLIB = $(LIBDIR)/libshaga_st.a
 ST_FULLOBJS = $(addprefix $(ST_FULLDIR)/, $(LIBSOURCES:.cpp=.o))
-ST_FULLFLAGS = -DSHAGA_SINGLE_THREAD $(FULLFLAGS)
+ST_FULLFLAGS = $(FULLFLAGS) -include shaga_st.h
 
-LITEFLAGS = -s -Iinclude -include shagalite.h
+LITEFLAGS = -s -Iinclude
 MT_LITEDIR = $(OBJDIR)/lite_mt
-MT_LITELIB = $(LIBDIR)/libshagalite.a
+MT_LITELIB = $(LIBDIR)/libshagalite_mt.a
 MT_LITEOBJS = $(addprefix $(MT_LITEDIR)/, $(LIBSOURCES:.cpp=.o))
-MT_LITEFLAGS = -DSHAGA_MULTI_THREAD $(LITEFLAGS)
+MT_LITEFLAGS = $(LITEFLAGS) -include shagalite_mt.h
 
 ST_LITEDIR = $(OBJDIR)/lite_st
 ST_LITELIB = $(LIBDIR)/libshagalite_st.a
 ST_LITEOBJS = $(addprefix $(ST_LITEDIR)/, $(LIBSOURCES:.cpp=.o))
-ST_LITEFLAGS = -DSHAGA_SINGLE_THREAD $(LITEFLAGS)
+ST_LITEFLAGS = $(LITEFLAGS) -include shagalite_st.h
 
-DEBUGFLAGS = -g -Iinclude -include shaga.h
+DEBUGFLAGS = -g -Iinclude
 MT_DEBUGDIR = $(OBJDIR)/debug_mt
-MT_DEBUGLIB = $(LIBDIR)/libshaga_debug.a
+MT_DEBUGLIB = $(LIBDIR)/libshaga_mt_debug.a
 MT_DEBUGOBJS = $(addprefix $(MT_DEBUGDIR)/, $(LIBSOURCES:.cpp=.o))
-MT_DEBUGFLAGS = -DSHAGA_MULTI_THREAD $(DEBUGFLAGS)
+MT_DEBUGFLAGS = $(DEBUGFLAGS) -include shaga_mt.h
 
 ST_DEBUGDIR = $(OBJDIR)/debug_st
 ST_DEBUGLIB = $(LIBDIR)/libshaga_st_debug.a
 ST_DEBUGOBJS = $(addprefix $(ST_DEBUGDIR)/, $(LIBSOURCES:.cpp=.o))
-ST_DEBUGFLAGS = -DSHAGA_SINGLE_THREAD $(DEBUGFLAGS)
+ST_DEBUGFLAGS = $(DEBUGFLAGS) -include shaga_st.h
 
 TESTFLAGS = -g -Iinclude
 TESTLIBS = -lgtest
 MT_TESTDIR = $(OBJDIR)/test_mt
 MT_TESTBIN = $(BINDIR)/test_mt.$(BINEXT)
 MT_TESTOBJS = $(addprefix $(MT_TESTDIR)/, $(TESTSOURCES:.cpp=.o))
-MT_TESTFLAGS = -DSHAGA_MULTI_THREAD $(TESTFLAGS)
+MT_TESTFLAGS = $(TESTFLAGS) -include shaga_mt.h
 MT_TESTLIBS = $(TESTLIBS)
 
 ST_TESTDIR = $(OBJDIR)/test_st
 ST_TESTBIN = $(BINDIR)/test_st.$(BINEXT)
 ST_TESTOBJS = $(addprefix $(ST_TESTDIR)/, $(TESTSOURCES:.cpp=.o))
-ST_TESTFLAGS = -DSHAGA_SINGLE_THREAD $(TESTFLAGS)
+ST_TESTFLAGS = $(TESTFLAGS) -include shaga_st.h
 ST_TESTLIBS = $(TESTLIBS)
 
 .PHONY: all lib test prep clean distclean remake debug_mt debug_st full_mt full_st lite_mt lite_st test_mt test_st install install_debug
@@ -70,7 +70,6 @@ prep:
 	$(MKDIR) $(ST_TESTDIR)/$(TESTSRCDIR)
 	$(MKDIR) $(LIBDIR)
 	$(MKDIR) $(BINDIR)
-	$(SYNC)
 
 clean:
 	$(RM) -f $(MT_FULLLIB) $(MT_FULLOBJS) $(MT_LITELIB) $(MT_LITEOBJS) $(MT_DEBUGLIB) $(MT_DEBUGOBJS) $(MT_TESTBIN) $(MT_TESTOBJS)
@@ -81,13 +80,13 @@ distclean: clean
 	$(RM) -rf $(OBJDIR)/
 	$(RM) -rf $(BINDIR)/
 
-remake: clean all
+remake: | clean all
 
 #############################################################################
 ## DEBUG                                                                   ##
 #############################################################################
 # Multi thread
-debug_mt: prep $(MT_DEBUGLIB)
+debug_mt: | prep $(MT_DEBUGLIB)
 
 $(MT_DEBUGLIB): $(MT_DEBUGOBJS)
 	$(AR) rcsD $@ $^
@@ -96,7 +95,7 @@ $(MT_DEBUGDIR)/%.o:%.cpp
 	$(GPP) $(MT_CPPFLAGS) $(MT_DEBUGFLAGS) -c $< -o $@
 
 # Single thread
-debug_st: prep $(ST_DEBUGLIB)
+debug_st: | prep $(ST_DEBUGLIB)
 
 $(ST_DEBUGLIB): $(ST_DEBUGOBJS)
 	$(AR) rcsD $@ $^
@@ -108,7 +107,7 @@ $(ST_DEBUGDIR)/%.o:%.cpp
 ## FULL                                                                    ##
 #############################################################################
 # Multi thread
-full_mt: prep $(MT_FULLLIB)
+full_mt: | prep $(MT_FULLLIB)
 
 $(MT_FULLLIB): $(MT_FULLOBJS)
 	$(AR) rcsD $@ $^
@@ -117,7 +116,7 @@ $(MT_FULLDIR)/%.o:%.cpp
 	$(GPP) $(MT_CPPFLAGS) $(MT_FULLFLAGS) -c $< -o $@
 
 # Single thread
-full_st: prep $(ST_FULLLIB)
+full_st: | prep $(ST_FULLLIB)
 
 $(ST_FULLLIB): $(ST_FULLOBJS)
 	$(AR) rcsD $@ $^
@@ -129,7 +128,7 @@ $(ST_FULLDIR)/%.o:%.cpp
 ## LITE                                                                    ##
 #############################################################################
 # Multi thread
-lite_mt: prep $(MT_LITELIB)
+lite_mt: | prep $(MT_LITELIB)
 
 $(MT_LITELIB): $(MT_LITEOBJS)
 	$(AR) rcsD $@ $^
@@ -138,7 +137,7 @@ $(MT_LITEDIR)/%.o:%.cpp
 	$(GPP) $(MT_CPPFLAGS) $(MT_LITEFLAGS) -c $< -o $@
 
 # Single thread
-lite_st: prep $(ST_LITELIB)
+lite_st: | prep $(ST_LITELIB)
 
 $(ST_LITELIB): $(ST_LITEOBJS)
 	$(AR) rcsD $@ $^
@@ -150,7 +149,7 @@ $(ST_LITEDIR)/%.o:%.cpp
 ## TEST                                                                    ##
 #############################################################################
 # Multi thread
-test_mt: debug_mt $(MT_TESTBIN)
+test_mt: | debug_mt $(MT_TESTBIN)
 
 $(MT_TESTBIN): $(MT_TESTOBJS) $(MT_DEBUGLIB)
 	$(GPP) $(MT_LDFLAGS) $(MT_TESTFLAGS) $^ $(MT_LIBS) $(MT_TESTLIBS) -o $@
@@ -159,7 +158,7 @@ $(MT_TESTDIR)/%.o:%.cpp
 	$(GPP) $(MT_CPPFLAGS) $(MT_TESTFLAGS) -c $< -o $@
 
 # Single thread
-test_st: debug_st $(ST_TESTBIN)
+test_st: | debug_st $(ST_TESTBIN)
 
 $(ST_TESTBIN): $(ST_TESTOBJS) $(ST_DEBUGLIB)
 	$(GPP) $(ST_LDFLAGS) $(ST_TESTFLAGS) $^ $(ST_LIBS) $(ST_TESTLIBS) -o $@

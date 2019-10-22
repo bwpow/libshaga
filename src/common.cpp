@@ -9,28 +9,32 @@ All rights reserved.
 
 namespace shaga {
 
-	#ifdef SHAGA_THREADING
-		#pragma message "Threading support: YES"
-		const bool _shaga_compiled_with_threading {true};
-	#else
-		#pragma message "Threading support: NO"
-		const bool _shaga_compiled_with_threading {false};
-	#endif // SHAGA_THREADING
-
 	#if BYTE_ORDER == LITTLE_ENDIAN
+		const bool _shaga_compiled_little_endian {true};
 		#pragma message "Endian: LITTLE"
 	#elif BYTE_ORDER == BIG_ENDIAN
+		const bool _shaga_compiled_little_endian {false};
 		#pragma message "Endian: BIG"
 	#else
-		#pragma message "Endian: Runtime detection"
+		#error Unable to detect version of the library
+	#endif
+
+	#if defined SHAGA_MULTI_THREAD
+		const bool _shaga_compiled_with_threading {true};
+		#pragma message "Threading support: YES"
+	#elif defined SHAGA_SINGLE_THREAD
+		const bool _shaga_compiled_with_threading {false};
+		#pragma message "Threading support: NO"
+	#else
+		#error Unable to detect version of the library
 	#endif
 
 	#if defined SHAGA_LITE
-		#pragma message "Version: LITE"
 		const bool _shaga_compiled_full {false};
+		#pragma message "Version: LITE"
 	#elif defined SHAGA_FULL
-		#pragma message "Version: FULL"
 		const bool _shaga_compiled_full {true};
+		#pragma message "Version: FULL"
 	#else
 		#error Unable to detect version of the library
 	#endif
