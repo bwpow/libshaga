@@ -11,6 +11,8 @@ All rights reserved.
 	#include <glob.h>
 #endif // OS_WIN
 
+#include <utime.h>
+
 namespace shaga {
 
 	std::string FS::realpath ([[maybe_unused]] const std::string_view path, [[maybe_unused]] const bool strip_fname)
@@ -130,6 +132,27 @@ namespace shaga {
 			cThrow ("Unable to stat '{}': {}"sv, fname, strerror (errno));
 		}
 		return ret;
+	}
+
+	void FS::touch (const std::string_view fname, const time_t timestamp)
+	{
+		int ret;
+		if (!is_file (fname)) {
+			ShFile file (fname, ShFile::mBRANDNEW);
+		}
+		if (0 == timestamp || std::numeric_limits<time_t>::max() == timestamp) {
+			ret = ::utime (s_c_str (fname), nullptr);
+		}
+		else {
+			struct utimbuf ts;
+			::memset (&ts, 0, sizeof (ts));
+			ts.actime = timestamp;
+			ts.modtime = timestamp;
+			ret = ::utime (s_c_str (fname), &ts);
+		}
+		if (0 != ret) {
+			cThrow ("Unable to touch '{}': {}"sv, fname, strerror (errno));
+		}
 	}
 
 	void FS::glob ([[maybe_unused]] const std::string_view pattern, [[maybe_unused]] GLOB_CALLBACK callback)

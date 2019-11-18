@@ -7,10 +7,6 @@ All rights reserved.
 *******************************************************************************/
 #include "shaga/common.h"
 
-#include <cstdarg>
-#include <climits>
-#include <sys/stat.h>
-
 #ifndef OS_WIN
 	#include <syslog.h>
 #endif // OS_WIN
@@ -23,26 +19,22 @@ namespace shaga::P {
 	static const off64_t _bytes_per_mb {1'024 * 1'024};
 
 	static bool _printf_ms {false};
+	static bool _use_gmtime {false};
 
 	static bool _check_size {false};
-	static bool _soft_limit_reached {false};
+	static volatile bool _soft_limit_reached {false};
 	static off64_t _limit_soft {0};
 	static off64_t _limit_hard {0};
 
 	#ifdef SHAGA_THREADING
 		static std::mutex _print_mutex;
 		static std::mutex _p_cache_mutex;
-
-		static volatile bool _disabled_permanently {false};
-		static volatile bool _disabled_temporarily {false};
-		static volatile bool _enabled {false};
-		static volatile bool _debug_enabled {false};
-	#else
-		static bool _disabled_permanently {false};
-		static bool _disabled_temporarily {false};
-		static bool _enabled {false};
-		static bool _debug_enabled {false};
 	#endif // SHAGA_THREADING
+
+	static volatile bool _disabled_permanently {false};
+	static volatile bool _disabled_temporarily {false};
+	static volatile bool _enabled {false};
+	static volatile bool _debug_enabled {false};
 
 	static COMMON_DEQUE _dir_log;
 	static size_t _dir_log_pos {0};
@@ -59,31 +51,83 @@ namespace shaga::P {
 
 	static ShFile _printf_file;
 	static COMMON_DEQUE _printf_entries;
+
+	static uint64_t _p_cache_rt {UINT64_MAX};
+	static time_t _p_cache_theTime {-1};
+	static struct tm _p_cache_local_tm;
+	static size_t _p_cache_time_sze {0};
+	static size_t _p_cache_fname_sze {0};
+
+	static void _p_clear_cache (void)
+	{
+		_printf_file.close ();
+		_p_cache_rt = UINT64_MAX;
+		_p_cache_theTime = -1;
+		_p_cache_time_sze = 0;
+		_p_cache_fname_sze = 0;
+	}
+
+	static void _p_cache_scan_directories (void)
+	{
+		if (_dir_log_enum != _DirLogEnum::FILE) {
+			cThrow ("Logging is not set to output to files"sv);
+		}
+
+		_dir_log_pos = SIZE_MAX;
+		for (size_t pos = 0; pos < _dir_log.size (); ++pos) {
+			if (FS::is_dir (_dir_log[pos])) {
+				_dir_log_pos = pos;
+				return;
+			}
+		}
+
+		cThrow ("All directories in list are unavailable"sv);
+	}
 }
 
 namespace shaga
 {
 	void P::set_dir_log (const std::string_view var)
 	{
+		#ifdef SHAGA_THREADING
+		std::lock_guard<std::mutex> lock (_print_mutex);
+		#endif // SHAGA_THREADING
+
 		_dir_log.empty ();
 		_dir_log.emplace_back (var);
 		_dir_log_pos = 0;
+
+		_p_clear_cache ();
 	}
 
 	void P::set_dir_log (const COMMON_DEQUE &lst)
 	{
+		#ifdef SHAGA_THREADING
+		std::lock_guard<std::mutex> lock (_print_mutex);
+		#endif // SHAGA_THREADING
+
 		_dir_log.empty ();
 		std::copy (lst.cbegin (), lst.cend (), std::back_inserter (_dir_log));
 		_dir_log_pos = 0;
+
+		_p_clear_cache ();
 	}
 
 	void P::set_name_log (const std::string_view var)
 	{
+		#ifdef SHAGA_THREADING
+		std::lock_guard<std::mutex> lock (_print_mutex);
+		#endif // SHAGA_THREADING
+
 		_name_log.assign (var);
 	}
 
 	void P::set_app_name (const std::string_view var)
 	{
+		#ifdef SHAGA_THREADING
+		std::lock_guard<std::mutex> lock (_print_mutex);
+		#endif // SHAGA_THREADING
+
 		_app_name.assign (var);
 	}
 
@@ -91,6 +135,10 @@ namespace shaga
 
 	void P::check_size (const bool enabled) noexcept
 	{
+		#ifdef SHAGA_THREADING
+		std::lock_guard<std::mutex> lock (_print_mutex);
+		#endif // SHAGA_THREADING
+
 		_check_size = enabled;
 		if (enabled == false) {
 			_soft_limit_reached = false;
@@ -99,6 +147,10 @@ namespace shaga
 
 	void P::set_max_size_mb (const int soft, const int hard) noexcept
 	{
+		#ifdef SHAGA_THREADING
+		std::lock_guard<std::mutex> lock (_print_mutex);
+		#endif // SHAGA_THREADING
+
 		_limit_soft = static_cast<off64_t> (soft) * _bytes_per_mb;
 		_limit_hard = static_cast<off64_t> (hard) * _bytes_per_mb;
 		_soft_limit_reached = false;
@@ -117,23 +169,15 @@ namespace shaga
 		std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
-		if (_dir_log_enum != _DirLogEnum::FILE) {
-			cThrow ("Logging is not set to output to files");
-		}
-
-		_dir_log_pos = SIZE_MAX;
-		for (size_t pos = 0; pos < _dir_log.size (); ++pos) {
-			if (FS::is_dir (_dir_log[pos])) {
-				_dir_log_pos = pos;
-				return;
-			}
-		}
-
-		cThrow ("All directories in list are unavailable");
+		_p_cache_scan_directories ();
+		_p_clear_cache ();
 	}
 
 	void P::set_enabled (const bool enabled)
 	{
+		#ifdef SHAGA_THREADING
+		std::lock_guard<std::mutex> lock (_print_mutex);
+		#endif // SHAGA_THREADING
 
 		if (enabled) {
 			if (_dir_log.empty () || _dir_log.front().empty () ||  _name_log.empty () || _app_name.empty ()) {
@@ -151,16 +195,32 @@ namespace shaga
 			}
 			else {
 				_dir_log_enum = _DirLogEnum::FILE;
-				rescan_available_directories ();
+				_p_cache_scan_directories ();
 			}
+
+			_p_clear_cache ();
 		}
 		_enabled = enabled;
-		_printf_file.close ();
 	}
 
 	void P::show_ms (const bool enabled) noexcept
 	{
+		#ifdef SHAGA_THREADING
+		std::lock_guard<std::mutex> lock (_print_mutex);
+		#endif // SHAGA_THREADING
+
 		_printf_ms = enabled;
+		_p_clear_cache ();
+	}
+
+	void P::use_gmt (const bool enabled) noexcept
+	{
+		#ifdef SHAGA_THREADING
+		std::lock_guard<std::mutex> lock (_print_mutex);
+		#endif // SHAGA_THREADING
+
+		_use_gmtime = enabled;
+		_p_clear_cache ();
 	}
 
 	bool P::is_enabled (void) noexcept
@@ -202,62 +262,76 @@ namespace shaga
 		std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
-		struct tm local_tm;
-		size_t sze;
+		const uint64_t rt = (true == _printf_ms) ? get_realtime_msec () : 0;
+		const time_t theTime = (rt > 0) ? (rt / 1'000) : get_realtime_sec ();
 
-		{
-			const uint64_t rt = (true == _printf_ms) ? get_realtime_msec () : 0;
-			const time_t theTime = (rt > 0) ? (rt / 1'000) : get_realtime_sec ();
+		if (rt != _p_cache_rt || theTime != _p_cache_theTime) {
+			_p_cache_rt = rt;
+			_p_cache_theTime = theTime;
 
-			::memset (&local_tm, 0, sizeof (local_tm));
-			::localtime_r (&theTime, &local_tm);
+			::memset (&_p_cache_local_tm, 0, sizeof (_p_cache_local_tm));
+			if (true == _use_gmtime) {
+				::gmtime_r (&theTime, &_p_cache_local_tm);
+			}
+			else {
+				::localtime_r (&theTime, &_p_cache_local_tm);
+			}
 
 #ifndef OS_WIN
 			if (true == _printf_ms) {
-				sze = fmt::format_to_n (_p_cache_time.begin (), _p_cache_time.size (), "{:04}-{:02}-{:02} {:02}:{:02}:{:02d}.{:03} {} : "sv,
-					local_tm.tm_year + 1900,
-					local_tm.tm_mon + 1,
-					local_tm.tm_mday,
-					local_tm.tm_hour,
-					local_tm.tm_min,
-					local_tm.tm_sec,
+				_p_cache_time_sze = fmt::format_to_n (_p_cache_time.begin (), _p_cache_time.size (), "{:04}-{:02}-{:02} {:02}:{:02}:{:02d}.{:03} {} : "sv,
+					_p_cache_local_tm.tm_year + 1900,
+					_p_cache_local_tm.tm_mon + 1,
+					_p_cache_local_tm.tm_mday,
+					_p_cache_local_tm.tm_hour,
+					_p_cache_local_tm.tm_min,
+					_p_cache_local_tm.tm_sec,
 					rt % 1'000,
-					local_tm.tm_zone).size;
+					_p_cache_local_tm.tm_zone).size;
 			}
 			else {
-				sze = fmt::format_to_n (_p_cache_time.begin (), _p_cache_time.size (), "{:04}-{:02}-{:02} {:02}:{:02}:{:02d} {} : "sv,
-					local_tm.tm_year + 1900,
-					local_tm.tm_mon + 1,
-					local_tm.tm_mday,
-					local_tm.tm_hour,
-					local_tm.tm_min,
-					local_tm.tm_sec,
-					local_tm.tm_zone).size;
+				_p_cache_time_sze = fmt::format_to_n (_p_cache_time.begin (), _p_cache_time.size (), "{:04}-{:02}-{:02} {:02}:{:02}:{:02d} {} : "sv,
+					_p_cache_local_tm.tm_year + 1900,
+					_p_cache_local_tm.tm_mon + 1,
+					_p_cache_local_tm.tm_mday,
+					_p_cache_local_tm.tm_hour,
+					_p_cache_local_tm.tm_min,
+					_p_cache_local_tm.tm_sec,
+					_p_cache_local_tm.tm_zone).size;
 			}
 #else
 			if (true == _printf_ms) {
-				sze = fmt::format_to_n (_p_cache_time.begin (), _p_cache_time.size (), "{:04}-{:02}-{:02} {:02}:{:02}:{:02d}.{:03} : "sv,
-					local_tm.tm_year + 1900,
-					local_tm.tm_mon + 1,
-					local_tm.tm_mday,
-					local_tm.tm_hour,
-					local_tm.tm_min,
-					local_tm.tm_sec,
+				_p_cache_time_sze = fmt::format_to_n (_p_cache_time.begin (), _p_cache_time.size (), "{:04}-{:02}-{:02} {:02}:{:02}:{:02d}.{:03} : "sv,
+					_p_cache_local_tm.tm_year + 1900,
+					_p_cache_local_tm.tm_mon + 1,
+					_p_cache_local_tm.tm_mday,
+					_p_cache_local_tm.tm_hour,
+					_p_cache_local_tm.tm_min,
+					_p_cache_local_tm.tm_sec,
 					rt % 1'000).size;
 			}
 			else {
-				sze = fmt::format_to_n (_p_cache_time.begin (), _p_cache_time.size (), "{:04}-{:02}-{:02} {:02}:{:02}:{:02d} : "sv,
-					local_tm.tm_year + 1900,
-					local_tm.tm_mon + 1,
-					local_tm.tm_mday,
-					local_tm.tm_hour,
-					local_tm.tm_min,
-					local_tm.tm_sec).size;
+				_p_cache_time_sze = fmt::format_to_n (_p_cache_time.begin (), _p_cache_time.size (), "{:04}-{:02}-{:02} {:02}:{:02}:{:02d} : "sv,
+					_p_cache_local_tm.tm_year + 1900,
+					_p_cache_local_tm.tm_mon + 1,
+					_p_cache_local_tm.tm_mday,
+					_p_cache_local_tm.tm_hour,
+					_p_cache_local_tm.tm_min,
+					_p_cache_local_tm.tm_sec).size;
+			}
+
+			if (_DirLogEnum::FILE == _dir_log_enum) {
+				_p_cache_fname_sze = fmt::format_to_n (_p_cache_fname.begin (), _p_cache_fname.size (), "{}/{}_{:04}-{:02}-{:02}.log"sv,
+					_dir_log.at (_dir_log_pos),
+					_name_log,
+					_p_cache_local_tm.tm_year + 1900,
+					_p_cache_local_tm.tm_mon + 1,
+					_p_cache_local_tm.tm_mday).size;
 			}
 #endif // OS_WIN
 		}
 
-		const std::string_view str_time (_p_cache_time.data (), std::min (sze, _p_cache_time.size ()));
+		const std::string_view str_time (_p_cache_time.data (), std::min (_p_cache_time_sze, _p_cache_time.size ()));
 
 #ifndef OS_WIN
 		if (_DirLogEnum::SYSLOG == _dir_log_enum) {
@@ -284,14 +358,7 @@ namespace shaga
 		}
 
 		if (_DirLogEnum::FILE == _dir_log_enum) {
-			sze = fmt::format_to_n (_p_cache_fname.begin (), _p_cache_fname.size (), "{}/{}_{:04}-{:02}-{:02}.log"sv,
-				_dir_log.at (_dir_log_pos),
-				_name_log,
-				local_tm.tm_year + 1900,
-				local_tm.tm_mon + 1,
-				local_tm.tm_mday).size;
-
-			const std::string_view str_fname (_p_cache_fname.data (), std::min (sze, _p_cache_fname.size ()));
+			const std::string_view str_fname (_p_cache_fname.data (), std::min (_p_cache_fname_sze, _p_cache_fname.size ()));
 
 			[[maybe_unused]] bool dumped_message {false};
 

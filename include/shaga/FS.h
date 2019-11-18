@@ -34,6 +34,8 @@ namespace shaga::FS {
 
 	int stat (const std::string_view fname, struct stat *buf, const bool should_throw = false);
 
+	void touch (const std::string_view fname, const time_t timestamp = std::numeric_limits<time_t>::max());
+
 	void glob (const std::string_view pattern, GLOB_CALLBACK callback);
 
 	template <typename T>

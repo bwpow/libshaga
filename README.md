@@ -11,11 +11,26 @@ Basic fields covered by this library:
 * Argument parsing
 * Chunk operations
 * Digital signatures (using [mbed TLS](https://tls.mbed.org/))
-* CRC
+* CRC, SipHash
 * Single producer single consumer queues
-* Possibility to compile without multithreading
+* Possibility to compile with or without multithreading support
 
 There is a full and lite version of the library. Lite version should compile without additional libraries. Full version requires [mbed TLS](https://tls.mbed.org/).
+
+## Usage
+Four static libraries are produced. There are also four header files, that are to be used with these libraries:
+* Full multi-thread:
+	- Header: shaga_mt.h
+	- Library: libshaga_mt.a
+* Full single-thread:
+	- Header: shaga_st.h
+	- Library: libshaga_st.a
+* Lite multi-thread (without mbedTLS):
+	- Header: shagalite_mt.h
+	- Library: libshagalite_mt.a
+* Lite single-thread (without mbedTLS):
+	- Header: shagalite_st.h
+	- Library: libshagalite_st.a
 
 ## History
 The library was developer as an internal project in 2012. Since then, it has been updated and modified several times, from C++98, C++03, C++11, C++14 to current C++17.
