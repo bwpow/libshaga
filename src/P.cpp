@@ -36,7 +36,7 @@ namespace shaga::P {
 	static volatile bool _enabled {false};
 	static volatile bool _debug_enabled {false};
 
-	static COMMON_DEQUE _dir_log;
+	static COMMON_VECTOR _dir_log;
 	static size_t _dir_log_pos {0};
 
 	static std::string _name_log;
@@ -83,6 +83,21 @@ namespace shaga::P {
 
 		cThrow ("All directories in list are unavailable"sv);
 	}
+
+	template <typename T>
+	static void _set_dir_log (const T &lst)
+	{
+		#ifdef SHAGA_THREADING
+		std::lock_guard<std::mutex> lock (_print_mutex);
+		#endif // SHAGA_THREADING
+
+		_dir_log.clear ();
+		std::copy (lst.cbegin (), lst.cend (), std::back_inserter (_dir_log));
+		_dir_log_pos = 0;
+
+		_p_clear_cache ();
+	}
+
 }
 
 namespace shaga
@@ -93,7 +108,7 @@ namespace shaga
 		std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
-		_dir_log.empty ();
+		_dir_log.clear ();
 		_dir_log.emplace_back (var);
 		_dir_log_pos = 0;
 
@@ -102,15 +117,17 @@ namespace shaga
 
 	void P::set_dir_log (const COMMON_DEQUE &lst)
 	{
-		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_print_mutex);
-		#endif // SHAGA_THREADING
+		_set_dir_log (lst);
+	}
 
-		_dir_log.empty ();
-		std::copy (lst.cbegin (), lst.cend (), std::back_inserter (_dir_log));
-		_dir_log_pos = 0;
+	void P::set_dir_log (const COMMON_LIST &lst)
+	{
+		_set_dir_log (lst);
+	}
 
-		_p_clear_cache ();
+	void P::set_dir_log (const COMMON_VECTOR &lst)
+	{
+		_set_dir_log (lst);
 	}
 
 	void P::set_name_log (const std::string_view var)
@@ -197,10 +214,9 @@ namespace shaga
 				_dir_log_enum = _DirLogEnum::FILE;
 				_p_cache_scan_directories ();
 			}
-
-			_p_clear_cache ();
 		}
 		_enabled = enabled;
+		_p_clear_cache ();
 	}
 
 	void P::show_ms (const bool enabled) noexcept
@@ -319,6 +335,7 @@ namespace shaga
 					_p_cache_local_tm.tm_min,
 					_p_cache_local_tm.tm_sec).size;
 			}
+#endif // OS_WIN
 
 			if (_DirLogEnum::FILE == _dir_log_enum) {
 				_p_cache_fname_sze = fmt::format_to_n (_p_cache_fname.begin (), _p_cache_fname.size (), "{}/{}_{:04}-{:02}-{:02}.log"sv,
@@ -328,7 +345,6 @@ namespace shaga
 					_p_cache_local_tm.tm_mon + 1,
 					_p_cache_local_tm.tm_mday).size;
 			}
-#endif // OS_WIN
 		}
 
 		const std::string_view str_time (_p_cache_time.data (), std::min (_p_cache_time_sze, _p_cache_time.size ()));

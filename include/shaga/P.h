@@ -31,7 +31,11 @@ namespace shaga::P {
 	typedef std::array<char, 256> P_CACHE_TYPE;
 
 	void set_dir_log (const std::string_view var);
+
 	void set_dir_log (const COMMON_DEQUE &lst);
+	void set_dir_log (const COMMON_LIST &lst);
+	void set_dir_log (const COMMON_VECTOR &lst);
+
 	void set_name_log (const std::string_view var);
 	void set_app_name (const std::string_view var);
 
