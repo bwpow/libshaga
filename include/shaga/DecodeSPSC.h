@@ -58,7 +58,7 @@ namespace shaga {
 				#ifdef OS_LINUX
 				const ssize_t sze = ::read (this->_eventfd, &_eventfd_read_val, sizeof (_eventfd_read_val));
 				if (sze < 0) {
-					if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+					if (errno == EWOULDBLOCK) {
 						return false;
 					}
 					cThrow ("{}: Error reading from notice eventfd: {}"sv, this->_name, strerror (errno));
@@ -114,8 +114,11 @@ namespace shaga {
 				#endif // SHAGA_THREADING
 
 				#ifdef OS_LINUX
-				if (::write (_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)) < 0) {
+				if (const ssize_t ret = ::write (_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)); ret < 0) {
 					cThrow ("{}: Error writing to eventfd: {}"sv, _name, strerror (errno));
+				}
+				else if (ret != sizeof (_eventfd_write_val)) {
+					cThrow ("{}: Error writing to eventfd: Unknown error"sv, _name);
 				}
 				#endif // OS_LINUX
 

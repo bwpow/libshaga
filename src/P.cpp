@@ -87,6 +87,10 @@ namespace shaga::P {
 	template <typename T>
 	static void _set_dir_log (const T &lst)
 	{
+		if (lst.empty () == true) {
+			return;
+		}
+
 		#ifdef SHAGA_THREADING
 		std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING

@@ -19,14 +19,6 @@ namespace shaga {
 
 	template<class T> class EncodeSPSC
 	{
-		private:
-			#ifdef OS_LINUX
-				int _eventfd {-1};
-				SHARED_SOCKET _event_sock;
-				uint64_t _eventfd_write_val {0};
-				uint64_t _eventfd_read_val {0};
-			#endif // OS_LINUX
-
 		protected:
 			const uint_fast32_t _max_packet_size;
 			const uint_fast32_t _num_packets;
@@ -40,35 +32,25 @@ namespace shaga {
 			#ifdef SHAGA_THREADING
 				std::atomic<uint_fast32_t> _pos_read {0};
 				std::atomic<uint_fast32_t> _pos_write {0};
+				std::atomic<uint_fast32_t> _stored_bytes {0};
 			#else
 				volatile uint_fast32_t _pos_read {0};
 				volatile uint_fast32_t _pos_write {0};
+				volatile uint_fast32_t _stored_bytes {0};
 			#endif // SHAGA_THREADING
-
-			virtual uint_fast32_t read_eventfd (void) final
-			{
-				#ifdef OS_LINUX
-					const ssize_t sze = ::read (_eventfd, &_eventfd_read_val, sizeof (_eventfd_read_val));
-					if (sze < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
-						cThrow ("{}: Error reading from notice eventfd: {}"sv, this->_name, strerror (errno));
-					}
-					return static_cast<uint_fast32_t> (_eventfd_read_val);
-				#else
-					return 0;
-				#endif // OS_LINUX
-			}
 
 			virtual void push (void) final
 			{
 				#ifdef SHAGA_THREADING
-					uint_fast32_t next = _pos_write.load (std::memory_order_relaxed) + 1;
+					uint_fast32_t next = _pos_write.load (std::memory_order::memory_order_relaxed) + 1;
 					RING (next);
 
-					if (next == _pos_read.load (std::memory_order_acquire)) {
+					if (next == _pos_read.load (std::memory_order::memory_order_acquire)) {
 						cThrow ("{}: Ring full"sv, _name);
 					}
 
-					_pos_write.store (next, std::memory_order_release);
+					_pos_write.store (next, std::memory_order::memory_order_relaxed);
+					_stored_bytes.fetch_add (_curdata->size (), std::memory_order::memory_order_seq_cst);
 				#else
 					uint_fast32_t next = _pos_write + 1;
 					RING (next);
@@ -78,14 +60,8 @@ namespace shaga {
 					}
 
 					_pos_write = next;
+					_stored_bytes += _curdata->size ();
 				#endif // SHAGA_THREADING
-
-				#ifdef OS_LINUX
-					_eventfd_write_val = _curdata->size ();
-					if (::write (_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)) < 0) {
-						cThrow ("{}: Error writing to eventfd: {}"sv, _name, strerror (errno));
-					}
-				#endif // OS_LINUX
 
 				_curdata = _data[next].get ();
 			}
@@ -97,31 +73,23 @@ namespace shaga {
 				_max_packet_size (max_packet_size),
 				_num_packets (num_packets)
 			{
+				this->_name.assign (typeid (*this).name ());
+
 				if (_num_packets < 2) {
 					cThrow ("{}: Ring size must be at least 2"sv, _name);
 				}
 
-				_data.reserve (_num_packets);
-				for (uint_fast32_t i = 0; i < num_packets; i++) {
-					_data.push_back (std::make_unique<T> (_max_packet_size));
+				this->_data.reserve (_num_packets);
+				for (uint_fast32_t i = 0; i < _num_packets; i++) {
+					this->_data.push_back (std::make_unique<T> (_max_packet_size));
 				}
-				_curdata = _data.front ().get ();
-
-				#ifdef OS_LINUX
-				_eventfd = eventfd (0, EFD_NONBLOCK);
-				if (_eventfd < 0) {
-					cThrow ("{}: Unable to init eventfd: {}"sv, _name, strerror (errno));
-				}
-				_event_sock = std::make_shared<ShSocket> (_eventfd);
-				#endif // OS_LINUX
-
-				_name.assign (typeid (*this).name ());
+				this->_curdata = this->_data.front ().get ();
 			}
 
 			virtual ~EncodeSPSC ()
 			{
-				_curdata = nullptr;
-				_data.clear ();
+				this->_curdata = nullptr;
+				this->_data.clear ();
 			}
 
 			/* Disable copy and assignment */
@@ -130,30 +98,28 @@ namespace shaga {
 
 			virtual void set_name (const std::string_view name) final
 			{
-				_name.assign (name);
+				this->_name.assign (name);
 			}
 
-			#ifdef OS_LINUX
-			virtual int get_eventfd (void) const final
+			virtual uint_fast32_t get_stored_bytes (void) const final
 			{
-				return _eventfd;
+				#ifdef SHAGA_THREADING
+					return this->_stored_bytes.load (std::memory_order_relaxed);
+				#else
+					return this->_stored_bytes;
+				#endif // SHAGA_THREADING
 			}
-
-			virtual SHARED_SOCKET get_event_socket (void) final
-			{
-				return _event_sock;
-			}
-			#endif // OS_LINUX
 
 			virtual bool empty (void) const final
 			{
 				#ifdef SHAGA_THREADING
-					const uint_fast32_t now_read = _pos_read.load (std::memory_order_relaxed);
-					const uint_fast32_t now_write = _pos_write.load (std::memory_order_acquire);
+					const uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
+					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
 				#else
-					const uint_fast32_t now_read = _pos_read;
-					const uint_fast32_t now_write = _pos_write;
+					const uint_fast32_t now_read = this->_pos_read;
+					const uint_fast32_t now_write = this->_pos_write;
 				#endif // SHAGA_THREADING
+
 				return (now_read == now_write);
 			}
 
@@ -195,7 +161,6 @@ namespace shaga {
 	{
 		private:
 			uint_fast32_t _read_offset {0};
-			uint_fast32_t _remaining_total {0};
 
 		public:
 			ContStreamEncodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets) :
@@ -204,11 +169,6 @@ namespace shaga {
 
 			virtual void clear (void) override final
 			{
-				#ifdef OS_LINUX
-					this->read_eventfd ();
-					_remaining_total = 0;
-				#endif // OS_LINUX
-
 				#ifdef SHAGA_THREADING
 					uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
 					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
@@ -225,21 +185,27 @@ namespace shaga {
 
 				_read_offset = 0;
 				#ifdef SHAGA_THREADING
-					this->_pos_read.store (now_read, std::memory_order_release);
+					this->_pos_read.store (now_read, std::memory_order::memory_order_relaxed);
+					this->_stored_bytes.store (0, std::memory_order::memory_order_release);
 				#else
 					this->_pos_read = now_read;
+					this->_stored_bytes = 0;
 				#endif // SHAGA_THREADING
 			}
 
 			virtual uint_fast32_t fill_front_buffer (char *outbuffer, uint_fast32_t len) override final
 			{
-				#ifdef OS_LINUX
-					_remaining_total += this->read_eventfd ();
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t stored_bytes = this->_stored_bytes.load (std::memory_order_relaxed);
 
-					if (len > _remaining_total) {
-						len = _remaining_total;
+					if (len > stored_bytes) {
+						len = stored_bytes;
 					}
-				#endif // OS_LINUX
+				#else
+					if (len > this->_stored_bytes) {
+						len = this->_stored_bytes;
+					}
+				#endif // SHAGA_THREADING
 
 				if (0 == len) {
 					return 0;
@@ -286,15 +252,17 @@ namespace shaga {
 
 			virtual void move_front_buffer (uint_fast32_t len) override final
 			{
-				#ifdef OS_LINUX
-					_remaining_total += this->read_eventfd ();
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t stored_bytes = this->_stored_bytes.load (std::memory_order_relaxed);
 
-					if (len > _remaining_total) {
+					if (len > stored_bytes) {
 						cThrow ("{}: Unable to move front buffer. Destination too far."sv, this->_name);
 					}
-
-					_remaining_total -= len;
-				#endif // OS_LINUX
+				#else
+					if (len > this->_stored_bytes) {
+						cThrow ("{}: Unable to move front buffer. Destination too far."sv, this->_name);
+					}
+				#endif // SHAGA_THREADING
 
 				if (0 == len) {
 					return;
@@ -310,6 +278,7 @@ namespace shaga {
 
 				uint_fast32_t read_offset = _read_offset;
 				uint_fast32_t remaining;
+				const uint_fast32_t orig_len = len;
 
 				while (true) {
 					if (now_read == now_write) {
@@ -340,19 +309,13 @@ namespace shaga {
 
 				_read_offset = read_offset;
 				#ifdef SHAGA_THREADING
-					this->_pos_read.store (now_read, std::memory_order_release);
+					this->_pos_read.store (now_read, std::memory_order::memory_order_relaxed);
+					this->_stored_bytes.fetch_sub (orig_len, std::memory_order::memory_order_seq_cst);
 				#else
 					this->_pos_read = now_read;
+					this->_stored_bytes -= orig_len;
 				#endif // SHAGA_THREADING
 			}
-
-			#ifdef OS_LINUX
-			uint_fast32_t get_remaining_total (void) const
-			{
-				return _remaining_total;
-			}
-			#endif // OS_LINUX
-
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -368,10 +331,6 @@ namespace shaga {
 
 			virtual void clear (void) override final
 			{
-				#ifdef OS_LINUX
-				this->read_eventfd ();
-				#endif // OS_LINUX
-
 				#ifdef SHAGA_THREADING
 					uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
 					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
@@ -387,25 +346,23 @@ namespace shaga {
 				}
 
 				#ifdef SHAGA_THREADING
-					this->_pos_read.store (now_read, std::memory_order_release);
+					this->_pos_read.store (now_read, std::memory_order::memory_order_relaxed);
+					this->_stored_bytes.store (0, std::memory_order::memory_order_release);
 				#else
 					this->_pos_read = now_read;
+					this->_stored_bytes = 0;
 				#endif // SHAGA_THREADING
 			}
 
 			virtual uint_fast32_t fill_front_buffer (char *outbuffer, uint_fast32_t len) override final
 			{
-				#ifdef OS_LINUX
-				this->read_eventfd ();
-				#endif // OS_LINUX
-
 				if (0 == len) {
 					return 0;
 				}
 
 				#ifdef SHAGA_THREADING
-					uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
-					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+					uint_fast32_t now_read = this->_pos_read.load (std::memory_order::memory_order_relaxed);
+					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order::memory_order_acquire);
 				#else
 					uint_fast32_t now_read = this->_pos_read;
 					const uint_fast32_t now_write = this->_pos_write;
@@ -426,17 +383,13 @@ namespace shaga {
 
 			virtual void move_front_buffer (uint_fast32_t len) override final
 			{
-				#ifdef OS_LINUX
-				this->read_eventfd ();
-				#endif // OS_LINUX
-
 				if (0 == len) {
 					return;
 				}
 
 				#ifdef SHAGA_THREADING
-					uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
-					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+					uint_fast32_t now_read = this->_pos_read.load (std::memory_order::memory_order_relaxed);
+					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order::memory_order_acquire);
 				#else
 					uint_fast32_t now_read = this->_pos_read;
 					const uint_fast32_t now_write = this->_pos_write;
@@ -455,9 +408,11 @@ namespace shaga {
 				RING (now_read);
 
 				#ifdef SHAGA_THREADING
-					this->_pos_read.store (now_read, std::memory_order_release);
+					this->_pos_read.store (now_read, std::memory_order::memory_order_relaxed);
+					this->_stored_bytes.fetch_sub (len, std::memory_order::memory_order_seq_cst);
 				#else
 					this->_pos_read = now_read;
+					this->_stored_bytes -= len;
 				#endif // SHAGA_THREADING
 			}
 	};
@@ -612,8 +567,9 @@ namespace shaga {
 			static const constexpr char _magic[2] {5, 23};
 			static const constexpr uint_fast32_t _crc_max_len {16};
 			static const constexpr uint8_t _crc_start_val {19};
+			static const constexpr size_t _header_size {6};
 
-			std::string tbuf;
+			std::string header;
 
 			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) override final
 			{
@@ -623,23 +579,28 @@ namespace shaga {
 					return;
 				}
 
-				tbuf.resize (0);
-				tbuf.append (_magic, sizeof (_magic));
+				header.resize (0);
+				header.append (_magic, sizeof (_magic));
 
 				/* CRC will be placed here */
-				BIN::from_uint8 (0, tbuf);
+				BIN::from_uint8 (0, header);
 
-				BIN::from_uint24 (sze, tbuf);
+				/* Data length */
+				BIN::from_uint24 (sze, header);
 
-				if ((sze + tbuf.size ()) > this->_max_packet_size) {
-					cThrow ("Buffer too long");
+				if (_header_size != header.size ()) {
+					cThrow ("Header has incorrect size"sv);
 				}
 
-				this->_curdata->alloc (sze + tbuf.size ());
-				this->_curdata->set_size (sze + tbuf.size ());
+				if ((sze + _header_size) > this->_max_packet_size) {
+					cThrow ("Buffer too long"sv);
+				}
 
-				::memcpy (this->_curdata->buffer, tbuf.data (), tbuf.size ());
-				::memcpy (this->_curdata->buffer + (tbuf.size ()), buffer + offset, sze);
+				this->_curdata->alloc (sze + _header_size);
+				this->_curdata->set_size (sze + _header_size);
+
+				::memcpy (this->_curdata->buffer, header.data (), _header_size);
+				::memcpy (this->_curdata->buffer + _header_size, buffer + offset, sze);
 
 				this->_curdata->buffer[2] = CRC::crc8_dallas (reinterpret_cast<const char *> (this->_curdata->buffer + 3), std::min (this->_curdata->size () - 3, _crc_max_len), _crc_start_val);
 
@@ -651,7 +612,7 @@ namespace shaga {
 			PacketEncodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets) :
 				ContStreamEncodeSPSC<T> (max_packet_size + 6, num_packets)
 			{
-				tbuf.reserve (6);
+				header.reserve (_header_size);
 			}
 	};
 
@@ -662,7 +623,8 @@ namespace shaga {
 	template<class T> class SeqPacketEncodeSPSC : public SeqStreamEncodeSPSC<T>
 	{
 		private:
-			std::string tbuf;
+			static const constexpr size_t _header_size {3};
+			std::string header;
 
 			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) override final
 			{
@@ -672,18 +634,22 @@ namespace shaga {
 					return;
 				}
 
-				tbuf.resize (0);
-				BIN::from_uint24 (sze, tbuf);
+				header.resize (0);
+				BIN::from_uint24 (sze, header);
 
-				if ((sze + tbuf.size ()) > this->_max_packet_size) {
+				if (_header_size != header.size ()) {
+					cThrow ("Header has incorrect size"sv);
+				}
+
+				if ((sze + _header_size) > this->_max_packet_size) {
 					cThrow ("Buffer too long"sv);
 				}
 
-				this->_curdata->alloc (sze + tbuf.size ());
-				this->_curdata->set_size (sze + tbuf.size ());
+				this->_curdata->alloc (sze + _header_size);
+				this->_curdata->set_size (sze + _header_size);
 
-				::memcpy (this->_curdata->buffer, tbuf.data (), tbuf.size ());
-				::memcpy (this->_curdata->buffer + (tbuf.size ()), buffer + offset, sze);
+				::memcpy (this->_curdata->buffer, header.data (), _header_size);
+				::memcpy (this->_curdata->buffer + _header_size, buffer + offset, sze);
 
 				this->push ();
 			}
@@ -693,7 +659,7 @@ namespace shaga {
 			SeqPacketEncodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets) :
 				SeqStreamEncodeSPSC<T> (max_packet_size + 3, num_packets)
 			{
-				tbuf.reserve (3);
+				header.reserve (_header_size);
 			}
 	};
 
