@@ -22,11 +22,11 @@ namespace shaga {
 			digit = chr - 'a' + 10;
 		}
 		else {
-			cThrow ("Unrecognized character '{:c}'"sv, chr);
+			cThrow ("Unrecognized character '{:c}'"sv, static_cast<char> (chr));
 		}
 
 		if (digit >= base) {
-			cThrow ("Unrecognized character '{:c}'"sv, chr);
+			cThrow ("Unrecognized character '{:c}'"sv, static_cast<char> (chr));
 		}
 
 		if (result > (UINT64_MAX / base) || (result * base) > (UINT64_MAX - digit)) {
@@ -607,9 +607,9 @@ namespace shaga {
 	{
 		COMMON_VECTOR vout;
 
-		replace (cmd, std::string ("\\\\"), std::string (1, 0x02));
-		replace (cmd, std::string ("\\\""), std::string (1, 0x03));
-		replace (cmd, std::string ("\\'"),  std::string (1, 0x04));
+		replace (cmd, "\\\\"s, std::string (1, 0x02));
+		replace (cmd, "\\\""s, std::string (1, 0x03));
+		replace (cmd, "\\'"s,  std::string (1, 0x04));
 
 		std::string what_find = "\"'";
 		size_t pos = 0, last_pos;
@@ -630,9 +630,9 @@ namespace shaga {
 			pos++;
 		}
 
-		replace (cmd, std::string (1, 0x02), std::string ("\\"));
-		replace (cmd, std::string (1, 0x03), std::string ("\""));
-		replace (cmd, std::string (1, 0x04), std::string ("'"));
+		replace (cmd, std::string (1, 0x02), "\\"s);
+		replace (cmd, std::string (1, 0x03), "\""s);
+		replace (cmd, std::string (1, 0x04), "'"s);
 
 		pos = 0;
 		bool in_quotes = false;

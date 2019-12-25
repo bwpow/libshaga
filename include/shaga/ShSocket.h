@@ -33,6 +33,7 @@ namespace shaga {
 	};
 
 	typedef std::shared_ptr<ShSocket> SHARED_SOCKET;
+	typedef std::unique_ptr<ShSocket> UNIQUE_SOCKET;
 
 	bool operator== (const SHARED_SOCKET &a, const int b);
 	bool operator== (const int b, const SHARED_SOCKET &a);

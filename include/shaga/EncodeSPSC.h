@@ -19,6 +19,14 @@ namespace shaga {
 
 	template<class T> class EncodeSPSC
 	{
+		private:
+			#ifdef OS_LINUX
+				int _eventfd {-1};
+				UNIQUE_SOCKET _event_sock;
+				uint64_t _eventfd_write_val {1};
+				uint64_t _eventfd_read_val {0};
+			#endif // OS_LINUX
+
 		protected:
 			const uint_fast32_t _max_packet_size;
 			const uint_fast32_t _num_packets;
@@ -38,6 +46,24 @@ namespace shaga {
 				volatile uint_fast32_t _pos_write {0};
 				volatile uint_fast32_t _stored_bytes {0};
 			#endif // SHAGA_THREADING
+
+			#ifdef OS_LINUX
+			virtual void clear_eventfd (void) final
+			{
+				while (true) {
+					const ssize_t sze = ::read (this->_eventfd, &_eventfd_read_val, sizeof (_eventfd_read_val));
+					if (sze < 0) {
+						if (EWOULDBLOCK == errno) {
+							break;
+						}
+						cThrow ("{}: Error reading from notice eventfd: {}"sv, this->_name, strerror (errno));
+					}
+					else if (sze != sizeof (_eventfd_read_val)) {
+						cThrow ("{}: Error reading from notice eventfd: Unknown error"sv, this->_name);
+					}
+				}
+			}
+			#endif // OS_LINUX
 
 			virtual void push (void) final
 			{
@@ -63,6 +89,15 @@ namespace shaga {
 					_stored_bytes += _curdata->size ();
 				#endif // SHAGA_THREADING
 
+				#ifdef OS_LINUX
+					if (const ssize_t ret = ::write (this->_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)); ret < 0) {
+						cThrow ("{}: Error writing to eventfd: {}"sv, _name, strerror (errno));
+					}
+					else if (ret != sizeof (_eventfd_write_val)) {
+						cThrow ("{}: Error writing to eventfd: Unknown error"sv, _name);
+					}
+				#endif // OS_LINUX
+
 				_curdata = _data[next].get ();
 			}
 
@@ -84,10 +119,24 @@ namespace shaga {
 					this->_data.push_back (std::make_unique<T> (_max_packet_size));
 				}
 				this->_curdata = this->_data.front ().get ();
+
+				#ifdef OS_LINUX
+					/* This will work as a trigger for new push, can be used to poll for new data */
+					this->_eventfd = ::eventfd (0, EFD_NONBLOCK | EFD_SEMAPHORE);
+					if (this->_eventfd < 0) {
+						cThrow ("{}: Unable to init eventfd: {}"sv, _name, strerror (errno));
+					}
+					this->_event_sock = std::make_unique<ShSocket> (this->_eventfd);
+				#endif // OS_LINUX
 			}
 
 			virtual ~EncodeSPSC ()
 			{
+				#ifdef OS_LINUX
+					this->_eventfd = -1;
+					this->_event_sock.reset ();
+				#endif // OS_LINUX
+
 				this->_curdata = nullptr;
 				this->_data.clear ();
 			}
@@ -109,6 +158,13 @@ namespace shaga {
 					return this->_stored_bytes;
 				#endif // SHAGA_THREADING
 			}
+
+			#ifdef OS_LINUX
+			virtual int get_eventfd (void) const final
+			{
+				return this->_eventfd;
+			}
+			#endif // OS_LINUX
 
 			virtual bool empty (void) const final
 			{
@@ -195,6 +251,10 @@ namespace shaga {
 
 			virtual uint_fast32_t fill_front_buffer (char *outbuffer, uint_fast32_t len) override final
 			{
+				#ifdef OS_LINUX
+					this->clear_eventfd ();
+				#endif // OS_LINUX
+
 				#ifdef SHAGA_THREADING
 					const uint_fast32_t stored_bytes = this->_stored_bytes.load (std::memory_order_relaxed);
 
@@ -252,6 +312,10 @@ namespace shaga {
 
 			virtual void move_front_buffer (uint_fast32_t len) override final
 			{
+				#ifdef OS_LINUX
+					this->clear_eventfd ();
+				#endif // OS_LINUX
+
 				#ifdef SHAGA_THREADING
 					const uint_fast32_t stored_bytes = this->_stored_bytes.load (std::memory_order_relaxed);
 
@@ -356,6 +420,10 @@ namespace shaga {
 
 			virtual uint_fast32_t fill_front_buffer (char *outbuffer, uint_fast32_t len) override final
 			{
+				#ifdef OS_LINUX
+					this->clear_eventfd ();
+				#endif // OS_LINUX
+
 				if (0 == len) {
 					return 0;
 				}
@@ -383,6 +451,10 @@ namespace shaga {
 
 			virtual void move_front_buffer (uint_fast32_t len) override final
 			{
+				#ifdef OS_LINUX
+					this->clear_eventfd ();
+				#endif // OS_LINUX
+
 				if (0 == len) {
 					return;
 				}

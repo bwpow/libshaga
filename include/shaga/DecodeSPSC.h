@@ -31,7 +31,7 @@ namespace shaga {
 
 			#ifdef OS_LINUX
 				int _eventfd {-1};
-				SHARED_SOCKET _event_sock;
+				UNIQUE_SOCKET _event_sock;
 				uint64_t _eventfd_write_val {1};
 				uint64_t _eventfd_read_val {0};
 			#endif // OS_LINUX
@@ -53,9 +53,9 @@ namespace shaga {
 				volatile uint_fast32_t _pos_write {0};
 			#endif // SHAGA_THREADING
 
+			#ifdef OS_LINUX
 			virtual bool read_eventfd (void) final
 			{
-				#ifdef OS_LINUX
 				const ssize_t sze = ::read (this->_eventfd, &_eventfd_read_val, sizeof (_eventfd_read_val));
 				if (sze < 0) {
 					if (errno == EWOULDBLOCK) {
@@ -63,15 +63,18 @@ namespace shaga {
 					}
 					cThrow ("{}: Error reading from notice eventfd: {}"sv, this->_name, strerror (errno));
 				}
-				#endif // OS_LINUX
+				else if (sze != sizeof (_eventfd_read_val)) {
+					cThrow ("{}: Error reading from notice eventfd: Unknown error"sv, this->_name);
+				}
 
 				return true;
 			}
+			#endif // OS_LINUX
 
 			virtual void nonfatal_error (const std::string_view buf) final
 			{
 				#ifdef SHAGA_THREADING
-					_err_count.fetch_add (1);
+					_err_count.fetch_add (1, std::memory_order::memory_order_acq_rel);
 				#else
 					++_err_count;
 				#endif // SHAGA_THREADING
@@ -114,7 +117,7 @@ namespace shaga {
 				#endif // SHAGA_THREADING
 
 				#ifdef OS_LINUX
-				if (const ssize_t ret = ::write (_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)); ret < 0) {
+				if (const ssize_t ret = ::write (this->_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)); ret < 0) {
 					cThrow ("{}: Error writing to eventfd: {}"sv, _name, strerror (errno));
 				}
 				else if (ret != sizeof (_eventfd_write_val)) {
@@ -132,6 +135,8 @@ namespace shaga {
 				_max_packet_size (max_packet_size),
 				_num_packets (num_packets)
 			{
+				_name.assign (typeid (*this).name ());
+
 				if (_num_packets < 2) {
 					cThrow ("{}: Ring size must be at least 2"sv, _name);
 				}
@@ -144,21 +149,19 @@ namespace shaga {
 
 				#ifdef OS_LINUX
 				/* This eventfd will work as a SEMAPHORE, so every push will increase counter by one and every read will decrease it. */
-				_eventfd = eventfd (0, EFD_NONBLOCK | EFD_SEMAPHORE);
-				if (_eventfd < 0) {
+				this->_eventfd = eventfd (0, EFD_NONBLOCK | EFD_SEMAPHORE);
+				if (this->_eventfd < 0) {
 					cThrow ("{}: Unable to init eventfd: {}"sv, _name, strerror (errno));
 				}
-				_event_sock = std::make_shared<ShSocket> (_eventfd);
+				this->_event_sock = std::make_unique<ShSocket> (this->_eventfd);
 				#endif // OS_LINUX
-
-				_name.assign (typeid (*this).name ());
 			}
 
 			virtual ~DecodeSPSC ()
 			{
 				#ifdef OS_LINUX
-				_eventfd = -1;
-				_event_sock.reset ();
+				this->_eventfd = -1;
+				this->_event_sock.reset ();
 				#endif // OS_LINUX
 
 				_curdata = nullptr;
@@ -187,7 +190,7 @@ namespace shaga {
 			virtual int get_err_count (void) const final
 			{
 				#ifdef SHAGA_THREADING
-					return _err_count.load (std::memory_order_relaxed);
+					return _err_count.load (std::memory_order::memory_order_relaxed);
 				#else
 					return _err_count;
 				#endif // SHAGA_THREADING
@@ -196,7 +199,7 @@ namespace shaga {
 			virtual int get_err_count_reset (void) final
 			{
 				#ifdef SHAGA_THREADING
-					return _err_count.exchange (0);
+					return _err_count.exchange (0, std::memory_order::memory_order_acq_rel);
 				#else
 					return std::exchange (_err_count, 0);
 				#endif // SHAGA_THREADING
@@ -205,12 +208,7 @@ namespace shaga {
 			#ifdef OS_LINUX
 			virtual int get_eventfd (void) const final
 			{
-				return _eventfd;
-			}
-
-			virtual SHARED_SOCKET get_event_socket (void) final
-			{
-				return _event_sock;
+				return this->_eventfd;
 			}
 			#endif // OS_LINUX
 
