@@ -381,10 +381,10 @@ void seed_seq_fe<count, IntRep, r>::mix_entropy (InputIter begin, InputIter end)
 
 template <size_t count, typename IntRep, size_t mix_rounds>
 template <typename OutputIterator>
-void seed_seq_fe<count,IntRep,mix_rounds>::param (OutputIterator dest) const
+void seed_seq_fe<count,IntRep,mix_rounds>::param (OutputIterator out) const
 {
-	const IntRep INV_A = fast_exp(MULT_A, IntRep(-1));
-	const IntRep MIX_INV_L = fast_exp(MIX_MULT_L, IntRep(-1));
+	const IntRep INV_A = fast_exp (MULT_A, IntRep(-1));
+	const IntRep MIX_INV_L = fast_exp (MIX_MULT_L, IntRep(-1));
 
 	auto mixer_copy = mixer_;
 	for (size_t round = 0; round < mix_rounds; ++round) {
@@ -421,7 +421,7 @@ void seed_seq_fe<count,IntRep,mix_rounds>::param (OutputIterator dest) const
 		}
 	}
 
-	std::copy (mixer_copy.begin (), mixer_copy.end (), dest);
+	std::copy (mixer_copy.begin (), mixer_copy.end (), out);
 }
 
 template <size_t count, typename IntRep, size_t mix_rounds>

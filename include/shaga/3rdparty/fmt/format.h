@@ -401,7 +401,7 @@ class truncating_iterator<OutputIt, std::false_type>
 	: public truncating_iterator_base<OutputIt> {
   using traits = std::iterator_traits<OutputIt>;
 
-  mutable typename traits::value_type blackhole_;
+  mutable typename traits::value_type blackhole_ {0};
 
  public:
   using value_type = typename traits::value_type;

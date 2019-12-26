@@ -92,7 +92,7 @@ namespace shaga::P {
 		}
 
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_print_mutex);
+			std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
 		_dir_log.clear ();
@@ -109,7 +109,7 @@ namespace shaga
 	void P::set_dir_log (const std::string_view var)
 	{
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_print_mutex);
+			std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
 		_dir_log.clear ();
@@ -137,7 +137,7 @@ namespace shaga
 	void P::set_name_log (const std::string_view var)
 	{
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_print_mutex);
+			std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
 		_name_log.assign (var);
@@ -146,7 +146,7 @@ namespace shaga
 	void P::set_app_name (const std::string_view var)
 	{
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_print_mutex);
+			std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
 		_app_name.assign (var);
@@ -157,7 +157,7 @@ namespace shaga
 	void P::check_size (const bool enabled) noexcept
 	{
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_print_mutex);
+			std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
 		_check_size = enabled;
@@ -169,7 +169,7 @@ namespace shaga
 	void P::set_max_size_mb (const int soft, const int hard) noexcept
 	{
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_print_mutex);
+			std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
 		_limit_soft = static_cast<off64_t> (soft) * _bytes_per_mb;
@@ -187,7 +187,7 @@ namespace shaga
 	void P::rescan_available_directories (void)
 	{
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_print_mutex);
+			std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
 		_p_cache_scan_directories ();
@@ -197,7 +197,7 @@ namespace shaga
 	void P::set_enabled (const bool enabled)
 	{
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_print_mutex);
+			std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
 		if (enabled) {
@@ -226,7 +226,7 @@ namespace shaga
 	void P::show_ms (const bool enabled) noexcept
 	{
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_print_mutex);
+			std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
 		_printf_ms = enabled;
@@ -236,7 +236,7 @@ namespace shaga
 	void P::use_gmt (const bool enabled) noexcept
 	{
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_print_mutex);
+			std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
 		_use_gmtime = enabled;
@@ -251,7 +251,7 @@ namespace shaga
 	P::P_CACHE_TYPE& P::_p_cache_lock (void) noexcept
 	{
 		#ifdef SHAGA_THREADING
-		_p_cache_mutex.lock ();
+			_p_cache_mutex.lock ();
 		#endif // SHAGA_THREADING
 
 		return _p_cache;
@@ -260,7 +260,7 @@ namespace shaga
 	void P::_p_cache_release (void) noexcept
 	{
 		#ifdef SHAGA_THREADING
-		_p_cache_mutex.unlock ();
+			_p_cache_mutex.unlock ();
 		#endif // SHAGA_THREADING
 	}
 
@@ -278,8 +278,8 @@ namespace shaga
 		}
 
 		#ifdef SHAGA_THREADING
-		// Since we can write logs to non-POSIX filesystems, let's do locking here instead on FS level.
-		std::lock_guard<std::mutex> lock (_print_mutex);
+			// Since we can write logs to non-POSIX filesystems, let's do locking here instead on FS level.
+			std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
 		const uint64_t rt = (true == _printf_ms) ? get_realtime_msec () : 0;

@@ -231,37 +231,37 @@ TEST (STR, trim)
 	const char arr[] = {' ', ' ', 'a', 'b', ' ', 'c', 'd', ' ', ' ', '\0', '\0', '\0'};
 	const char arr2[] = {' ', ' ', '\t', '\t', ' ', '\t', '\t', ' ', ' ', '\0', '\0', '\0'};
 
-	auto ltrim = [](const char *arr, const size_t len, const std::string_view chars) -> size_t
+	auto ltrim = [](const char *_arr, const size_t len, const std::string_view _chars) -> size_t
 	{
-		std::string s (arr, len);
-		std::string_view v (arr, len);
+		std::string s (_arr, len);
+		std::string_view v (_arr, len);
 
-		STR::ltrim (s, chars);
-		STR::ltrim (v, chars);
+		STR::ltrim (s, _chars);
+		STR::ltrim (v, _chars);
 
 		EXPECT_TRUE (s.size () == v.size ());
 		return s.size ();
 	};
 
-	auto rtrim = [](const char *arr, const size_t len, const std::string_view chars) -> size_t
+	auto rtrim = [](const char *_arr, const size_t len, const std::string_view _chars) -> size_t
 	{
-		std::string s (arr, len);
-		std::string_view v (arr, len);
+		std::string s (_arr, len);
+		std::string_view v (_arr, len);
 
-		STR::rtrim (s, chars);
-		STR::rtrim (v, chars);
+		STR::rtrim (s, _chars);
+		STR::rtrim (v, _chars);
 
 		EXPECT_TRUE (s.size () == v.size ()) << s.size () << " " << v.size ();
 		return s.size ();
 	};
 
-	auto trim = [](const char *arr, const size_t len, const std::string_view chars) -> size_t
+	auto trim = [](const char *_arr, const size_t len, const std::string_view _chars) -> size_t
 	{
-		std::string s (arr, len);
-		std::string_view v (arr, len);
+		std::string s (_arr, len);
+		std::string_view v (_arr, len);
 
-		STR::trim (s, chars);
-		STR::trim (v, chars);
+		STR::trim (s, _chars);
+		STR::trim (v, _chars);
 
 		EXPECT_TRUE (s.size () == v.size ());
 		return s.size ();

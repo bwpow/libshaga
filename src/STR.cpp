@@ -109,7 +109,9 @@ namespace shaga {
 				result = static_cast<T> (out);
 			}
 			else if (std::is_same <T, int64_t>::value) {
-				if (out > static_cast<uint64_t> (-std::numeric_limits<T>::min ())) {
+				// uint64_t can be converted to int64_t when out is larger than 1<<63 on most platforms
+				// !!! IMPORTANT !!! Fix this code to be platform independent
+				if (out > (1ULL << 63)) {
 					cThrow ("Out of range"sv);
 				}
 
@@ -504,8 +506,8 @@ namespace shaga {
 
 	bool STR::icompare (const std::string_view a, const std::string_view b)
 	{
-		return std::equal (a.cbegin (), a.cend (), b.cbegin (), b.cend (), [](const auto a, const auto b) {
-			return std::tolower(a) == std::tolower(b);
+		return std::equal (a.cbegin (), a.cend (), b.cbegin (), b.cend (), [](const auto _a, const auto _b) -> bool {
+			return std::tolower(_a) == std::tolower(_b);
 		});
 	}
 

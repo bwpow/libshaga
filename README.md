@@ -45,6 +45,14 @@ You can compile using single-thread and/or multi-thread version of the library. 
 is not required. Using atomic operations and mutex locking is quite expensive on some operating systems and architectures. By providing single-thread version of the library,
 the programmer may avoid using atomics and mutexes altogether and compile without pthread.
 
+## Sanitizers and safety
+It is possible to enable AddressSanitizer, LeakSanitizer and UndefinedBehaviorSanitizer by setting environment variable SHAGA_SANITY before calling make. This will add
+these compiler options: `-fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer`. You need to install both libasan and libubsan for this to work
+properly.
+
+Code is compiled with `-Wall -Wextra -Wshadow -fstack-protector-strong` parameters and all warning are fixed during development and testing.
+Since the library is intended to be used only as static, it is compiled with -fPIE and -pie.
+
 ## Current progress and future development
 I am currently working on unit tests using [Google Test](https://github.com/google/googletest) that were missing in the original library and slowly modifying
 source code to use C++17 types and structures (like string_view). I am also planning to add documentation in doxygen format and cmake building process.

@@ -173,13 +173,15 @@ namespace aho_corasick {
 				return interval_collection(overlaps);
 			}
 
-			interval_collection find_overlapping_ranges(node_ptr& node, const T& i) const {
-				if (node) {
-					return interval_collection(node->find_overlaps(i));
+			interval_collection find_overlapping_ranges (node_ptr& fnode, const T& i) const
+			{
+				if (fnode) {
+					return interval_collection (fnode->find_overlaps (i));
 				}
-				return interval_collection();
+				return interval_collection ();
 			}
 		};
+
 		node d_root;
 
 	public:

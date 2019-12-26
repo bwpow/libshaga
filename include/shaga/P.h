@@ -67,8 +67,8 @@ namespace shaga::P {
 		else {
 			P_CACHE_TYPE &cache = _p_cache_lock ();
 			try {
-				const size_t sze = fmt::format_to_n (cache.begin (), cache.size (), format, args...).size;
-				_print (std::string_view (cache.data (), std::min (sze, cache.size ())));
+				const auto result = fmt::format_to_n (cache.begin (), cache.size (), format, args...);
+				_print (std::string_view (cache.data (), std::min (result.size, cache.size ())));
 			}
 			catch (...) {
 				_print (format, "(!FORMAT ERROR!) "sv);
@@ -93,8 +93,8 @@ namespace shaga::P {
 		else {
 			P_CACHE_TYPE &cache = _p_cache_lock ();
 			try {
-				const size_t sze = fmt::format_to_n (cache.begin (), cache.size (), format, args...).size;
-				_print (std::string_view (cache.data (), std::min (sze, cache.size ())), "[DEBUG] "sv);
+				const auto result = fmt::format_to_n (cache.begin (), cache.size (), format, args...);
+				_print (std::string_view (cache.data (), std::min (result.size, cache.size ())), "[DEBUG] "sv);
 			}
 			catch (...) {
 				_print (format, "[DEBUG] (!FORMAT ERROR!) "sv);

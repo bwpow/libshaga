@@ -267,7 +267,7 @@ namespace shaga {
 	}
 
 
-	bool ArgTable::process (const COMMON_VECTOR &v, const bool thr)
+	bool ArgTable::process (const COMMON_VECTOR &vec, const bool thr)
 	{
 		for (auto &e : _entries) {
 			e.vars.clear ();
@@ -277,12 +277,12 @@ namespace shaga {
 
 		try {
 			/* Process all entries */
-			for (auto &e : v) {
+			for (auto &e : vec) {
 				process_entry (e);
 			}
 
 			if (true == _next_entry_is_param) {
-				cThrow ("Option '{}' is missing parameter", v.back());
+				cThrow ("Option '{}' is missing parameter", vec.back());
 			}
 
 			/* Check for correct incidence */
@@ -314,9 +314,9 @@ namespace shaga {
 			/* Chechk using special checker functions */
 			for (const auto &e : _entries) {
 				if (e.checker != nullptr) {
-					for (const auto &v : e.vars) {
-						if (e.checker (v) == false) {
-							cThrow ("Parameter '{}' is not valid for option '{}'"sv, v, e.get_str ());
+					for (const auto &var : e.vars) {
+						if (e.checker (var) == false) {
+							cThrow ("Parameter '{}' is not valid for option '{}'"sv, var, e.get_str ());
 						}
 					}
 				}

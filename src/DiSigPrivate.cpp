@@ -286,8 +286,10 @@ namespace shaga {
 		::mbedtls_mpi_init (&s);
 
 		try {
-			const int ret = ::mbedtls_ecdsa_sign_det (&(ec->grp), &r, &s, &(ec->d), reinterpret_cast<const unsigned char *> (hsh.data ()), hsh.size (), md_alg);
-			check_error (ret);
+			{
+				const int ret = ::mbedtls_ecdsa_sign_det (&(ec->grp), &r, &s, &(ec->d), reinterpret_cast<const unsigned char *> (hsh.data ()), hsh.size (), md_alg);
+				check_error (ret);
+			}
 
 			const size_t expected_len = ::mbedtls_mpi_size (&ec->grp.P) * 2;
 
