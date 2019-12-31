@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2019, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2020, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -267,6 +267,7 @@ namespace shaga {
 			std::list<TRACERT_HOP> tracert_hops_get (void) const;
 			size_t tracert_hops_count (void) const;
 
+			HWIDMASK get_destination_hwidmask (void) const;
 			void set_destination_hwid (const HWID hwid);
 			void set_destination_hwid (const HWIDMASK &hwidmask);
 			void set_destination_broadcast (void);

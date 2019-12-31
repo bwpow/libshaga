@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2019, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2020, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -22,7 +22,7 @@ namespace shaga {
 		private:
 			#ifdef OS_LINUX
 				int _eventfd {-1};
-				UNIQUE_SOCKET _event_sock;
+				SHARED_SOCKET _event_sock;
 				uint64_t _eventfd_write_val {1};
 				uint64_t _eventfd_read_val {0};
 			#endif // OS_LINUX
@@ -126,7 +126,7 @@ namespace shaga {
 					if (this->_eventfd < 0) {
 						cThrow ("{}: Unable to init eventfd: {}"sv, _name, strerror (errno));
 					}
-					this->_event_sock = std::make_unique<ShSocket> (this->_eventfd);
+					this->_event_sock = std::make_shared<ShSocket> (this->_eventfd);
 				#endif // OS_LINUX
 			}
 
@@ -163,6 +163,11 @@ namespace shaga {
 			virtual int get_eventfd (void) const final
 			{
 				return this->_eventfd;
+			}
+
+			virtual SHARED_SOCKET get_eventfd_shared_socket (void) const final
+			{
+				return this->_event_sock;
 			}
 			#endif // OS_LINUX
 
