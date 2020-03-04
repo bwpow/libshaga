@@ -17,10 +17,19 @@ All rights reserved.
 namespace shaga {
 	class ReDataConfig {
 		public:
+			static const uint8_t key_digest_mask   {0b0000'1111};
+			static const uint8_t key_crypto_mask   {0b0011'0000};
+			static const uint8_t key_reserved_mask {0b0100'0000};
+			static const uint8_t key_highbit_mask  {0b1000'0000};
+
+			static const constexpr uint32_t key_digest_shift = BIN::count_trailing_zeros (key_digest_mask);
+			static const constexpr uint32_t key_crypto_shift = BIN::count_trailing_zeros (key_crypto_mask);
+
 			enum class DIGEST_HMAC_TYPE {
 				NONE,
 				TYPICAL,
 				SIPHASH,
+				HALFSIPHASH,
 				_MAX
 			};
 
@@ -29,14 +38,16 @@ namespace shaga {
 				CRC32, /* CRC-32-Castagnoli */
 				CRC64, /* CRC-64-Jones */
 
-				SHA1,
 				SHA256,
 				SHA512,
 
-				HMAC_RIPEMD160,
-				HMAC_SHA1,
 				HMAC_SHA256,
 				HMAC_SHA512,
+
+				HALFSIPHASH24_32,
+				HALFSIPHASH24_64,
+				HALFSIPHASH48_32,
+				HALFSIPHASH48_64,
 
 				SIPHASH24_64,
 				SIPHASH24_128,
@@ -56,20 +67,11 @@ namespace shaga {
 				{"crc64"s, DIGEST::CRC64},
 				{"crc-64"s, DIGEST::CRC64},
 
-				{"sha1"s, DIGEST::SHA1},
-				{"sha-1"s, DIGEST::SHA1},
-
 				{"sha256"s, DIGEST::SHA256},
 				{"sha-256"s, DIGEST::SHA256},
 
 				{"sha512"s, DIGEST::SHA512},
 				{"sha-512"s, DIGEST::SHA512},
-
-				{"hmac-ripemd160"s, DIGEST::HMAC_RIPEMD160},
-				{"hmac-ripemd-160"s, DIGEST::HMAC_RIPEMD160},
-
-				{"hmac-sha1"s, DIGEST::HMAC_SHA1},
-				{"hmac-sha-1"s, DIGEST::HMAC_SHA1},
 
 				{"hmac-sha256"s, DIGEST::HMAC_SHA256},
 				{"hmac-sha-256"s, DIGEST::HMAC_SHA256},
@@ -77,18 +79,25 @@ namespace shaga {
 				{"hmac-sha512"s, DIGEST::HMAC_SHA512},
 				{"hmac-sha-512"s, DIGEST::HMAC_SHA512},
 
-				{"siphash"s, DIGEST::SIPHASH24_64},
-				{"siphash24"s, DIGEST::SIPHASH24_64},
+				{"halfsiphash24-32"s, DIGEST::HALFSIPHASH24_32},
+				{"halfsiphash-2-4-32"s, DIGEST::HALFSIPHASH24_32},
+
+				{"halfsiphash24-64"s, DIGEST::HALFSIPHASH24_64},
+				{"halfsiphash-2-4-64"s, DIGEST::HALFSIPHASH24_64},
+
+				{"halfsiphash48-32"s, DIGEST::HALFSIPHASH48_32},
+				{"halfsiphash-4-8-32"s, DIGEST::HALFSIPHASH48_32},
+
+				{"halfsiphash48-64"s, DIGEST::HALFSIPHASH48_64},
+				{"halfsiphash-4-8-64"s, DIGEST::HALFSIPHASH48_64},
+
 				{"siphash24-64"s, DIGEST::SIPHASH24_64},
-				{"siphash-2-4"s, DIGEST::SIPHASH24_64},
 				{"siphash-2-4-64"s, DIGEST::SIPHASH24_64},
 
 				{"siphash24-128"s, DIGEST::SIPHASH24_128},
 				{"siphash-2-4-128"s, DIGEST::SIPHASH24_128},
 
-				{"siphash48"s, DIGEST::SIPHASH48_64},
 				{"siphash48-64"s, DIGEST::SIPHASH48_64},
-				{"siphash-4-8"s, DIGEST::SIPHASH48_64},
 				{"siphash-4-8-64"s, DIGEST::SIPHASH48_64},
 
 				{"siphash48-128"s, DIGEST::SIPHASH48_128},
@@ -120,13 +129,16 @@ namespace shaga {
 				randutils::mt19937_rng _rng;
 				mbedtls_aes_context _aes_ctx;
 
-				#ifdef SHAGA_THREADING
-				std::once_flag _aes_init_flag;
-				#else
-				bool _aes_init_flag {false};
-				#endif // SHAGA_THREADING
+				CryptoCache ()
+				{
+					::mbedtls_aes_init (&_aes_ctx);
+				}
 
-				CryptoCache () {}
+				~CryptoCache ()
+				{
+					::mbedtls_aes_free (&_aes_ctx);
+				}
+
 				CryptoCache (const CryptoCache &) = delete;
 				CryptoCache (CryptoCache &&) = delete;
 			};
@@ -143,6 +155,8 @@ namespace shaga {
 
 				uint64_t siphash_k0;
 				uint64_t siphash_k1;
+				uint32_t halfsiphash_k0;
+				uint32_t halfsiphash_k1;
 
 				DigestCache ();
 				DigestCache (const DigestCache &other);
@@ -177,7 +191,7 @@ namespace shaga {
 			void decode (const std::string_view msg);
 
 			void encode (std::string &msg) const;
-			std::string encode (void) const;
+			SHAGA_NODISCARD std::string encode (void) const;
 
 			ReDataConfig& set_digest (const ReDataConfig::DIGEST v);
 			ReDataConfig& set_digest (const std::string_view str);
@@ -185,32 +199,37 @@ namespace shaga {
 			ReDataConfig& set_crypto (const ReDataConfig::CRYPTO v);
 			ReDataConfig& set_crypto (const std::string_view str);
 
-			ReDataConfig::DIGEST get_digest (void) const;
-			ReDataConfig::CRYPTO get_crypto (void) const;
+			SHAGA_NODISCARD ReDataConfig::DIGEST get_digest (void) const;
+			SHAGA_NODISCARD ReDataConfig::CRYPTO get_crypto (void) const;
 
 			SHAGA_STRV std::string_view get_digest_text (void) const;
 			SHAGA_STRV std::string_view get_crypto_text (void) const;
 
 			std::string describe (void) const;
 
+			SHAGA_NODISCARD bool is_compatible_digest (const ReDataConfig &other) const;
+			SHAGA_NODISCARD bool is_compatible_crypto (const ReDataConfig &other) const;
+			SHAGA_NODISCARD bool is_compatible (const ReDataConfig &other) const;
+
 			/* ReDataConfigDigest.cpp */
-			std::string calc_digest (const std::string_view plain, const std::string_view key);
+			SHAGA_NODISCARD std::string calc_digest (const std::string_view plain, const std::string_view key);
 
-			size_t get_digest_result_size (void) const;
-			size_t get_digest_hmac_block_size (void) const;
+			SHAGA_NODISCARD size_t get_digest_result_size (void) const;
+			SHAGA_NODISCARD size_t get_digest_hmac_key_size (void) const;
 
-			bool has_hmac (void) const;
-			bool has_digest_size_at_least_bits (const size_t limit) const;
+			SHAGA_NODISCARD bool has_hmac (void) const;
+			SHAGA_NODISCARD bool has_digest_result_size_at_least_bits (const size_t limit) const;
+			SHAGA_NODISCARD bool has_digest_hmac_key_size_at_least_bits (const size_t limit) const;
 
 			/* ReDataConfigCrypto.cpp */
 			void calc_crypto_enc (std::string &plain, std::string &out, const std::string_view key);
 			void calc_crypto_dec (const std::string_view msg, size_t offset, std::string &out, const std::string_view key);
 
-			size_t get_crypto_block_size (void) const;
-			size_t get_crypto_key_size (void) const;
+			SHAGA_NODISCARD size_t get_crypto_block_size (void) const;
+			SHAGA_NODISCARD size_t get_crypto_key_size (void) const;
 
-			bool has_crypto (void) const;
-			bool has_crypto_size_at_least_bits (const size_t limit) const;
+			SHAGA_NODISCARD bool has_crypto (void) const;
+			SHAGA_NODISCARD bool has_crypto_key_size_at_least_bits (const size_t limit) const;
 
 			void set_user_iv (const std::string_view iv);
 			void unset_user_iv (void);

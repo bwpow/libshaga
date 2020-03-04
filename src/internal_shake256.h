@@ -131,7 +131,7 @@ static inline void _sha3_keccakf (uint64_t st[25])
 	ENDIAN_END
 }
 
-static void _shake256_init (_shake256_ctx_t *c)
+static void _shake256_init (_shake256_ctx_t *const c)
 {
 	for (size_t i = 0; i < 25; ++i) {
 		c->st.q[i] = 0;
@@ -141,28 +141,28 @@ static void _shake256_init (_shake256_ctx_t *c)
 	c->pt = 0;
 }
 
-static void _shake256_update (_shake256_ctx_t *c, const std::string &data)
+static void _shake256_update (_shake256_ctx_t *const c, const std::string &data)
 {
 	int j = c->pt;
 	for (size_t i = 0; i < data.size (); i++) {
 		c->st.b[j++] ^= static_cast<uint8_t> (data[i]);
 		if (j >= c->rsiz) {
-			_sha3_keccakf(c->st.q);
+			_sha3_keccakf (c->st.q);
 			j = 0;
 		}
 	}
 	c->pt = j;
 }
 
-static void _shake256_xof (_shake256_ctx_t *c)
+static void _shake256_xof (_shake256_ctx_t *const c)
 {
 	c->st.b[c->pt] ^= 0x1F;
 	c->st.b[c->rsiz - 1] ^= 0x80;
-	_sha3_keccakf(c->st.q);
+	_sha3_keccakf (c->st.q);
 	c->pt = 0;
 }
 
-static void _shake256_out (_shake256_ctx_t *c, std::string &out, const size_t len)
+static void _shake256_out (_shake256_ctx_t *const c, std::string &out, const size_t len)
 {
 	size_t i;
 	int j;
@@ -172,7 +172,7 @@ static void _shake256_out (_shake256_ctx_t *c, std::string &out, const size_t le
 	j = c->pt;
 	for (i = 0; i < len; ++i) {
 		if (j >= c->rsiz) {
-			_sha3_keccakf(c->st.q);
+			_sha3_keccakf (c->st.q);
 			j = 0;
 		}
 		out[i] = static_cast<char> (c->st.b[j++]);

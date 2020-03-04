@@ -360,7 +360,7 @@ namespace shaga {
 	//  CRC-64 Jones  ///////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint64_t CRC::crc64 (const char *buf, const size_t len, const uint64_t startval)
+	uint64_t CRC::crc64 (const char *const buf, const size_t len, const uint64_t startval)
 	{
 		uint_fast64_t val = startval;
 
@@ -373,7 +373,7 @@ namespace shaga {
 		return val & UINT64_MAX;
 	}
 
-	uint64_t CRC::crc64 (const uint8_t *buf, const size_t len, const uint64_t startval)
+	uint64_t CRC::crc64 (const uint8_t *const buf, const size_t len, const uint64_t startval)
 	{
 		uint_fast64_t val = startval;
 
@@ -390,11 +390,11 @@ namespace shaga {
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint64_t)) {
-			cThrow ("CRC-64: String is too short");
+			cThrow ("CRC-64: String is too short"sv);
 		}
 		const uint64_t crc = crc64 (plain.data (), sze, startval);
 		if (crc64_magic != crc) {
-			cThrow ("CRC-64: String and signature does not match");
+			cThrow ("CRC-64: String and signature does not match"sv);
 		}
 		return (sze - sizeof (uint64_t));
 	}
@@ -403,11 +403,11 @@ namespace shaga {
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint64_t)) {
-			cThrow ("CRC-64: String is too short");
+			cThrow ("CRC-64: String is too short"sv);
 		}
 		const uint64_t crc = crc64 (plain.data (), sze, startval);
 		if (crc64_magic != crc) {
-			cThrow ("CRC-64: String and signature does not match");
+			cThrow ("CRC-64: String and signature does not match"sv);
 		}
 		plain.remove_suffix (sizeof (uint64_t));
 	}
@@ -422,7 +422,7 @@ namespace shaga {
 	//  CRC-32 zlib compatible  /////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint32_t CRC::crc32_zlib (const char *buf, const size_t len, const uint32_t startval)
+	uint32_t CRC::crc32_zlib (const char *const buf, const size_t len, const uint32_t startval)
 	{
 		uint_fast32_t val = startval ^ UINT32_MAX;
 
@@ -435,7 +435,7 @@ namespace shaga {
 		return (val ^ UINT32_MAX);
 	}
 
-	uint32_t CRC::crc32_zlib (const uint8_t *buf, const size_t len, const uint32_t startval)
+	uint32_t CRC::crc32_zlib (const uint8_t *const buf, const size_t len, const uint32_t startval)
 	{
 		uint_fast32_t val = startval ^ UINT32_MAX;
 
@@ -452,11 +452,11 @@ namespace shaga {
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint32_t)) {
-			cThrow ("CRC-32: String is too short");
+			cThrow ("CRC-32: String is too short"sv);
 		}
 		const uint32_t crc = crc32_zlib (plain.data (), sze, startval);
 		if (crc32_zlib_magic != crc) {
-			cThrow ("CRC-32: String and signature does not match");
+			cThrow ("CRC-32: String and signature does not match"sv);
 		}
 		return (sze - sizeof (uint32_t));
 	}
@@ -465,11 +465,11 @@ namespace shaga {
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint32_t)) {
-			cThrow ("CRC-32: String is too short");
+			cThrow ("CRC-32: String is too short"sv);
 		}
 		const uint32_t crc = crc32_zlib (plain.data (), sze, startval);
 		if (crc32_zlib_magic != crc) {
-			cThrow ("CRC-32: String and signature does not match");
+			cThrow ("CRC-32: String and signature does not match"sv);
 		}
 		plain.remove_suffix (sizeof (uint32_t));
 	}
@@ -484,7 +484,7 @@ namespace shaga {
 	//  CRC-32 Atmel CRCCU CCITT802.3 compatible  ///////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint32_t CRC::crc32_atmel (const char *buf, const size_t len, const uint32_t startval)
+	uint32_t CRC::crc32_atmel (const char *const buf, const size_t len, const uint32_t startval)
 	{
 		uint_fast32_t val = startval;
 
@@ -497,7 +497,7 @@ namespace shaga {
 		return val & UINT32_MAX;
 	}
 
-	uint32_t CRC::crc32_atmel (const uint8_t *buf, const size_t len, const uint32_t startval)
+	uint32_t CRC::crc32_atmel (const uint8_t *const buf, const size_t len, const uint32_t startval)
 	{
 		uint_fast32_t val = startval;
 
@@ -514,13 +514,13 @@ namespace shaga {
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint32_t)) {
-			cThrow ("CRC-32: String is too short");
+			cThrow ("CRC-32: String is too short"sv);
 		}
 		size_t offset = sze - sizeof (uint32_t);
 		const uint32_t crc = crc32_atmel (plain.data (), offset, startval);
 		const uint32_t crc_data = BIN::to_uint32 (plain, offset);
 		if (crc_data != crc) {
-			cThrow ("CRC-32: String and signature does not match");
+			cThrow ("CRC-32: String and signature does not match"sv);
 		}
 		return (sze - sizeof (uint32_t));
 	}
@@ -529,13 +529,13 @@ namespace shaga {
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint32_t)) {
-			cThrow ("CRC-32: String is too short");
+			cThrow ("CRC-32: String is too short"sv);
 		}
 		size_t offset = sze - sizeof (uint32_t);
 		const uint32_t crc = crc32_atmel (plain.data (), offset, startval);
 		const uint32_t crc_data = BIN::to_uint32 (plain, offset);
 		if (crc_data != crc) {
-			cThrow ("CRC-32: String and signature does not match");
+			cThrow ("CRC-32: String and signature does not match"sv);
 		}
 		plain.remove_suffix (sizeof (uint32_t));
 	}
@@ -550,7 +550,7 @@ namespace shaga {
 	//  CRC-32C /////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint32_t CRC::crc32c (const char *buf, const size_t len, const uint32_t startval)
+	uint32_t CRC::crc32c (const char *const buf, const size_t len, const uint32_t startval)
 	{
 		uint_fast32_t val = startval ^ UINT32_MAX;
 
@@ -563,7 +563,7 @@ namespace shaga {
 		return (val ^ UINT32_MAX);
 	}
 
-	uint32_t CRC::crc32c (const uint8_t *buf, const size_t len, const uint32_t startval)
+	uint32_t CRC::crc32c (const uint8_t *const buf, const size_t len, const uint32_t startval)
 	{
 		uint_fast32_t val = startval ^ UINT32_MAX;
 
@@ -580,11 +580,11 @@ namespace shaga {
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint32_t)) {
-			cThrow ("CRC-32: String is too short");
+			cThrow ("CRC-32: String is too short"sv);
 		}
 		const uint32_t crc = crc32c (plain.data (), sze, startval);
 		if (crc32c_magic != crc) {
-			cThrow ("CRC-32: String and signature does not match");
+			cThrow ("CRC-32: String and signature does not match"sv);
 		}
 		return (sze - sizeof (uint32_t));
 	}
@@ -593,11 +593,11 @@ namespace shaga {
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint32_t)) {
-			cThrow ("CRC-32: String is too short");
+			cThrow ("CRC-32: String is too short"sv);
 		}
 		const uint32_t crc = crc32c (plain.data (), sze, startval);
 		if (crc32c_magic != crc) {
-			cThrow ("CRC-32: String and signature does not match");
+			cThrow ("CRC-32: String and signature does not match"sv);
 		}
 		plain.remove_suffix (sizeof (uint32_t));
 	}
@@ -612,7 +612,7 @@ namespace shaga {
 	//  CRC-16 Modbus  //////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint16_t CRC::crc16_modbus (const char *buf, const size_t len, const uint16_t startval)
+	uint16_t CRC::crc16_modbus (const char *const buf, const size_t len, const uint16_t startval)
 	{
 		uint_fast16_t val = startval;
 
@@ -623,7 +623,7 @@ namespace shaga {
 		return val & UINT16_MAX;
 	}
 
-	uint16_t CRC::crc16_modbus (const uint8_t *buf, const size_t len, const uint16_t startval)
+	uint16_t CRC::crc16_modbus (const uint8_t *const buf, const size_t len, const uint16_t startval)
 	{
 		uint_fast16_t val = startval;
 
@@ -638,11 +638,11 @@ namespace shaga {
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint16_t)) {
-			cThrow ("CRC-16: String is too short");
+			cThrow ("CRC-16: String is too short"sv);
 		}
 		const uint16_t crc = crc16_modbus (plain.data (), sze, startval);
 		if (crc16_modbus_magic != crc) {
-			cThrow ("CRC-16: Signature does not match");
+			cThrow ("CRC-16: Signature does not match"sv);
 		}
 		return (sze - sizeof (uint16_t));
 	}
@@ -651,11 +651,11 @@ namespace shaga {
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint16_t)) {
-			cThrow ("CRC-16: String is too short");
+			cThrow ("CRC-16: String is too short"sv);
 		}
 		const uint16_t crc = crc16_modbus (plain.data (), sze, startval);
 		if (crc16_modbus_magic != crc) {
-			cThrow ("CRC-16: Signature does not match");
+			cThrow ("CRC-16: Signature does not match"sv);
 		}
 		plain.remove_suffix (sizeof (uint16_t));
 	}
@@ -670,7 +670,7 @@ namespace shaga {
 	//  CRC-8 Dallas/Maxim  /////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint8_t CRC::crc8_dallas (const char *buf, const size_t len, const uint8_t startval)
+	uint8_t CRC::crc8_dallas (const char *const buf, const size_t len, const uint8_t startval)
 	{
 		uint_fast8_t val = startval;
 
@@ -681,7 +681,7 @@ namespace shaga {
 		return val & UINT8_MAX;
 	}
 
-	uint8_t CRC::crc8_dallas (const uint8_t *buf, const size_t len, const uint8_t startval)
+	uint8_t CRC::crc8_dallas (const uint8_t *const buf, const size_t len, const uint8_t startval)
 	{
 		uint_fast8_t val = startval;
 
@@ -696,11 +696,11 @@ namespace shaga {
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint8_t)) {
-			cThrow ("CRC-8: String is too short");
+			cThrow ("CRC-8: String is too short"sv);
 		}
 		const uint8_t crc = crc8_dallas (plain.data (), sze, startval);
 		if (crc8_dallas_magic != crc) {
-			cThrow ("CRC-8: Signature does not match");
+			cThrow ("CRC-8: Signature does not match"sv);
 		}
 		return (sze - sizeof (uint8_t));
 	}
@@ -709,11 +709,11 @@ namespace shaga {
 	{
 		const size_t sze = plain.size ();
 		if (sze < sizeof (uint8_t)) {
-			cThrow ("CRC-8: String is too short");
+			cThrow ("CRC-8: String is too short"sv);
 		}
 		const uint8_t crc = crc8_dallas (plain.data (), sze, startval);
 		if (crc8_dallas_magic != crc) {
-			cThrow ("CRC-8: Signature does not match");
+			cThrow ("CRC-8: Signature does not match"sv);
 		}
 		plain.remove_suffix (sizeof (uint8_t));
 	}
@@ -722,158 +722,5 @@ namespace shaga {
 	{
 		const uint8_t crc = crc8_dallas (plain, startval);
 		BIN::from_uint8 (crc, plain);
-	}
-
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  SHA-256  ////////////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	std::string CRC::sha256 ([[maybe_unused]] const char *buf, [[maybe_unused]] const size_t len)
-	{
-#ifdef SHAGA_FULL
-		const size_t sze = 32;
-		unsigned char output[sze];
-		::mbedtls_sha256 (reinterpret_cast<const unsigned char *> (buf), len, output, 0);
-		return std::string (reinterpret_cast<const char *> (output), sze);
-#else
-		cThrow ("Digest is not supported in lite version");
-#endif // SHAGA_FULL
-	}
-
-	std::string CRC::sha256 ([[maybe_unused]] const uint8_t *buf, [[maybe_unused]] const size_t len)
-	{
-#ifdef SHAGA_FULL
-		const size_t sze = 32;
-		unsigned char output[sze];
-		::mbedtls_sha256 (buf, len, output, 0);
-		return std::string (reinterpret_cast<const char *> (output), sze);
-#else
-		cThrow ("Digest is not supported in lite version");
-#endif // SHAGA_FULL
-	}
-
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  SHA-512  ////////////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	std::string CRC::sha512 ([[maybe_unused]] const char *buf, [[maybe_unused]] const size_t len)
-	{
-#ifdef SHAGA_FULL
-		const size_t sze = 64;
-		unsigned char output[sze];
-		::mbedtls_sha512 (reinterpret_cast<const unsigned char *> (buf), len, output, 0);
-		return std::string (reinterpret_cast<const char *> (output), sze);
-#else
-		cThrow ("Digest is not supported in lite version");
-#endif // SHAGA_FULL
-	}
-
-	std::string CRC::sha512 ([[maybe_unused]] const uint8_t *buf, [[maybe_unused]] const size_t len)
-	{
-#ifdef SHAGA_FULL
-		const size_t sze = 64;
-		unsigned char output[sze];
-		::mbedtls_sha512 (buf, len, output, 0);
-		return std::string (reinterpret_cast<const char *> (output), sze);
-#else
-		cThrow ("Digest is not supported in lite version");
-#endif // SHAGA_FULL
-	}
-
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  SipHash  ////////////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	namespace CRC {
-		#define SIPHASH_DATA _data
-		#define SIPHASH_DATA_SIZE _sze
-		#define SIPHASH_PARAMS (const uint8_t *_data, const size_t _sze, const CRC::SipHash128_t &siphash_key)
-
-		#define SIPHASH_BEGIN_KEYS \
-			uint64_t vv0 = 0x736f6d6570736575ULL ^ siphash_key.first;	\
-			uint64_t vv1 = 0x646f72616e646f6dULL ^ siphash_key.second;	\
-			uint64_t vv2 = 0x6c7967656e657261ULL ^ siphash_key.first;	\
-			uint64_t vv3 = 0x7465646279746573ULL ^ siphash_key.second;
-
-		#include "internal_siphash.h"
-
-		#undef SIPHASH_BEGIN_KEYS
-		#undef SIPHASH_PARAMS
-		#undef SIPHASH_DATA_SIZE
-		#undef SIPHASH_DATA
-	}
-
-	CRC::SipHash128_t CRC::siphash_extract_key (const std::string_view key)
-	{
-		if (key.size () != 16) {
-			cThrow ("SipHash key must be exactly 16 bytes (128 bit) long");
-		}
-
-		CRC::SipHash128_t out;
-
-		out.first = _siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data ()));
-		out.second = _siphash_to_uint64 (reinterpret_cast<const uint8_t *> (key.data () + 8));
-
-		return out;
-	}
-
-	uint64_t CRC::siphash24 (const char *buf, const size_t len, const CRC::SipHash128_t &key)
-	{
-		return _calc_siphash24 (reinterpret_cast<const uint8_t *> (buf), len, key);
-	}
-
-	uint64_t CRC::siphash24 (const uint8_t *buf, const size_t len, const CRC::SipHash128_t &key)
-	{
-		return _calc_siphash24 (buf, len, key);
-	}
-
-	uint64_t CRC::siphash48 (const char *buf, const size_t len, const CRC::SipHash128_t &key)
-	{
-		return _calc_siphash48 (reinterpret_cast<const uint8_t *> (buf), len, key);
-	}
-
-	uint64_t CRC::siphash48 (const uint8_t *buf, const size_t len, const CRC::SipHash128_t &key)
-	{
-		return _calc_siphash48 (buf, len, key);
-	}
-
-	std::string CRC::siphash24_128 (const char *buf, const size_t len, const CRC::SipHash128_t &key)
-	{
-		return _calc_siphash24_128 (reinterpret_cast<const uint8_t *> (buf), len, key);
-	}
-
-	std::string CRC::siphash24_128 (const uint8_t *buf, const size_t len, const CRC::SipHash128_t &key)
-	{
-		return _calc_siphash24_128 (buf, len, key);
-	}
-
-	std::string CRC::siphash48_128 (const char *buf, const size_t len, const CRC::SipHash128_t &key)
-	{
-		return _calc_siphash48_128 (reinterpret_cast<const uint8_t *> (buf), len, key);
-	}
-
-	std::string CRC::siphash48_128 (const uint8_t *buf, const size_t len, const CRC::SipHash128_t &key)
-	{
-		return _calc_siphash48_128 (buf, len, key);
-	}
-
-	CRC::SipHash128_t CRC::siphash24_128t (const char *buf, const size_t len, const CRC::SipHash128_t &key)
-	{
-		return _calc_siphash24_128t (reinterpret_cast<const uint8_t *> (buf), len, key);
-	}
-
-	CRC::SipHash128_t CRC::siphash24_128t (const uint8_t *buf, const size_t len, const CRC::SipHash128_t &key)
-	{
-		return _calc_siphash24_128t (buf, len, key);
-	}
-
-	CRC::SipHash128_t CRC::siphash48_128t (const char *buf, const size_t len, const CRC::SipHash128_t &key)
-	{
-		return _calc_siphash48_128t (reinterpret_cast<const uint8_t *> (buf), len, key);
-	}
-
-	CRC::SipHash128_t CRC::siphash48_128t (const uint8_t *buf, const size_t len, const CRC::SipHash128_t &key)
-	{
-		return _calc_siphash48_128t (buf, len, key);
 	}
 }

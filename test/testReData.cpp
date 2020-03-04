@@ -29,7 +29,7 @@ static void _redata_test (shaga::ReDataConfig &config, const bool use_header, co
 	ReData::KEY_IDENT_VECTOR keys_ident;
 
 	/* Key mixing doesn't support more than 64 bytes for key */
-	const size_t hmac_key_size = config.get_digest_hmac_block_size ();
+	const size_t hmac_key_size = config.get_digest_hmac_key_size ();
 	const size_t crypto_key_size = config.get_crypto_key_size ();
 	const size_t crypto_block_size = config.get_crypto_block_size ();
 
@@ -223,9 +223,9 @@ TEST (ReData, random_iv)
 {
 	ReData rd;
 	ReDataConfig config;
-	config.set_digest (ReDataConfig::DIGEST::HMAC_RIPEMD160).set_crypto (ReDataConfig::CRYPTO::AES_128_CBC);
+	config.set_digest (ReDataConfig::DIGEST::HMAC_SHA512).set_crypto (ReDataConfig::CRYPTO::AES_128_CBC);
 
-	const size_t hmac_key_size = config.get_digest_hmac_block_size ();
+	const size_t hmac_key_size = config.get_digest_hmac_key_size ();
 	const size_t crypto_key_size = config.get_crypto_key_size ();
 
 	COMMON_VECTOR keys_hmac, keys_crypto;

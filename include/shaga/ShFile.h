@@ -72,11 +72,11 @@ namespace shaga {
 			void write (const std::string_view data);
 
 			/* Write memory buffer of particular length */
-			void write (const char *buf, const size_t len);
-			void write (const uint8_t *buf, const size_t len);
+			void write (const char *const buf, const size_t len);
+			void write (const uint8_t *const buf, const size_t len);
 
 			/* Write C-style string */
-			void write (const char *buf);
+			void write (const char *const buf);
 
 			/* Write single character */
 			void write (const uint8_t val);

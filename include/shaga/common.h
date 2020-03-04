@@ -130,6 +130,7 @@ All rights reserved.
 #ifdef OS_LINUX
 	#include <sys/eventfd.h>
 	#include <unistd.h>
+	#include <sched.h>
 #endif // OS_LINUX
 
 #ifdef SHAGA_FULL
@@ -137,8 +138,6 @@ All rights reserved.
 	#include <mbedtls/cipher.h>
 	#include <mbedtls/aes.h>
 
-	#include <mbedtls/ripemd160.h>
-	#include <mbedtls/sha1.h>
 	#include <mbedtls/sha256.h>
 	#include <mbedtls/sha512.h>
 
@@ -150,8 +149,6 @@ All rights reserved.
 
 	#if !defined(MBEDTLS_CIPHER_MODE_CBC) || \
 		!defined(MBEDTLS_AES_C) || \
-		!defined(MBEDTLS_RIPEMD160_C) || \
-		!defined(MBEDTLS_SHA1_C) || \
 		!defined(MBEDTLS_SHA256_C) || \
 		!defined(MBEDTLS_SHA512_C) || \
 		!defined(MBEDTLS_MD_C) || \
@@ -391,6 +388,7 @@ namespace shaga
 #include "BIN.h"
 #include "hwid.h"
 #include "CRC.h"
+#include "Digest.h"
 #include "ShSocket.h"
 #include "ShFile.h"
 #include "FS.h"
@@ -535,6 +533,19 @@ namespace shaga
 
 	static_assert (ChunkMeta::key_repeat_mask == (ChunkMeta::key_repeat_byte << 8),
 		"ChunkMeta key repeat byte and mask does not match");
+
+	static_assert (BIN::check_bit_coverage (UINT8_MAX,
+		ReDataConfig::key_digest_mask,
+		ReDataConfig::key_crypto_mask,
+		ReDataConfig::key_reserved_mask,
+		ReDataConfig::key_highbit_mask),
+		"ReDataConfig key don't add up or overlap");
+
+	static_assert (std::underlying_type<ReDataConfig::DIGEST>::type (ReDataConfig::DIGEST::_MAX) <= (1 + (ReDataConfig::key_digest_mask >> ReDataConfig::key_digest_shift)),
+		"ReDataConfig::DIGEST contains more entries than allowed");
+
+	static_assert (std::underlying_type<ReDataConfig::CRYPTO>::type (ReDataConfig::CRYPTO::_MAX) <= (1 + (ReDataConfig::key_crypto_mask >> ReDataConfig::key_crypto_shift)),
+		"ReDataConfig::CRYPTO contains more entries than allowed");
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Most used templates  ////////////////////////////////////////////////////////////////////////////////////////

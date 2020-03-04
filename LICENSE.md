@@ -110,7 +110,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------
-Files "src/internal_siphash.h" and "test/testSipHash.cpp" contain code
+Files "src/internal_*siphash.h" and "test/test*SipHash.cpp" contain code
 under following license:
 ------------------------------------------------------------------------
 SipHash reference C implementation

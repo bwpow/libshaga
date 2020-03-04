@@ -24,8 +24,8 @@ namespace shaga::CRC {
 	static const uint64_t crc64_magic {0};
 	static const uint64_t crc64_startval {0};
 
-	uint64_t crc64 (const char *buf, const size_t len, const uint64_t startval = crc64_startval);
-	uint64_t crc64 (const uint8_t *buf, const size_t len, const uint64_t startval = crc64_startval);
+	uint64_t crc64 (const char *const buf, const size_t len, const uint64_t startval = crc64_startval);
+	uint64_t crc64 (const uint8_t *const buf, const size_t len, const uint64_t startval = crc64_startval);
 
 	template<typename T>
 	uint64_t crc64 (const T &plain, const uint64_t startval = crc64_startval)
@@ -41,8 +41,8 @@ namespace shaga::CRC {
 	static const uint32_t crc32_zlib_magic {0x2144df1c};
 	static const uint32_t crc32_zlib_startval {0};
 
-	uint32_t crc32_zlib (const char *buf, const size_t len, const uint32_t startval = crc32_zlib_startval);
-	uint32_t crc32_zlib (const uint8_t *buf, const size_t len, const uint32_t startval = crc32_zlib_startval);
+	uint32_t crc32_zlib (const char *const buf, const size_t len, const uint32_t startval = crc32_zlib_startval);
+	uint32_t crc32_zlib (const uint8_t *const buf, const size_t len, const uint32_t startval = crc32_zlib_startval);
 
 	template<typename T>
 	uint32_t crc32_zlib (const T &plain, const uint32_t startval = crc32_zlib_startval)
@@ -57,8 +57,8 @@ namespace shaga::CRC {
 	/*** CRC-32 Atmel CRCCU CCITT802.3 compatible ***/
 	static const uint32_t crc32_atmel_startval {UINT32_MAX};
 
-	uint32_t crc32_atmel (const char *buf, const size_t len, const uint32_t startval = crc32_atmel_startval);
-	uint32_t crc32_atmel (const uint8_t *buf, const size_t len, const uint32_t startval = crc32_atmel_startval);
+	uint32_t crc32_atmel (const char *const buf, const size_t len, const uint32_t startval = crc32_atmel_startval);
+	uint32_t crc32_atmel (const uint8_t *const buf, const size_t len, const uint32_t startval = crc32_atmel_startval);
 
 	template<typename T>
 	uint32_t crc32_atmel (const T &plain, const uint32_t startval = crc32_atmel_startval)
@@ -74,8 +74,8 @@ namespace shaga::CRC {
 	static const uint32_t crc32c_magic {0x48674bc7};
 	static const uint32_t crc32c_startval {0};
 
-	uint32_t crc32c (const char *buf, const size_t len, const uint32_t startval = crc32c_startval);
-	uint32_t crc32c (const uint8_t *buf, const size_t len, const uint32_t startval = crc32c_startval);
+	uint32_t crc32c (const char *const buf, const size_t len, const uint32_t startval = crc32c_startval);
+	uint32_t crc32c (const uint8_t *const buf, const size_t len, const uint32_t startval = crc32c_startval);
 
 	template<typename T>
 	uint32_t crc32c (const T &plain, const uint32_t startval = crc32c_startval)
@@ -91,8 +91,8 @@ namespace shaga::CRC {
 	static const uint16_t crc16_modbus_magic {0};
 	static const uint16_t crc16_modbus_startval {UINT16_MAX};
 
-	uint16_t crc16_modbus (const char *buf, const size_t len, const uint16_t startval = crc16_modbus_startval);
-	uint16_t crc16_modbus (const uint8_t *buf, const size_t len, const uint16_t startval = crc16_modbus_startval);
+	uint16_t crc16_modbus (const char *const buf, const size_t len, const uint16_t startval = crc16_modbus_startval);
+	uint16_t crc16_modbus (const uint8_t *const buf, const size_t len, const uint16_t startval = crc16_modbus_startval);
 
 	template<typename T>
 	uint16_t crc16_modbus (const T &plain, const uint16_t startval = crc16_modbus_startval)
@@ -108,8 +108,8 @@ namespace shaga::CRC {
 	static const uint8_t crc8_dallas_magic {0};
 	static const uint8_t crc8_dallas_startval {0};
 
-	uint8_t crc8_dallas (const char *buf, const size_t len, const uint8_t startval = crc8_dallas_startval);
-	uint8_t crc8_dallas (const uint8_t *buf, const size_t len, const uint8_t startval = crc8_dallas_startval);
+	uint8_t crc8_dallas (const char *const buf, const size_t len, const uint8_t startval = crc8_dallas_startval);
+	uint8_t crc8_dallas (const uint8_t *const buf, const size_t len, const uint8_t startval = crc8_dallas_startval);
 
 	template<typename T>
 	uint8_t crc8_dallas (const T &plain, const uint8_t startval = crc8_dallas_startval)
@@ -120,82 +120,6 @@ namespace shaga::CRC {
 	size_t crc8_dallas_check (const std::string_view plain, const uint8_t startval = crc8_dallas_startval);
 	void crc8_dallas_check_and_trim (std::string_view &plain, const uint8_t startval = crc8_dallas_startval);
 	void crc8_dallas_append (std::string &plain, const uint8_t startval = crc8_dallas_startval);
-
-	/*** SHA-256 ***/
-	std::string sha256 (const char *buf, const size_t len);
-	std::string sha256 (const uint8_t *buf, const size_t len);
-
-	template<class T>
-	std::string sha256 (const T &plain)
-	{
-		return sha256 (plain.data (), plain.size ());
-	}
-
-	/*** SHA-512 ***/
-	std::string sha512 (const char *buf, const size_t len);
-	std::string sha512 (const uint8_t *buf, const size_t len);
-
-	template<class T>
-	std::string sha512 (const T &plain)
-	{
-		return sha512 (plain.data (), plain.size ());
-	}
-
-	/*** SipHash ***/
-	typedef std::pair<uint64_t, uint64_t> SipHash128_t;
-
-	SipHash128_t siphash_extract_key (const std::string_view key);
-
-	uint64_t siphash24 (const char *buf, const size_t len, const SipHash128_t &key);
-	uint64_t siphash24 (const uint8_t *buf, const size_t len, const SipHash128_t &key);
-	uint64_t siphash48 (const char *buf, const size_t len, const SipHash128_t &key);
-	uint64_t siphash48 (const uint8_t *buf, const size_t len, const SipHash128_t &key);
-
-	template<typename T>
-	uint64_t siphash24 (const T &plain, const SipHash128_t &key)
-	{
-		return siphash24 (plain.data (), plain.size (), key);
-	}
-
-	template<typename T>
-	uint64_t siphash48 (const T &plain, const SipHash128_t &key)
-	{
-		return siphash48 (plain.data (), plain.size (), key);
-	}
-
-	std::string siphash24_128 (const char *buf, const size_t len, const SipHash128_t &key);
-	std::string siphash24_128 (const uint8_t *buf, const size_t len, const SipHash128_t &key);
-	std::string siphash48_128 (const char *buf, const size_t len, const SipHash128_t &key);
-	std::string siphash48_128 (const uint8_t *buf, const size_t len, const SipHash128_t &key);
-
-	template<typename T>
-	std::string siphash24_128 (const T &plain, const SipHash128_t &key)
-	{
-		return siphash24_128 (plain.data (), plain.size (), key);
-	}
-
-	template<typename T>
-	std::string siphash48_128 (const T &plain, const SipHash128_t &key)
-	{
-		return siphash48_128 (plain.data (), plain.size (), key);
-	}
-
-	SipHash128_t siphash24_128t (const char *buf, const size_t len, const SipHash128_t &key);
-	SipHash128_t siphash24_128t (const uint8_t *buf, const size_t len, const SipHash128_t &key);
-	SipHash128_t siphash48_128t (const char *buf, const size_t len, const SipHash128_t &key);
-	SipHash128_t siphash48_128t (const uint8_t *buf, const size_t len, const SipHash128_t &key);
-
-	template<typename T>
-	SipHash128_t siphash24_128t (const T &plain, const SipHash128_t &key)
-	{
-		return siphash24_128t (plain.data (), plain.size (), key);
-	}
-
-	template<typename T>
-	SipHash128_t siphash48_128t (const T &plain, const SipHash128_t &key)
-	{
-		return siphash48_128t (plain.data (), plain.size (), key);
-	}
 }
 
 #endif // HEAD_shaga_CRC

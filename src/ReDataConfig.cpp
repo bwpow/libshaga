@@ -13,18 +13,6 @@ namespace shaga {
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	template <typename T>
-	static T opts_get (const uint8_t opts, const uint8_t shift, const uint8_t bits)
-	{
-		return static_cast<T>((opts >> shift) & ((1 << bits) - 1));
-	}
-
-	template <typename T>
-	static void opts_set (uint8_t &opts, const int shift, const T val)
-	{
-		opts |= static_cast<uint8_t>(val) << shift;
-	}
-
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -104,15 +92,15 @@ namespace shaga {
 		try {
 			const uint8_t opts = msg.at (mv); ++mv;
 
-			if ((opts & 0x80) != 0x80) {
-				cThrow ("Malformed data");
+			if ((opts & key_highbit_mask) != key_highbit_mask) {
+				cThrow ("Malformed data"sv);
 			}
 
-			set_digest (opts_get<DIGEST> (opts, 0, 4));
-			set_crypto (opts_get<CRYPTO> (opts, 5, 2));
+			set_digest (static_cast<DIGEST>((opts & key_digest_mask) >> key_digest_shift));
+			set_crypto (static_cast<CRYPTO>((opts & key_crypto_mask) >> key_crypto_shift));
 		}
 		catch (const std::exception &e) {
-			cThrow ("Unable to decode message: {}", e.what());
+			cThrow ("Unable to decode message: {}"sv, e.what());
 		}
 		catch (...) {
 			throw;
@@ -128,15 +116,15 @@ namespace shaga {
 
 	void ReDataConfig::encode (std::string &msg) const
 	{
-		uint8_t opts = 0x80;
+		uint8_t opts = key_highbit_mask;
 
-		opts_set (opts, 0, _used_digest);
-		opts_set (opts, 5, _used_crypto);
+		opts |= (static_cast<uint8_t>(_used_digest) << key_digest_shift) & key_digest_mask;
+		opts |= (static_cast<uint8_t>(_used_crypto) << key_crypto_shift) & key_crypto_mask;
 
 		msg.push_back (opts);
 	}
 
-	std::string ReDataConfig::encode (void) const
+	SHAGA_NODISCARD std::string ReDataConfig::encode (void) const
 	{
 		std::string out;
 		encode (out);
@@ -149,7 +137,7 @@ namespace shaga {
 			_used_digest = v;
 		}
 		else {
-			cThrow ("Unknown digest value");
+			cThrow ("Unknown digest value"sv);
 		}
 
 		return *this;
@@ -162,11 +150,11 @@ namespace shaga {
 			std::string vals;
 			for (const auto &v : DIGEST_MAP) {
 				if (vals.empty () == false) {
-					vals.append (" ");
+					vals.append (" "s);
 				}
 				vals.append (v.first);
 			}
-			cThrow ("Unknown digest. Possible values: {}", vals);
+			cThrow ("Unknown digest. Possible values: {}"sv, vals);
 		}
 
 		_used_digest = res->second;
@@ -180,7 +168,7 @@ namespace shaga {
 			_used_crypto = v;
 		}
 		else {
-			cThrow ("Unknown crypto value");
+			cThrow ("Unknown crypto value"sv);
 		}
 
 		return *this;
@@ -197,7 +185,7 @@ namespace shaga {
 				}
 				vals.append (v.first);
 			}
-			cThrow ("Unknown crypto. Possible values: {}", vals);
+			cThrow ("Unknown crypto. Possible values: {}"sv, vals);
 		}
 
 		_used_crypto = res->second;
@@ -205,12 +193,12 @@ namespace shaga {
 		return *this;
 	}
 
-	ReDataConfig::DIGEST ReDataConfig::get_digest (void) const
+	SHAGA_NODISCARD ReDataConfig::DIGEST ReDataConfig::get_digest (void) const
 	{
 		return _used_digest;
 	}
 
-	ReDataConfig::CRYPTO ReDataConfig::get_crypto (void) const
+	SHAGA_NODISCARD ReDataConfig::CRYPTO ReDataConfig::get_crypto (void) const
 	{
 		return _used_crypto;
 	}
@@ -222,14 +210,16 @@ namespace shaga {
 			case DIGEST::CRC32: return "CRC-32"sv;
 			case DIGEST::CRC64: return "CRC-64"sv;
 
-			case DIGEST::SHA1: return "SHA-1"sv;
 			case DIGEST::SHA256: return "SHA-256"sv;
 			case DIGEST::SHA512: return "SHA-512"sv;
 
-			case DIGEST::HMAC_RIPEMD160: return "HMAC-RIPEMD-160"sv;
-			case DIGEST::HMAC_SHA1: return "HMAC-SHA-1"sv;
 			case DIGEST::HMAC_SHA256: return "HMAC-SHA-256"sv;
 			case DIGEST::HMAC_SHA512: return "HMAC-SHA-512"sv;
+
+			case DIGEST::HALFSIPHASH24_32: return "HalfSipHash-2-4-32"sv;
+			case DIGEST::HALFSIPHASH24_64: return "HalfSipHash-2-4-64"sv;
+			case DIGEST::HALFSIPHASH48_32: return "HalfSipHash-4-8-32"sv;
+			case DIGEST::HALFSIPHASH48_64: return "HalfSipHash-4-8-64"sv;
 
 			case DIGEST::SIPHASH24_64: return "SipHash-2-4-64"sv;
 			case DIGEST::SIPHASH24_128: return "SipHash-2-4-128"sv;
@@ -261,5 +251,20 @@ namespace shaga {
 		out.append (", "sv);
 		out.append (get_crypto_text ());
 		return out;
+	}
+
+	SHAGA_NODISCARD bool ReDataConfig::is_compatible_digest (const ReDataConfig &other) const
+	{
+		return (get_digest () == other.get_digest ());
+	}
+
+	SHAGA_NODISCARD bool ReDataConfig::is_compatible_crypto (const ReDataConfig &other) const
+	{
+		return (get_crypto () == other.get_crypto ());
+	}
+
+	SHAGA_NODISCARD bool ReDataConfig::is_compatible (const ReDataConfig &other) const
+	{
+		return (is_compatible_digest (other) && is_compatible_crypto (other));
 	}
 }

@@ -19,7 +19,7 @@ All rights reserved.
 
 static_assert (sizeof (uint64_t) == 8, "Expected uint64_t to be 8 bytes");
 
-static inline void _siphash_to_uint64 (const uint8_t *data, uint64_t &v)
+static inline void _siphash_to_uint64 (const uint8_t *const data, uint64_t &v)
 {
 	::memcpy (&v, data, 8);
 
@@ -28,7 +28,7 @@ static inline void _siphash_to_uint64 (const uint8_t *data, uint64_t &v)
 	ENDIAN_END
 }
 
-static inline uint64_t _siphash_to_uint64 (const uint8_t *data)
+static inline uint64_t _siphash_to_uint64 (const uint8_t *const data)
 {
 	uint64_t v;
 
@@ -41,25 +41,25 @@ static inline uint64_t _siphash_to_uint64 (const uint8_t *data)
 	return v;
 }
 
-#ifndef ROTL64
-	#define ROTL64(x, b) (((x) << (b)) | ((x) >> (64 - (b))))
-#endif // ROTL64
+#ifndef SIPHASH_ROTL64
+	#define SIPHASH_ROTL64(x, b) (((x) << (b)) | ((x) >> (64 - (b))))
+#endif // SIPHASH_ROTL64
 
 #define SIPHASH_ROUND \
-	vv0 += vv1;												\
-	vv2 += vv3;												\
-	vv1 = ROTL64 (vv1, 13ULL);								\
-	vv3 = ROTL64 (vv3, 16ULL);								\
-	vv1 ^= vv0;												\
-	vv3 ^= vv2;												\
-	vv0 = ROTL64 (vv0, 32ULL);								\
-	vv2 += vv1;												\
-	vv0 += vv3;												\
-	vv1 = ROTL64 (vv1, 17ULL);								\
-	vv3 = ROTL64 (vv3, 21ULL);								\
-	vv1 ^= vv2;												\
-	vv3 ^= vv0;												\
-	vv2 = ROTL64 (vv2, 32ULL);
+	vv0 += vv1;							\
+	vv2 += vv3;							\
+	vv1 = SIPHASH_ROTL64 (vv1, 13ULL);	\
+	vv3 = SIPHASH_ROTL64 (vv3, 16ULL);	\
+	vv1 ^= vv0;							\
+	vv3 ^= vv2;							\
+	vv0 = SIPHASH_ROTL64 (vv0, 32ULL);	\
+	vv2 += vv1;							\
+	vv0 += vv3;							\
+	vv1 = SIPHASH_ROTL64 (vv1, 17ULL);	\
+	vv3 = SIPHASH_ROTL64 (vv3, 21ULL);	\
+	vv1 ^= vv2;							\
+	vv3 ^= vv0;							\
+	vv2 = SIPHASH_ROTL64 (vv2, 32ULL);
 
 #define SIPHASH_LAST \
 	val = static_cast<uint64_t> (SIPHASH_DATA_SIZE & 0xff) << 56;	\
@@ -90,12 +90,16 @@ static inline uint64_t _siphash_to_uint64 (const uint8_t *data)
 	}
 
 #define SIPHASH_BEGIN \
-	uint64_t val;																\
-	const uint8_t *in = SIPHASH_DATA;											\
-	const uint8_t *end = in + (SIPHASH_DATA_SIZE - (SIPHASH_DATA_SIZE & 7));	\
+	uint64_t val;																	\
+	const uint8_t *in = SIPHASH_DATA;												\
+	const uint8_t *const end = in + (SIPHASH_DATA_SIZE - (SIPHASH_DATA_SIZE & 7));	\
 	SIPHASH_BEGIN_KEYS
 
-static inline uint64_t _calc_siphash24 SIPHASH_PARAMS
+///////////////////////////////////////////////////////////////////////////////
+// SipHash-2-4 output 64bit  //////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+static inline uint64_t _calc_siphash24_64t SIPHASH_PARAMS
 {
 	SIPHASH_BEGIN
 
@@ -124,7 +128,7 @@ static inline uint64_t _calc_siphash24 SIPHASH_PARAMS
 	return (vv0 ^ vv1 ^ vv2 ^ vv3);
 }
 
-static inline std::string _calc_siphash24_64 SIPHASH_PARAMS
+static inline std::string _calc_siphash24_64s SIPHASH_PARAMS
 {
 	SIPHASH_BEGIN
 
@@ -153,7 +157,11 @@ static inline std::string _calc_siphash24_64 SIPHASH_PARAMS
 	return BIN::from_uint64 (vv0 ^ vv1 ^ vv2 ^ vv3);
 }
 
-static inline std::string _calc_siphash24_128 SIPHASH_PARAMS
+///////////////////////////////////////////////////////////////////////////////
+// SipHash-2-4 output 128bit  /////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+static inline Digest::SipHash128_t _calc_siphash24_128t SIPHASH_PARAMS
 {
 	SIPHASH_BEGIN
 
@@ -169,46 +177,7 @@ static inline std::string _calc_siphash24_128 SIPHASH_PARAMS
 
 
 	SIPHASH_LAST
-	vv3 ^= val;
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	vv0 ^= val;
 
-	vv2 ^= 0xeeULL;
-
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-
-	val = vv0 ^ vv1 ^ vv2 ^ vv3;
-
-	vv1 ^= 0xddULL;
-
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-
-	return BIN::from_uint64 (val) + BIN::from_uint64 (vv0 ^ vv1 ^ vv2 ^ vv3);
-}
-
-static inline CRC::SipHash128_t _calc_siphash24_128t SIPHASH_PARAMS
-{
-	SIPHASH_BEGIN
-
-	vv1 ^= 0xeeULL;
-
-	for (; in != end; in += 8) {
-		_siphash_to_uint64 (in, val);
-		vv3 ^= val;
-		SIPHASH_ROUND
-		SIPHASH_ROUND
-		vv0 ^= val;
-	}
-
-
-	SIPHASH_LAST
 	vv3 ^= val;
 	SIPHASH_ROUND
 	SIPHASH_ROUND
@@ -233,7 +202,52 @@ static inline CRC::SipHash128_t _calc_siphash24_128t SIPHASH_PARAMS
 	return std::make_pair (val, vv0 ^ vv1 ^ vv2 ^ vv3);
 }
 
-static inline uint64_t _calc_siphash48 SIPHASH_PARAMS
+static inline std::string _calc_siphash24_128s SIPHASH_PARAMS
+{
+	SIPHASH_BEGIN
+
+	vv1 ^= 0xeeULL;
+
+	for (; in != end; in += 8) {
+		_siphash_to_uint64 (in, val);
+		vv3 ^= val;
+		SIPHASH_ROUND
+		SIPHASH_ROUND
+		vv0 ^= val;
+	}
+
+
+	SIPHASH_LAST
+
+	vv3 ^= val;
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	vv0 ^= val;
+
+	vv2 ^= 0xeeULL;
+
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+
+	val = vv0 ^ vv1 ^ vv2 ^ vv3;
+
+	vv1 ^= 0xddULL;
+
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+
+	return BIN::from_uint64 (val) + BIN::from_uint64 (vv0 ^ vv1 ^ vv2 ^ vv3);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// SipHash-4-8 output 64bit  //////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+static inline uint64_t _calc_siphash48_64t SIPHASH_PARAMS
 {
 	SIPHASH_BEGIN
 
@@ -269,7 +283,7 @@ static inline uint64_t _calc_siphash48 SIPHASH_PARAMS
 	return (vv0 ^ vv1 ^ vv2 ^ vv3);
 }
 
-static inline std::string _calc_siphash48_64 SIPHASH_PARAMS
+static inline std::string _calc_siphash48_64s SIPHASH_PARAMS
 {
 	SIPHASH_BEGIN
 
@@ -305,58 +319,11 @@ static inline std::string _calc_siphash48_64 SIPHASH_PARAMS
 	return BIN::from_uint64 (vv0 ^ vv1 ^ vv2 ^ vv3);
 }
 
-static inline std::string _calc_siphash48_128 SIPHASH_PARAMS
-{
-	SIPHASH_BEGIN
+///////////////////////////////////////////////////////////////////////////////
+// SipHash-4-8 output 128bit  /////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
-	vv1 ^= 0xeeULL;
-
-	for (; in != end; in += 8) {
-		_siphash_to_uint64 (in, val);
-		vv3 ^= val;
-		SIPHASH_ROUND
-		SIPHASH_ROUND
-		SIPHASH_ROUND
-		SIPHASH_ROUND
-		vv0 ^= val;
-	}
-
-	SIPHASH_LAST
-	vv3 ^= val;
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	vv0 ^= val;
-
-	vv2 ^= 0xeeULL;
-
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-
-	val = vv0 ^ vv1 ^ vv2 ^ vv3;
-
-	vv1 ^= 0xddULL;
-
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-	SIPHASH_ROUND
-
-	return BIN::from_uint64 (val) + BIN::from_uint64 (vv0 ^ vv1 ^ vv2 ^ vv3);
-}
-
-static inline CRC::SipHash128_t _calc_siphash48_128t SIPHASH_PARAMS
+static inline Digest::SipHash128_t _calc_siphash48_128t SIPHASH_PARAMS
 {
 	SIPHASH_BEGIN
 
@@ -405,6 +372,57 @@ static inline CRC::SipHash128_t _calc_siphash48_128t SIPHASH_PARAMS
 	SIPHASH_ROUND
 
 	return std::make_pair (val, vv0 ^ vv1 ^ vv2 ^ vv3);
+}
+
+static inline std::string _calc_siphash48_128s SIPHASH_PARAMS
+{
+	SIPHASH_BEGIN
+
+	vv1 ^= 0xeeULL;
+
+	for (; in != end; in += 8) {
+		_siphash_to_uint64 (in, val);
+		vv3 ^= val;
+		SIPHASH_ROUND
+		SIPHASH_ROUND
+		SIPHASH_ROUND
+		SIPHASH_ROUND
+		vv0 ^= val;
+	}
+
+	SIPHASH_LAST
+	vv3 ^= val;
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	vv0 ^= val;
+
+	vv2 ^= 0xeeULL;
+
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+
+	val = vv0 ^ vv1 ^ vv2 ^ vv3;
+
+	vv1 ^= 0xddULL;
+
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+	SIPHASH_ROUND
+
+	return BIN::from_uint64 (val) + BIN::from_uint64 (vv0 ^ vv1 ^ vv2 ^ vv3);
 }
 
 #undef SIPHASH_ROUND

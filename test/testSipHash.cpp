@@ -148,6 +148,7 @@ static void _siphash_ref_impl (const uint8_t *in, const size_t inlen, const uint
 
 using namespace shaga;
 
+/* When running the same test more times, generated string will differ. This is intended. */
 static std::string _siphash_make_string (const size_t sze)
 {
 	static uint32_t nSeed = 5323;
@@ -201,43 +202,52 @@ static void _siphash_test (const ReDataConfig &config, const size_t outlen, cons
 	}
 }
 
-static void _siphash_crc_test (const size_t outlen, const int cROUNDS, const int dROUNDS)
+static void _siphash_digest_keylen_test (void)
+{
+	for (int i = 0; i < 100; ++i) {
+		if (i != 16) {
+			EXPECT_THROW (Digest::siphash_extract_key (_siphash_make_string (i)), std::exception);
+		}
+	}
+}
+
+static void _siphash_digest_test (const size_t outlen, const int cROUNDS, const int dROUNDS)
 {
 	const int test_str_sizes[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 21, 25, 28, 31, 32, 60, 64, 65, 100, 1000, 1024, 10000, UINT16_MAX + 1, -1};
 
 	for (int j = 0; j < 6; ++j) {
 		for (size_t i = 0; test_str_sizes[i] >= 0; ++i) {
 			const std::string key_str = _siphash_make_string (16);
-			const auto key = CRC::siphash_extract_key (key_str);
+			const auto key = Digest::siphash_extract_key (key_str);
 			const std::string plain = _siphash_make_string (test_str_sizes[i]);
 
-			/* Create message using CRC functions */
+			/* Create message using Digest functions */
 			std::string msg1;
 			if (8 == outlen) {
 				if (2 == cROUNDS && 4 == dROUNDS) {
-					msg1 = BIN::from_uint64 (CRC::siphash24 (plain, key));
+					msg1 = BIN::from_uint64 (Digest::siphash24_64t (plain, key));
 				}
 				else if (4 == cROUNDS && 8 == dROUNDS) {
-					msg1 = BIN::from_uint64 (CRC::siphash48 (plain, key));
+					msg1 = BIN::from_uint64 (Digest::siphash48_64t (plain, key));
 				}
 			}
 			else if (16 == outlen) {
 				if (2 == cROUNDS && 4 == dROUNDS) {
 					if (j & 1) {
-						auto ret = CRC::siphash24_128t (plain, key);
+						auto ret = Digest::siphash24_128t (plain, key);
 						msg1 = BIN::from_uint64 (ret.first) + BIN::from_uint64 (ret.second);
 					}
 					else {
-						msg1 = CRC::siphash24_128 (plain, key);
+						msg1 = Digest::siphash24_128s (plain, key);
 					}
 				}
 				else if (4 == cROUNDS && 8 == dROUNDS) {
 					if (j & 1) {
-						auto ret = CRC::siphash48_128t (plain, key);
+						auto ret = Digest::siphash48_128t (plain, key);
 						msg1 = BIN::from_uint64 (ret.first) + BIN::from_uint64 (ret.second);
 					}
 					else {
-						msg1 = CRC::siphash48_128 (plain, key);
+						msg1 = Digest::siphash48_128s (plain, key);
 					}
 				}
 			}
@@ -248,15 +258,6 @@ static void _siphash_crc_test (const size_t outlen, const int cROUNDS, const int
 			_siphash_ref (plain, key_str, msg2, outlen, cROUNDS, dROUNDS);
 
 			EXPECT_TRUE (msg1.compare (msg2) == 0);
-		}
-	}
-}
-
-static void _siphash_crc_keylen_test (void)
-{
-	for (int i = 0; i < 100; ++i) {
-		if (i != 16) {
-			EXPECT_THROW (CRC::siphash_extract_key (_siphash_make_string (i)), std::exception);
 		}
 	}
 }
@@ -283,13 +284,13 @@ TEST (ReData, SipHash)
 
 }
 
-TEST (CRC, SipHash)
+TEST (Digest, SipHash)
 {
-	_siphash_crc_keylen_test ();
+	_siphash_digest_keylen_test ();
 
-	_siphash_crc_test (8, 2, 4);
-	_siphash_crc_test (8, 4, 8);
+	_siphash_digest_test (8, 2, 4);
+	_siphash_digest_test (8, 4, 8);
 
-	_siphash_crc_test (16, 2, 4);
-	_siphash_crc_test (16, 4, 8);
+	_siphash_digest_test (16, 2, 4);
+	_siphash_digest_test (16, 4, 8);
 }

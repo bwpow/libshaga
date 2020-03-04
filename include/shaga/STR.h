@@ -248,8 +248,8 @@ namespace shaga::STR {
 	std::string multiply (std::string_view what, const uint_fast32_t cnt);
 	std::string multiply (std::string_view what, const uint_fast32_t cnt, const std::string_view postfix);
 
-	char * dirdup (const char *buf, const bool remove_trailing_slash = true);
-	char * strdup (const char *buf);
+	char * dirdup (const char *const buf, const bool remove_trailing_slash = true);
+	char * strdup (const char *const buf);
 
 	std::string from_argv (const COMMON_VECTOR &v, const char separator = ' ');
 	std::string from_argv (const int argc, const char * const * argv, const char separator = ' ');

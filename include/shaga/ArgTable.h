@@ -53,9 +53,9 @@ namespace shaga {
 			void print_usage (void) const;
 			friend std::ostream& operator<< (std::ostream& stream, const ArgTable& t);
 
-			ArgTable & add (const std::string_view key_long, const char key_short, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string_view help, const std::string_view param_type = "", CheckerCallback checker = nullptr);
-			ArgTable & add (const std::string_view key_long, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string_view help, const std::string_view param_type = "", CheckerCallback checker = nullptr);
-			ArgTable & add (const char key_short, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string_view help, const std::string_view param_type = "", CheckerCallback checker = nullptr);
+			ArgTable & add (const std::string_view key_long, const char key_short, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string_view help, const std::string_view param_type = ""sv, CheckerCallback checker = nullptr);
+			ArgTable & add (const std::string_view key_long, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string_view help, const std::string_view param_type = ""sv, CheckerCallback checker = nullptr);
+			ArgTable & add (const char key_short, const ArgTable::INCIDENCE incidence, const bool has_param, const std::string_view help, const std::string_view param_type = ""sv, CheckerCallback checker = nullptr);
 
 			bool process (const COMMON_VECTOR &v, const bool thr = false);
 			bool process (const COMMON_VECTOR &v, std::string &error);

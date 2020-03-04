@@ -164,8 +164,8 @@ TEST (DiSig, raw)
 TEST (DiSig, genkey)
 {
 	std::string name;
-	const std::string hsh_ok = CRC::sha256 ("test string"sv);
-	const std::string hsh_other = CRC::sha256 ("different test string"sv);
+	const std::string hsh_ok = Digest::sha256 ("test string"sv);
+	const std::string hsh_other = Digest::sha256 ("different test string"sv);
 	const std::string hsh_bad = "abcd"s;
 
 	DiSigPrivate priv;

@@ -438,7 +438,7 @@ namespace shaga {
 		static inline auto _to_int (const S &s, size_t &offset) -> T
 		{
 			if ((offset + sizeof (T)) > s.size ()) {
-				cThrow ("Not enough bytes");
+				cThrow ("Not enough bytes"sv);
 			}
 			else if (std::is_same<T, uint8_t>::value || std::is_same<T, int8_t>::value) {
 				return static_cast<T> (s[offset++]);

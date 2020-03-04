@@ -376,6 +376,6 @@ namespace shaga {
 
 	INI ArgTable::export_ini (void) const
 	{
-		return export_ini ("");
+		return export_ini (""sv);
 	}
 }

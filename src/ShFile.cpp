@@ -7,9 +7,7 @@ All rights reserved.
 *******************************************************************************/
 #include "shaga/common.h"
 
-#include <sys/types.h>
 #include <fcntl.h>
-#include <unistd.h>
 
 namespace shaga {
 
@@ -187,7 +185,7 @@ namespace shaga {
 		write (data, data.size ());
 	}
 
-	void ShFile::write (const char *buf, const size_t len)
+	void ShFile::write (const char *const buf, const size_t len)
 	{
 		const ssize_t ret = ::write (_fd, buf, len);
 		if (ret < 0) {
@@ -198,12 +196,12 @@ namespace shaga {
 		}
 	}
 
-	void ShFile::write (const uint8_t *buf, const size_t len)
+	void ShFile::write (const uint8_t *const buf, const size_t len)
 	{
 		write (reinterpret_cast<const char *> (buf), len);
 	}
 
-	void ShFile::write (const char *buf)
+	void ShFile::write (const char *const buf)
 	{
 		write (buf, ::strlen (buf));
 	}

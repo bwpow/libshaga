@@ -231,7 +231,7 @@ namespace shaga {
 		}
 #ifndef OS_WIN
 		if (true == for_filename) {
-			STR::sprint (out, "{:04}-{:02}-{:02}_{:02}{:02}{:02d}_{}"sv,
+			STR::sprint (out, "{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}_{}"sv,
 				t.tm_year + 1900,
 				t.tm_mon + 1,
 				t.tm_mday,
@@ -241,7 +241,7 @@ namespace shaga {
 				t.tm_zone);
 		}
 		else {
-			STR::sprint (out, "{:04}-{:02}-{:02} {:02}:{:02}:{:02d} {}"sv,
+			STR::sprint (out, "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d} {}"sv,
 				t.tm_year + 1900,
 				t.tm_mon + 1,
 				t.tm_mday,
@@ -252,7 +252,7 @@ namespace shaga {
 		}
 #else
 		if (true == for_filename) {
-			STR::sprint (out, "{:04}-{:02}-{:02}_{:02}{:02}{:02d}"sv,
+			STR::sprint (out, "{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}"sv,
 				t.tm_year + 1900,
 				t.tm_mon + 1,
 				t.tm_mday,
@@ -261,7 +261,7 @@ namespace shaga {
 				t.tm_sec);
 		}
 		else {
-			STR::sprint (out, "{:04}-{:02}-{:02} {:02}:{:02}:{:02d}"sv,
+			STR::sprint (out, "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}"sv,
 				t.tm_year + 1900,
 				t.tm_mon + 1,
 				t.tm_mday,
@@ -292,7 +292,7 @@ namespace shaga {
 		}
 #ifndef OS_WIN
 		if (true == for_filename) {
-			return fmt::format ("{:04}-{:02}-{:02}_{:02}{:02}{:02d}_{}"sv,
+			return fmt::format ("{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}_{}"sv,
 				t.tm_year + 1900,
 				t.tm_mon + 1,
 				t.tm_mday,
@@ -302,7 +302,7 @@ namespace shaga {
 				t.tm_zone);
 		}
 		else {
-			return fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d} {}"sv,
+			return fmt::format ("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d} {}"sv,
 				t.tm_year + 1900,
 				t.tm_mon + 1,
 				t.tm_mday,
@@ -313,7 +313,7 @@ namespace shaga {
 		}
 #else
 		if (true == for_filename) {
-			return fmt::format ("{:04}-{:02}-{:02}_{:02}{:02}{:02d}"sv,
+			return fmt::format ("{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}"sv,
 				t.tm_year + 1900,
 				t.tm_mon + 1,
 				t.tm_mday,
@@ -322,7 +322,7 @@ namespace shaga {
 				t.tm_sec);
 		}
 		else {
-			return fmt::format ("{:04}-{:02}-{:02} {:02}:{:02}:{:02d}"sv,
+			return fmt::format ("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}"sv,
 				t.tm_year + 1900,
 				t.tm_mon + 1,
 				t.tm_mday,
@@ -352,7 +352,7 @@ namespace shaga {
 			::gmtime_r (&theTime, &t);
 		}
 
-		STR::sprint (out, "{:04}{}{:02}{}{:02}"sv,
+		STR::sprint (out, "{:04d}{}{:02d}{}{:02d}"sv,
 			t.tm_year + 1900,
 			separatorstr,
 			t.tm_mon + 1,
@@ -379,7 +379,7 @@ namespace shaga {
 			::gmtime_r (&theTime, &t);
 		}
 
-		return fmt::format ("{:04}{}{:02}{}{:02}"sv,
+		return fmt::format ("{:04d}{}{:02d}{}{:02d}"sv,
 			t.tm_year + 1900,
 			separatorstr,
 			t.tm_mon + 1,
@@ -532,7 +532,7 @@ namespace shaga {
 		return out;
 	}
 
-	char * STR::dirdup (const char *buf, const bool remove_trailing_slash)
+	char * STR::dirdup (const char *const buf, const bool remove_trailing_slash)
 	{
 		ssize_t l = static_cast<ssize_t> (strlen (buf));
 		char *output = reinterpret_cast<char *> (::malloc (l + 2));
@@ -558,7 +558,7 @@ namespace shaga {
 		return output;
 	}
 
-	char * STR::strdup (const char *buf)
+	char * STR::strdup (const char *const buf)
 	{
 		char *output = ::strdup (buf);
 		if (nullptr == output) {

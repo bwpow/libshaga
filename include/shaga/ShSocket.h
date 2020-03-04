@@ -30,6 +30,9 @@ namespace shaga {
 			bool operator== (const int other) const;
 			bool operator!= (const int other) const;
 			bool operator< (const int other) const;
+
+			ShSocket (ShSocket const&) = delete;
+			ShSocket& operator= (ShSocket const&) = delete;
 	};
 
 	typedef std::shared_ptr<ShSocket> SHARED_SOCKET;
@@ -40,6 +43,12 @@ namespace shaga {
 
 	bool operator< (const SHARED_SOCKET &a, const int b);
 	bool operator< (const int b, const SHARED_SOCKET &a);
+
+	bool operator== (const UNIQUE_SOCKET &a, const int b);
+	bool operator== (const int b, const UNIQUE_SOCKET &a);
+
+	bool operator< (const UNIQUE_SOCKET &a, const int b);
+	bool operator< (const int b, const UNIQUE_SOCKET &a);
 }
 
 #endif // HEAD_shaga_ShSocket

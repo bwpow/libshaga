@@ -31,7 +31,9 @@ namespace shaga {
 			T* const _data;
 
 		public:
-			explicit SPSC (const uint_fast32_t sze) : _size (sze), _data (static_cast<T*> (::malloc (sizeof (T) * sze)))
+			explicit SPSC (const uint_fast32_t sze) :
+				_size (sze),
+				_data (static_cast<T*> (::malloc (sizeof (T) * sze)))
 			{
 				if (sze < 2) {
 					cThrow ("Ring size must be at least 2"sv);
@@ -288,7 +290,9 @@ namespace shaga {
 
 		public:
 			template<class ...Args>
-			explicit PaSPSC (const uint_fast32_t sze, Args&&... args) : _size (sze), _data (static_cast<T*> (::malloc (sizeof (T) * sze)))
+			explicit PaSPSC (const uint_fast32_t sze, Args&&... args) :
+				_size (sze),
+				_data (static_cast<T*> (::malloc (sizeof (T) * sze)))
 			{
 				if (sze < 2) {
 					cThrow ("Ring size must be at least 2"sv);

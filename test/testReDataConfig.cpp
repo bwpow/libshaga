@@ -12,7 +12,7 @@ using namespace shaga;
 TEST (ReDataConfig, constructors)
 {
 	ReDataConfig first;
-	first.set_digest (ReDataConfig::DIGEST::SHA1).set_crypto (ReDataConfig::CRYPTO::AES_256_CBC);
+	first.set_digest (ReDataConfig::DIGEST::SHA256).set_crypto (ReDataConfig::CRYPTO::AES_256_CBC);
 
 	ReDataConfig second (first);
 
@@ -28,7 +28,7 @@ TEST (ReDataConfig, constructors)
 TEST (ReDataConfig, assign_operators)
 {
 	ReDataConfig first;
-	first.set_digest (ReDataConfig::DIGEST::SHA1).set_crypto (ReDataConfig::CRYPTO::AES_256_CBC);
+	first.set_digest (ReDataConfig::DIGEST::SHA256).set_crypto (ReDataConfig::CRYPTO::AES_256_CBC);
 
 	ReDataConfig second = first;
 

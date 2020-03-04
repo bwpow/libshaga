@@ -13,7 +13,7 @@ namespace shaga {
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	static inline size_t _get_crypto_block_size (const ReDataConfig::CRYPTO crypto)
+	SHAGA_NODISCARD static inline size_t _get_crypto_block_size (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
 			case ReDataConfig::CRYPTO::NONE:
@@ -26,10 +26,10 @@ namespace shaga {
 			case ReDataConfig::CRYPTO::_MAX:
 				break;
 		}
-		cThrow ("Unsupported crypto");
+		cThrow ("Unsupported crypto"sv);
 	}
 
-	static inline size_t _get_crypto_iv_size (const ReDataConfig::CRYPTO crypto)
+	SHAGA_NODISCARD static inline size_t _get_crypto_iv_size (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
 			case ReDataConfig::CRYPTO::NONE:
@@ -42,10 +42,10 @@ namespace shaga {
 			case ReDataConfig::CRYPTO::_MAX:
 				break;
 		}
-		cThrow ("Unsupported crypto");
+		cThrow ("Unsupported crypto"sv);
 	}
 
-	static inline size_t _get_crypto_key_size (const ReDataConfig::CRYPTO crypto)
+	SHAGA_NODISCARD static inline size_t _get_crypto_key_size (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
 			case ReDataConfig::CRYPTO::NONE:
@@ -60,56 +60,49 @@ namespace shaga {
 			case ReDataConfig::CRYPTO::_MAX:
 				break;
 		}
-		cThrow ("Unsupported crypto");
+		cThrow ("Unsupported crypto"sv);
 	}
 
-	static inline size_t _calc_aes (std::string &out, const char *msg, const size_t msg_size, unsigned char *iv_data, const size_t iv_size, const std::string_view key, const bool enc, ReDataConfig::CryptoCache &cache)
+	SHAGA_NODISCARD static inline size_t _calc_aes (
+		[[maybe_unused]] std::string &out,
+		[[maybe_unused]] const char *msg,
+		[[maybe_unused]] const size_t msg_size,
+		[[maybe_unused]] unsigned char *iv_data,
+		[[maybe_unused]] const size_t iv_size,
+		[[maybe_unused]] const std::string_view key,
+		[[maybe_unused]] const bool enc,
+		[[maybe_unused]] ReDataConfig::CryptoCache &cache)
 	{
 #ifdef SHAGA_FULL
 		if (iv_size != 16) {
-			cThrow ("Wrong crypto IV size");
+			cThrow ("Wrong crypto IV size"sv);
 		}
 
-		#ifdef SHAGA_THREADING
-			std::call_once (cache._aes_init_flag, [&]()-> void {
-				mbedtls_aes_init (&cache._aes_ctx);
-			});
-		#else
-			if (std::exchange (cache._aes_init_flag, true) == false) {
-				mbedtls_aes_init (&cache._aes_ctx);
-			}
-		#endif // SHAGA_THREADING
-
 		if ((true == enc ? mbedtls_aes_setkey_enc : mbedtls_aes_setkey_dec)(&cache._aes_ctx, reinterpret_cast<const unsigned char *> (key.data ()), key.size () * 8) != 0) {
-			cThrow ("Wrong crypto key size");
+			cThrow ("Wrong crypto key size"sv);
 		}
 
 		const size_t orig_out_size = out.size ();
 		out.resize (orig_out_size + msg_size);
-		if (mbedtls_aes_crypt_cbc (&cache._aes_ctx, (true == enc) ? MBEDTLS_AES_ENCRYPT : MBEDTLS_AES_DECRYPT, msg_size, iv_data,
-			reinterpret_cast<const unsigned char *> (msg), reinterpret_cast<unsigned char *> (out.data () + orig_out_size)) != 0)
+		if (mbedtls_aes_crypt_cbc (&cache._aes_ctx,
+			(true == enc) ? MBEDTLS_AES_ENCRYPT : MBEDTLS_AES_DECRYPT,
+			msg_size,
+			iv_data,
+			reinterpret_cast<const unsigned char *> (msg),
+			reinterpret_cast<unsigned char *> (out.data () + orig_out_size)) != 0)
 		{
-			cThrow ("Wrong crypto message size");
+			cThrow ("Wrong crypto message size"sv);
 		}
 
 		return msg_size;
-
 #else
-		(void) out;
-		(void) msg;
-		(void) msg_size;
-		(void) iv_data;
-		(void) iv_size;
-		(void) key;
-		(void) enc;
-		(void) cache;
-		cThrow ("Cryptography is not supported in lite version");
+		cThrow ("Cryptography is not supported in lite version"sv);
 #endif // SHAGA_FULL
 	}
 
 	typedef std::function<size_t(std::string &, const char *, const size_t, unsigned char *, const size_t, const std::string_view, const bool, ReDataConfig::CryptoCache &)> CRYPTO_FUNC;
 
-	static inline CRYPTO_FUNC _get_crypto_calc_function (const ReDataConfig::CRYPTO crypto)
+	SHAGA_NODISCARD static inline CRYPTO_FUNC _get_crypto_calc_function (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
 			case ReDataConfig::CRYPTO::NONE:
@@ -125,24 +118,21 @@ namespace shaga {
 		cThrow ("Unsupported crypto"sv);
 	}
 
-	static inline void _random_string (unsigned char *str, const size_t sze, ReDataConfig::CryptoCache &cache)
+	static inline void _random_string ([[maybe_unused]] unsigned char *str, [[maybe_unused]] const size_t sze, [[maybe_unused]] ReDataConfig::CryptoCache &cache)
 	{
 #ifdef SHAGA_FULL
 		cache._rng.generate_n<uint8_t> (str, sze, 0x00, 0xff);
 #else
-		(void) str;
-		(void) sze;
-		(void) cache;
 		cThrow ("Cryptography is not supported in lite version"sv);
 #endif // SHAGA_FULL
 	}
 
-	static inline size_t _round_up_pow2 (const size_t numToRound, const size_t multiple)
+	SHAGA_NODISCARD static inline size_t _round_up_pow2 (const size_t numToRound, const size_t multiple)
 	{
 		return (numToRound + multiple - 1) & ~(multiple - 1);
 	}
 
-	static inline void _pad_to_blocksize (std::string &str, const size_t block_size)
+	static inline void _pad_to_blocksize ([[maybe_unused]] std::string &str, [[maybe_unused]] const size_t block_size)
 	{
 #ifdef SHAGA_FULL
 		/* Store original data size before any modification */
@@ -157,13 +147,10 @@ namespace shaga {
 
 		/* Pad with data */
 		std::iota (str.begin () + orig_size, str.end (), 0x33);
-		//cache._rng.generate<uint8_t> (str.begin () + orig_size, str.end (), 0x00, 0xff);
 
 		/* Append last 3 bytes with 24-bit little endian encoded original data size */
 		BIN::from_uint24 (orig_size, str);
 #else
-		(void) str;
-		(void) block_size;
 		cThrow ("Cryptography is not supported in lite version"sv);
 #endif // SHAGA_FULL
 	}
@@ -285,24 +272,24 @@ namespace shaga {
 		}
 	}
 
-	size_t ReDataConfig::get_crypto_block_size (void) const
+	SHAGA_NODISCARD size_t ReDataConfig::get_crypto_block_size (void) const
 	{
 		return _get_crypto_block_size (_used_crypto);
 	}
 
-	size_t ReDataConfig::get_crypto_key_size (void) const
+	SHAGA_NODISCARD size_t ReDataConfig::get_crypto_key_size (void) const
 	{
 		return _get_crypto_key_size (_used_crypto);
 	}
 
-	bool ReDataConfig::has_crypto (void) const
+	SHAGA_NODISCARD bool ReDataConfig::has_crypto (void) const
 	{
 		return _get_crypto_key_size (_used_crypto) > 0;
 	}
 
-	bool ReDataConfig::has_crypto_size_at_least_bits (const size_t limit) const
+	SHAGA_NODISCARD bool ReDataConfig::has_crypto_key_size_at_least_bits (const size_t limit) const
 	{
-		return _get_crypto_key_size (_used_crypto) * 8 >= limit;
+		return (_get_crypto_key_size (_used_crypto) * 8) >= limit;
 	}
 
 	void ReDataConfig::set_user_iv (const std::string_view iv)

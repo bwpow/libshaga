@@ -142,6 +142,7 @@ namespace shaga {
 		private:
 			std::string _text;
 			size_t _info_pos {0};
+			static const constexpr char *_muted_str = "CommonException muted";
 
 		public:
 			template <typename... Args>
@@ -184,7 +185,7 @@ namespace shaga {
 			const char *what () const noexcept
 			{
 				if (_text.empty ()) {
-					return "CommonException muted";
+					return _muted_str;
 				}
 				else {
 					return (_text.c_str ()) + _info_pos;
@@ -194,7 +195,7 @@ namespace shaga {
 			const char *debugwhat () const noexcept
 			{
 				if (_text.empty ()) {
-					return "CommonException muted";
+					return _muted_str;
 				}
 				else {
 					return _text.c_str ();

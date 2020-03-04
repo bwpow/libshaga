@@ -33,6 +33,26 @@ namespace shaga {
 		return b < a->get ();
 	}
 
+	bool operator== (const UNIQUE_SOCKET &a, const int b)
+	{
+		return a->get () == b;
+	}
+
+	bool operator== (const int b, const UNIQUE_SOCKET &a)
+	{
+		return a->get () == b;
+	}
+
+	bool operator< (const UNIQUE_SOCKET &a, const int b)
+	{
+		return a->get () < b;
+	}
+
+	bool operator< (const int b, const UNIQUE_SOCKET &a)
+	{
+		return b < a->get ();
+	}
+
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -46,14 +66,14 @@ namespace shaga {
 	{
 		if (_fd < 0) {
 			if (errno > 0) {
-				cThrow ("Unable to create socket: {}", strerror (errno));
+				cThrow ("Unable to create socket: {}"sv, strerror (errno));
 			}
 			else {
-				cThrow ("Unable to use empty socket");
+				cThrow ("Unable to use empty socket"sv);
 			}
 		}
 
-		P::debug_print ("Opening socket {}", _fd);
+		P::debug_print ("Opening socket {}"sv, _fd);
 	}
 
 	ShSocket::ShSocket (const int domain, const int type, const int protocol) :
@@ -63,7 +83,7 @@ namespace shaga {
 	ShSocket::~ShSocket ()
 	{
 		if (_fd >= 0) {
-			P::debug_print ("Closing socket {}", _fd);
+			P::debug_print ("Closing socket {}"sv, _fd);
 			::close (_fd);
 		}
 	}
