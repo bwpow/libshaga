@@ -115,7 +115,7 @@ namespace shaga {
 				}
 
 				this->_data.reserve (_num_packets);
-				for (uint_fast32_t i = 0; i < _num_packets; i++) {
+				for (uint_fast32_t i = 0; i < _num_packets; ++i) {
 					this->_data.push_back (std::make_unique<T> (_max_packet_size));
 				}
 				this->_curdata = this->_data.front ().get ();

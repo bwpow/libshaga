@@ -39,14 +39,14 @@ namespace shaga {
 			uint_fast32_t _size {0};
 
 		public:
-			uint8_t *buffer {nullptr};
+			uint8_t * buffer {nullptr};
 
 			SPSCDataPreAlloc (const uint_fast32_t bufsize) :
-				_bufsize (bufsize)
+				_bufsize (bufsize),
+				buffer (reinterpret_cast<uint8_t *> (::operator new (_bufsize, std::nothrow)))
 			{
-				buffer = reinterpret_cast<uint8_t *> (::operator new (_bufsize, std::nothrow));
 				if (nullptr == buffer) {
-					cThrow ("Unable to allocate buffer");
+					cThrow ("Unable to allocate buffer"sv);
 				}
 			}
 
@@ -65,7 +65,7 @@ namespace shaga {
 			virtual uint_fast32_t inc_size (void) override
 			{
 				if (_size >= _bufsize) {
-					cThrow ("Unable to increase size");
+					cThrow ("Unable to increase size"sv);
 				}
 				return _size++;
 			}
@@ -73,7 +73,7 @@ namespace shaga {
 			virtual uint_fast32_t set_size (const uint_fast32_t new_size) override
 			{
 				if (new_size > _bufsize) {
-					cThrow ("Unable to set size");
+					cThrow ("Unable to set size"sv);
 				}
 				return (_size = new_size);
 			}
@@ -81,7 +81,7 @@ namespace shaga {
 			virtual void dec_size (void) override
 			{
 				if (0 == _size) {
-					cThrow ("Unable to decrease size");
+					cThrow ("Unable to decrease size"sv);
 				}
 				_size--;
 			}
@@ -89,7 +89,7 @@ namespace shaga {
 			virtual void dec2_size (void) override
 			{
 				if (_size < 2) {
-					cThrow ("Unable to decrease size");
+					cThrow ("Unable to decrease size"sv);
 				}
 				_size -= 2;
 			}
@@ -104,7 +104,7 @@ namespace shaga {
 			virtual void alloc (const uint_fast32_t alloc_size) override
 			{
 				if (alloc_size > _bufsize) {
-					cThrow ("Requested larger alloc size in constant container");
+					cThrow ("Requested larger alloc size in constant container"sv);
 				}
 			}
 
@@ -138,7 +138,7 @@ namespace shaga {
 			virtual uint_fast32_t inc_size (void) override
 			{
 				if (_size >= _real_bufsize) {
-					cThrow ("Unable to increase size");
+					cThrow ("Unable to increase size"sv);
 				}
 				return _size++;
 			}
@@ -146,7 +146,7 @@ namespace shaga {
 			virtual uint_fast32_t set_size (const uint_fast32_t new_size) override
 			{
 				if (new_size > _real_bufsize) {
-					cThrow ("Unable to set size");
+					cThrow ("Unable to set size"sv);
 				}
 				return (_size = new_size);
 			}
@@ -154,7 +154,7 @@ namespace shaga {
 			virtual void dec_size (void) override
 			{
 				if (0 == _size) {
-					cThrow ("Unable to decrease size");
+					cThrow ("Unable to decrease size"sv);
 				}
 				_size--;
 			}
@@ -162,7 +162,7 @@ namespace shaga {
 			virtual void dec2_size (void) override
 			{
 				if (_size < 2) {
-					cThrow ("Unable to decrease size");
+					cThrow ("Unable to decrease size"sv);
 				}
 				_size -= 2;
 			}
@@ -185,7 +185,7 @@ namespace shaga {
 					if (alloc_size > 0) {
 						buffer = reinterpret_cast<uint8_t *> (::operator new (alloc_size, std::nothrow));
 						if (nullptr == buffer) {
-							cThrow ("Unable to allocate buffer");
+							cThrow ("Unable to allocate buffer"sv);
 						}
 					}
 

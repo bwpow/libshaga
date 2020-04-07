@@ -13,8 +13,8 @@ All rights reserved.
 namespace shaga {
 #define RING(x) if ((x) >= _size) { (x) = 0; }
 
-	template<class T>
-	class SPSC {
+	template<class T> class SPSC
+	{
 		private:
 			typedef T value_type;
 
@@ -271,8 +271,8 @@ namespace shaga {
 			SPSC& operator= (const SPSC &) = delete;
 	};
 
-	template<class T>
-	class PaSPSC {
+	template<class T> class PaSPSC
+	{
 		private:
 			typedef T value_type;
 
