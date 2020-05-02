@@ -27,13 +27,13 @@ namespace shaga {
 		}
 	}
 
-	static void _check_key_validity (uint32_t bkey, uint8_t *chars = nullptr)
+	static void _check_key_validity (uint32_t bkey, uint8_t *const out_chars = nullptr)
 	{
 		if (bkey < Chunk::key_type_min || bkey > Chunk::key_type_max) {
 			cThrow ("Unrecognized key value {:X}"sv, bkey);
 		}
 
-		if (chars != nullptr) {
+		if (out_chars != nullptr) {
 			--bkey;
 
 			uint8_t val[4];
@@ -42,10 +42,10 @@ namespace shaga {
 			val[2] = ((bkey / 676) % 26);
 			val[3] = ((bkey / 17'576) % 26);
 
-			chars[0] = val[0] + 'A';
-			chars[1] = val[1] + 'A';
-			chars[2] = val[2] + 'A';
-			chars[3] = val[3] + 'A';
+			out_chars[0] = val[0] + 'A';
+			out_chars[1] = val[1] + 'A';
+			out_chars[2] = val[2] + 'A';
+			out_chars[3] = val[3] + 'A';
 		}
 	}
 
@@ -71,9 +71,9 @@ namespace shaga {
 
 	std::string Chunk::bin_to_key (const uint32_t bkey)
 	{
-		uint8_t buf[4];
-		_check_key_validity (bkey, buf);
-		return std::string (reinterpret_cast<const char*> (buf), 4);
+		std::string out (4, '\0');
+		_check_key_validity (bkey, reinterpret_cast<uint8_t*> (out.data ()));
+		return out;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////

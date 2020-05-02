@@ -137,6 +137,8 @@ All rights reserved.
 	/* Used in ReData and CRC */
 	#include <mbedtls/cipher.h>
 	#include <mbedtls/aes.h>
+	#include <mbedtls/chacha20.h>
+	#include <mbedtls/chachapoly.h>
 
 	#include <mbedtls/sha256.h>
 	#include <mbedtls/sha512.h>
@@ -149,6 +151,8 @@ All rights reserved.
 
 	#if !defined(MBEDTLS_CIPHER_MODE_CBC) || \
 		!defined(MBEDTLS_AES_C) || \
+		!defined(MBEDTLS_CHACHA20_C) || \
+		!defined(MBEDTLS_CHACHAPOLY_C) || \
 		!defined(MBEDTLS_SHA256_C) || \
 		!defined(MBEDTLS_SHA512_C) || \
 		!defined(MBEDTLS_MD_C) || \
@@ -203,9 +207,9 @@ using namespace std::literals;
 	#error Unable to detect endian
 #endif
 
-#define ENDIAN_BSWAP16(val) val = __builtin_bswap16 (val)
-#define ENDIAN_BSWAP32(val) val = __builtin_bswap32 (val)
-#define ENDIAN_BSWAP64(val) val = __builtin_bswap64 (val)
+#define ENDIAN_BSWAP16(val) (val)= __builtin_bswap16 (val)
+#define ENDIAN_BSWAP32(val) (val)= __builtin_bswap32 (val)
+#define ENDIAN_BSWAP64(val) (val)= __builtin_bswap64 (val)
 
 #if __has_cpp_attribute(fallthrough)
 	#define SHAGA_FALLTHROUGH [[fallthrough]]
@@ -495,6 +499,11 @@ namespace shaga
 	static_assert (4 <= sizeof (uint_fast32_t), "Expected uint_fast32_t to be at least 32 bits");
 	static_assert (8 <= sizeof (uint_fast64_t), "Expected uint_fast64_t to be at least 64 bits");
 
+	static_assert (8 == sizeof (off64_t), "Expected off64_t to be 64 bits");
+	static_assert (sizeof (off_t) == sizeof (off64_t), "Expected off_t to be same size as off64_t");
+
+	static_assert (4 == sizeof (time_t) || 8 == sizeof (time_t), "Expected time_t to be 32 or 64 bits");
+
 	/*** Chunk ***/
 	static_assert (std::underlying_type<Chunk::Priority>::type (Chunk::_Priority_first) < std::underlying_type<Chunk::Priority>::type (Chunk::_Priority_last),
 		"Chunk::Priority must begin before end");
@@ -537,7 +546,6 @@ namespace shaga
 	static_assert (BIN::check_bit_coverage (UINT8_MAX,
 		ReDataConfig::key_digest_mask,
 		ReDataConfig::key_crypto_mask,
-		ReDataConfig::key_reserved_mask,
 		ReDataConfig::key_highbit_mask),
 		"ReDataConfig key don't add up or overlap");
 

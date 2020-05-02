@@ -30,7 +30,7 @@ namespace shaga {
 		ret = ::mbedtls_pk_setup (&_ctx, ::mbedtls_pk_info_from_type (MBEDTLS_PK_ECKEY));
 		check_error (ret);
 
-		mbedtls_ecp_keypair *ec = mbedtls_pk_ec (_ctx);
+		mbedtls_ecp_keypair *ec = ::mbedtls_pk_ec (_ctx);
 
 		ret = ::mbedtls_ecp_group_load (&ec->grp, curve_info->grp_id);
 		check_error (ret);

@@ -156,7 +156,7 @@ namespace shaga {
 				if (0 == _size) {
 					cThrow ("Unable to decrease size"sv);
 				}
-				_size--;
+				--_size;
 			}
 
 			virtual void dec2_size (void) override

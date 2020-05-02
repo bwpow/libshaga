@@ -229,10 +229,10 @@ namespace shaga {
 	{
 		for (const auto &e : _entries) {
 			if (e.key_long.empty () == false && key_long == e.key_long) {
-				cThrow ("Option '--{}' is duplicated", key_long);
+				cThrow ("Option '--{}' is duplicated"sv, key_long);
 			}
 			if (e.key_short != 0 && key_short == e.key_short) {
-				cThrow ("Option '-{:c}' is duplicated", key_short);
+				cThrow ("Option '-{:c}' is duplicated"sv, key_short);
 			}
 		}
 
@@ -282,7 +282,7 @@ namespace shaga {
 			}
 
 			if (true == _next_entry_is_param) {
-				cThrow ("Option '{}' is missing parameter", vec.back());
+				cThrow ("Option '{}' is missing parameter"sv, vec.back ());
 			}
 
 			/* Check for correct incidence */

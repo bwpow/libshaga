@@ -19,8 +19,8 @@ namespace shaga {
 			static void can_do (const mbedtls_pk_context &ctx);
 			static std::string_view get_name (const mbedtls_pk_context &ctx);
 
-			virtual void dump_to_file (const std::string_view fname, const unsigned char *buf) const;
-			virtual void dump_to_file (const std::string_view fname, const unsigned char *buf, const size_t len) const;
+			virtual void dump_to_file (const std::string_view fname, const void *const buf) const;
+			virtual void dump_to_file (const std::string_view fname, const void *const buf, const size_t len) const;
 			virtual void dump_to_file (const std::string_view fname, const std::string_view buf) const;
 
 			virtual void check_hash (const mbedtls_md_type_t md_alg, const std::string_view hsh) const;

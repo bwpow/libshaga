@@ -246,9 +246,9 @@ TEST (ReData, HalfSipHash)
 {
 	ReDataConfig config;
 
-	config.reset ();
-	config.set_digest (ReDataConfig::DIGEST::HALFSIPHASH24_32).set_crypto (ReDataConfig::CRYPTO::NONE);
-	_halfsiphash_test (config, 4, 2, 4);
+	//config.reset ();
+	//config.set_digest (ReDataConfig::DIGEST::HALFSIPHASH24_32).set_crypto (ReDataConfig::CRYPTO::NONE);
+	//_halfsiphash_test (config, 4, 2, 4);
 
 	config.reset ();
 	config.set_digest (ReDataConfig::DIGEST::HALFSIPHASH24_64).set_crypto (ReDataConfig::CRYPTO::NONE);

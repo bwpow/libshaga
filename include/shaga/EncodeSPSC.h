@@ -188,29 +188,19 @@ namespace shaga {
 			virtual uint_fast32_t fill_front_buffer (char *outbuffer, uint_fast32_t len) = 0;
 			virtual void move_front_buffer (uint_fast32_t len) = 0;
 
-			virtual void push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) final
+			virtual void push_buffer (const void *const buffer, const uint_fast32_t offset, const uint_fast32_t len) final
 			{
-				this->_push_buffer (buffer, offset, len);
+				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer), offset, len);
+			}
+
+			virtual void push_buffer (const void *const buffer, const uint_fast32_t len) final
+			{
+				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer), 0, len);
 			}
 
 			virtual void push_buffer (const std::string_view buffer) final
 			{
 				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
-			}
-
-			virtual void push_buffer (const uint8_t *const buffer, const uint_fast32_t len) final
-			{
-				this->_push_buffer (buffer, 0, len);
-			}
-
-			virtual void push_buffer (const char *const buffer, uint_fast32_t offset, const uint_fast32_t len) final
-			{
-				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer), offset, len);
-			}
-
-			virtual void push_buffer (const char *const buffer, const uint_fast32_t len) final
-			{
-				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer), 0, len);
 			}
 	};
 
@@ -679,7 +669,7 @@ namespace shaga {
 				::memcpy (this->_curdata->buffer, header.data (), _header_size);
 				::memcpy (this->_curdata->buffer + _header_size, buffer + offset, sze);
 
-				this->_curdata->buffer[2] = CRC::crc8_dallas (reinterpret_cast<const char *> (this->_curdata->buffer + 3), std::min (this->_curdata->size () - 3, _crc_max_len), _crc_start_val);
+				this->_curdata->buffer[2] = CRC::crc8_dallas (this->_curdata->buffer + 3, std::min (this->_curdata->size () - 3, _crc_max_len), _crc_start_val);
 
 				this->push ();
 			}

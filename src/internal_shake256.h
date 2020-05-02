@@ -11,8 +11,6 @@ All rights reserved.
  * Slightly modified to be used only for SHAKE256.
  */
 
-static_assert (sizeof (uint64_t) == 8, "Expected uint64_t to be 8 bytes");
-
 #ifndef ROTL64
 	#define ROTL64(x, b) (((x) << (b)) | ((x) >> (64 - (b))))
 #endif // ROTL64
@@ -137,7 +135,7 @@ static void _shake256_init (_shake256_ctx_t *const c)
 		c->st.q[i] = 0;
 	}
 	c->mdlen = 32;
-	c->rsiz = 200 - 2 * c->mdlen;
+	c->rsiz = 200 - (2 * c->mdlen);
 	c->pt = 0;
 }
 
@@ -164,13 +162,10 @@ static void _shake256_xof (_shake256_ctx_t *const c)
 
 static void _shake256_out (_shake256_ctx_t *const c, std::string &out, const size_t len)
 {
-	size_t i;
-	int j;
-
 	out.resize (len);
 
-	j = c->pt;
-	for (i = 0; i < len; ++i) {
+	int j = c->pt;
+	for (size_t i = 0; i < len; ++i) {
 		if (j >= c->rsiz) {
 			_sha3_keccakf (c->st.q);
 			j = 0;

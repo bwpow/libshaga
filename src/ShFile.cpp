@@ -11,8 +11,6 @@ All rights reserved.
 
 namespace shaga {
 
-	static_assert (sizeof (off_t) == sizeof (off64_t), "Expected off_t to be same size as off64_t");
-
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -123,6 +121,12 @@ namespace shaga {
 			cThrow ("Flags mNOCREAT and mEXCL cannot be used together"sv);
 		}
 
+		if ((nullptr != _callback) && (_mode & mWRITE) != 0 && (_mode & mEXCL) == 0 && (_mode & mAPPEND) == 0) {
+			if (FS::is_file (_filename) && _callback (*this, CallbackAction::OVERWRITE) == false) {
+				cThrow ("Error opening file '{}': File already exists and overwriting is not allowed"sv, _filename);
+			}
+		}
+
 		_fd = ::open (_filename.c_str (), flags, _mask);
 		if (_fd < 0) {
 			cThrow ("Error opening file '{}': {}"sv, _filename, strerror (errno));
@@ -185,7 +189,7 @@ namespace shaga {
 		write (data, data.size ());
 	}
 
-	void ShFile::write (const char *const buf, const size_t len)
+	void ShFile::write (const void *const buf, const size_t len)
 	{
 		const ssize_t ret = ::write (_fd, buf, len);
 		if (ret < 0) {
@@ -196,14 +200,9 @@ namespace shaga {
 		}
 	}
 
-	void ShFile::write (const uint8_t *const buf, const size_t len)
+	void ShFile::write (const void *const buf)
 	{
-		write (reinterpret_cast<const char *> (buf), len);
-	}
-
-	void ShFile::write (const char *const buf)
-	{
-		write (buf, ::strlen (buf));
+		write (buf, ::strlen (reinterpret_cast<const char *>(buf)));
 	}
 
 	void ShFile::write (const uint8_t val)
@@ -260,7 +259,7 @@ namespace shaga {
 		return data;
 	}
 
-	bool ShFile::read (char *buf, const size_t len, const bool thr_eof)
+	bool ShFile::read (void *const buf, const size_t len, const bool thr_eof)
 	{
 		if (len > SSIZE_MAX) {
 			cThrow ("Error reading from file '{}': Too many bytes requested"sv, _filename);
@@ -290,11 +289,11 @@ namespace shaga {
 
 	uint8_t ShFile::read (void)
 	{
-		char buf[1];
+		uint8_t buf[1];
 		if (read (buf, 1) == false) {
 			cThrow ("Error reading from file '{}': EOF"sv, _filename);
 		}
-		return static_cast<uint8_t> (buf[0]);
+		return buf[0];
 	}
 
 
@@ -302,8 +301,7 @@ namespace shaga {
 	{
 		seek (0, SEEK::SET);
 		const uint64_t file_sze = static_cast<uint64_t> (get_file_size ());
-		const size_t sze = (max_len < file_sze) ? max_len : file_sze;
-		read (data, sze);
+		read (data, std::min (max_len, file_sze));
 	}
 
 	std::string ShFile::read_whole_file (const size_t max_len)
@@ -311,6 +309,49 @@ namespace shaga {
 		std::string out;
 		read_whole_file (out, max_len);
 		return out;
+	}
+
+	void ShFile::read_whole_file (void *const data, const size_t max_len)
+	{
+		seek (0, SEEK::SET);
+		const uint64_t file_sze = static_cast<uint64_t> (get_file_size ());
+		read (data, std::min (max_len, file_sze));
+	}
+
+	void ShFile::dump_in_c_format (const std::string_view varname, const size_t len, std::function<std::string(const size_t pos)> callback, const size_t per_line, const bool add_len)
+	{
+		if (true == add_len) {
+			print ("{}[{}] = {{"sv, varname, len);
+		}
+		else {
+			print ("{} = {{"sv, varname);
+		}
+
+		for (size_t pos = 0; pos < len; ++pos) {
+			if ((pos % per_line) == 0) {
+				write ("\n\t"sv);
+			}
+			else {
+				write (' ');
+			}
+			write (callback (pos));
+			write (',');
+		}
+		write ("\n};\n"sv);
+	}
+
+	void ShFile::dump_in_c_format (const std::string_view varname, const void *const data, const size_t len, const size_t per_line, const bool add_len)
+	{
+		dump_in_c_format (varname, len, [&data](const size_t pos) -> std::string {
+			return fmt::format ("{:#04x}"sv, reinterpret_cast<const uint8_t *>(data)[pos]);
+		}, per_line, add_len);
+	}
+
+	void ShFile::dump_in_c_format (const std::string_view varname, const std::string_view data, const size_t per_line, const bool add_len)
+	{
+		dump_in_c_format (varname, data.size (), [&data](const size_t pos) -> std::string {
+			return fmt::format ("{:#04x}"sv, static_cast<uint8_t> (data.at (pos)));
+		}, per_line, add_len);
 	}
 
 	void ShFile::set_file_name (const std::string_view filename, const uint8_t mode)

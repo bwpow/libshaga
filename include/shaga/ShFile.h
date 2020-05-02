@@ -14,11 +14,12 @@ namespace shaga {
 	class ShFile {
 		public:
 			enum class CallbackAction {
-				OPEN, /* Right after file is opened */
-				CLOSE /* Right before file is closed */
+				OPEN,		/* Right after file is opened */
+				CLOSE,		/* Right before file is closed */
+				OVERWRITE,	/* */
 			};
 			/* Reference of calling ShFile and action */
-			typedef std::function<void (ShFile &file, const ShFile::CallbackAction action)> ShFileCallback;
+			typedef std::function<bool (ShFile &file, const ShFile::CallbackAction action)> ShFileCallback;
 
 			static const uint8_t mREAD    { 0b00'00'00'01 };
 			static const uint8_t mWRITE   { 0b00'00'00'10 };
@@ -72,11 +73,10 @@ namespace shaga {
 			void write (const std::string_view data);
 
 			/* Write memory buffer of particular length */
-			void write (const char *const buf, const size_t len);
-			void write (const uint8_t *const buf, const size_t len);
+			void write (const void *const buf, const size_t len);
 
 			/* Write C-style string */
-			void write (const char *const buf);
+			void write (const void *const buf);
 
 			/* Write single character */
 			void write (const uint8_t val);
@@ -90,11 +90,16 @@ namespace shaga {
 
 			bool read (std::string &data, const size_t len, const bool thr_eof = true);
 			std::string read (const size_t len, const bool thr_eof = true);
-			bool read (char *buf, const size_t len, const bool thr_eof = true);
+			bool read (void *const buf, const size_t len, const bool thr_eof = true);
 			uint8_t read (void);
 
 			void read_whole_file (std::string &data, const size_t max_len = SIZE_MAX);
 			std::string read_whole_file (const size_t max_len = SIZE_MAX);
+			void read_whole_file (void *const data, const size_t max_len = SIZE_MAX);
+
+			void dump_in_c_format (const std::string_view varname, const size_t len, std::function<std::string(const size_t pos)> callback, const size_t per_line = 16, const bool add_len = true);
+			void dump_in_c_format (const std::string_view varname, const void *const data, const size_t len, const size_t per_line = 16, const bool add_len = true);
+			void dump_in_c_format (const std::string_view varname, const std::string_view data, const size_t per_line = 16, const bool add_len = true);
 
 			void set_file_name (const std::string_view filename, const uint8_t mode);
 			void set_file_name (const std::string_view filename);

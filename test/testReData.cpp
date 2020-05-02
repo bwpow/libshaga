@@ -11,42 +11,64 @@ using namespace shaga;
 
 static std::string _redata_make_string (const size_t sze, const uint32_t seed)
 {
-	/* Generate random string with specific seed */
-	std::mt19937 gen (seed);
-	std::uniform_int_distribution<uint8_t> dis (0x00, 0xff);
-	std::string str (sze, '\0');
+	uint32_t nSeed = seed;
+	std::string str;
+	str.reserve (sze);
 
-	std::generate (str.begin (), str.end (), [&](void) -> char {
-		return dis (gen);
-	});
+	for (size_t i = 0; i < sze; ++i) {
+		nSeed = (8253729 * nSeed + 2396403);
+		str.push_back (nSeed & UINT8_MAX);
+	}
 
 	return str;
 }
 
-static void _redata_test (shaga::ReDataConfig &config, const bool use_header, const bool use_key_ident, const bool use_mix)
+static void _redata_test (shaga::ReDataConfig &config, const bool use_header, const bool use_key_ident, const bool use_mix, const bool use_iv_counter)
 {
-	COMMON_VECTOR keys_hmac, keys_crypto;
+	COMMON_VECTOR keys_hmac;
+	COMMON_VECTOR keys_crypto;
 	ReData::KEY_IDENT_VECTOR keys_ident;
 
 	/* Key mixing doesn't support more than 64 bytes for key */
 	const size_t hmac_key_size = config.get_digest_hmac_key_size ();
 	const size_t crypto_key_size = config.get_crypto_key_size ();
 	const size_t crypto_block_size = config.get_crypto_block_size ();
+	const size_t crypto_iv_size = config.get_crypto_iv_size ();
 
 	if (0 == crypto_key_size && 0 == hmac_key_size && true == use_mix) {
 		/* This test is pointless, because there is no key to mix */
 		return;
 	}
 
+	if (true == use_iv_counter && 0 == crypto_iv_size) {
+		/* It is not possible to use counter without IV */
+		return;
+	}
+
+	ASSERT_TRUE ((crypto_key_size == 0) || (crypto_block_size != 0 && crypto_iv_size != 0));
+
 	for (size_t i = 0; i < 16; i++) {
-		keys_hmac.push_back (_redata_make_string (hmac_key_size, i));
-		keys_crypto.push_back (_redata_make_string (crypto_key_size, i + 128));
+		keys_hmac.push_back (_redata_make_string (hmac_key_size, 0x11 << i));
+		keys_crypto.push_back (_redata_make_string (crypto_key_size, 0x12 << i));
 		keys_ident.push_back (i);
 	}
 
-	/* IV is normally generated randomly, but during testing, we want to use reproducible execution. */
-	const std::string iv = _redata_make_string (crypto_block_size, 0xAACE);
-	config.set_user_iv (iv);
+	if (crypto_iv_size > 0) {
+		/* IV is normally generated randomly, but during testing, we want to use reproducible execution. */
+		if (use_iv_counter) {
+			const std::string iv = _redata_make_string (crypto_iv_size - sizeof (uint32_t), 0xACE2);
+			config.set_user_iv (iv);
+			config.set_iv_counter (0xB00F1337);
+		}
+		else {
+			const std::string iv = _redata_make_string (crypto_iv_size, 0xACE2);
+			config.set_user_iv (iv);
+			config.unset_iv_counter ();
+		}
+	}
+	else {
+		config.unset_iv_counter ();
+	}
 
 	ReData rd1, rd2;
 	rd1.set_hmac_keys (keys_hmac);
@@ -70,7 +92,7 @@ static void _redata_test (shaga::ReDataConfig &config, const bool use_header, co
 		rd2.set_config (config);
 	}
 
-	const int test_str_sizes[] = {0, 1, 2, 3, 5, 16, 21, 25, 28, 31, 32, 60, 64, 65, 100, 1'000, 10'000, 0x100, 0x10'000, -1};
+	const int test_str_sizes[] = {0, 1, 2, 3, 5, 9, 16, 21, 25, 28, 29, 30, 31, 32, 60, 61, 62, 63, 64, 65, 100, 1'000, 10'000, 0x100, 0x10'000, -1};
 
 	for (size_t i = 0; test_str_sizes[i] >= 0; ++i) {
 		if ((i % 7) == 0) {
@@ -80,12 +102,12 @@ static void _redata_test (shaga::ReDataConfig &config, const bool use_header, co
 			rd2.set_key_id (0);
 		}
 
-		const std::string desc = fmt::format ("Digest = {}, Crypto = {}, use_header = {}, use_key_ident = {}, use_mix = {}, str_size = {}",
+		const std::string desc = fmt::format ("Digest = {}, Crypto = {}, use_header = {}, use_key_ident = {}, use_mix = {}, str_size = {}"sv,
 			config.get_digest_text (),
 			config.get_crypto_text (),
-			use_header ? "YES" : "NO",
-			use_key_ident ? "YES" : "NO",
-			use_mix ? "YES" : "NO",
+			use_header,
+			use_key_ident,
+			use_mix,
 			test_str_sizes[i]);
 
 		const std::string plain = _redata_make_string (test_str_sizes[i], i);
@@ -94,6 +116,11 @@ static void _redata_test (shaga::ReDataConfig &config, const bool use_header, co
 
 		msg.reserve (plain.size () * 2);
 		plain2.reserve (plain.size () * 2);
+
+		if (0 == config.get_digest_result_size () && false == config.has_mac ()) {
+			ASSERT_THROW (rd1.encode (plain, msg), CommonException) << desc;
+			continue;
+		}
 
 		if (true == use_mix) {
 			const std::string mix = _redata_make_string (16, i ^ 0b1010101);
@@ -152,14 +179,14 @@ TEST (ReData, enc_dec)
 		for (const auto &crypto : config.CRYPTO_MAP) {
 			config.reset ();
 			config.set_digest (digest.first).set_crypto (crypto.first);
-			for (int i = 0; i <= 0b111; i += 2) {
-				_redata_test (config, (i & 0b001) == 0, (i & 0b010) == 0, (i & 0b100) == 0);
+			for (int i = 0; i <= 0b1111; i += 2) {
+				_redata_test (config, (i & 0b1) == 0, (i & 0b10) == 0, (i & 0b100) == 0, (i & 0b1000) == 0);
 			}
 
 			config.reset ();
 			config.set_digest (digest.second).set_crypto (crypto.second);
-			for (int i = 1; i <= 0b111; i += 2) {
-				_redata_test (config, (i & 0b001) == 0, (i & 0b010) == 0, (i & 0b100) == 0);
+			for (int i = 1; i <= 0b1111; i += 2) {
+				_redata_test (config, (i & 0b1) == 0, (i & 0b10) == 0, (i & 0b100) == 0, (i & 0b1000) == 0);
 			}
 		}
 	}
@@ -170,9 +197,9 @@ TEST (ReData, enc_dec)
 TEST (ReData, shake256)
 {
 	/* SHAKE256, message of length 0 */
-	const std::string ref_empty = BIN::from_hex ("AB0BAE316339894304E35877B0C28A9B1FD166C796B9CC258A064A8F57E27F2A");
+	const std::string ref_empty = BIN::from_hex ("AB0BAE316339894304E35877B0C28A9B1FD166C796B9CC258A064A8F57E27F2A"sv);
 	/* SHAKE256, 1600-bit test pattern */
-	const std::string ref_pattern = BIN::from_hex ("6A1A9D7846436E4DCA5728B6F760EEF0CA92BF0BE5615E96959D767197A0BEEB");
+	const std::string ref_pattern = BIN::from_hex ("6A1A9D7846436E4DCA5728B6F760EEF0CA92BF0BE5615E96959D767197A0BEEB"sv);
 
 	_shake256_ctx_t ctx;
 	std::string out;

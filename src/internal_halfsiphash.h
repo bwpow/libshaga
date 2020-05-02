@@ -16,30 +16,6 @@ All rights reserved.
  * worldwide. This software is distributed without any warranty.
  */
 
-static_assert (sizeof (uint32_t) == 4, "Expected uint32_t to be 4 bytes");
-
-static inline void _siphash_to_uint32 (const uint8_t *const data, uint32_t &v)
-{
-	::memcpy (&v, data, 4);
-
-	ENDIAN_IS_BIG
-	ENDIAN_BSWAP32 (v);
-	ENDIAN_END
-}
-
-static inline uint32_t _siphash_to_uint32 (const uint8_t *const data)
-{
-	uint32_t v;
-
-	::memcpy (&v, data, 4);
-
-	ENDIAN_IS_BIG
-	ENDIAN_BSWAP32 (v);
-	ENDIAN_END
-
-	return v;
-}
-
 #ifndef HALFSIPHASH_ROTL32
 	#define HALFSIPHASH_ROTL32(x, b) (uint32_t)(((x) << (b)) | ((x) >> (32 - (b))))
 #endif // HALFSIPHASH_ROTL32
@@ -86,337 +62,243 @@ static inline uint32_t _siphash_to_uint32 (const uint8_t *const data)
 // HalfSipHash-2-4 output 32bit  //////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-static inline uint32_t _calc_halfsiphash24_32t HALFSIPHASH_PARAMS
+#define HALFSIPHASH24_32_BODY \
+	HALFSIPHASH_BEGIN				\
+	for (; in != end; in += 4) {	\
+		BIN::_to_uint32 (val, in);	\
+		vv3 ^= val;					\
+		HALFSIPHASH_ROUND			\
+		HALFSIPHASH_ROUND			\
+		vv0 ^= val;					\
+	}								\
+	HALFSIPHASH_LAST				\
+	vv3 ^= val;						\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	vv0 ^= val;						\
+	vv2 ^= 0xff;					\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND
+
+static inline uint32_t _calc_halfsiphash24_32t (HALFSIPHASH_PARAMS)
 {
-	HALFSIPHASH_BEGIN
-
-	for (; in != end; in += 4) {
-		_siphash_to_uint32 (in, val);
-		vv3 ^= val;
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		vv0 ^= val;
-	}
-
-	HALFSIPHASH_LAST
-
-	vv3 ^= val;
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	vv0 ^= val;
-
-	vv2 ^= 0xff;
-
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-
+	HALFSIPHASH24_32_BODY
 	return (vv1 ^ vv3);
 }
 
-static inline std::string _calc_halfsiphash24_32s HALFSIPHASH_PARAMS
+static inline void _calc_halfsiphash24_32tv (HALFSIPHASH_PARAMS, uint32_t &out)
 {
-	HALFSIPHASH_BEGIN
+	HALFSIPHASH24_32_BODY
+	out = (vv1 ^ vv3);
+}
 
-	for (; in != end; in += 4) {
-		_siphash_to_uint32 (in, val);
-		vv3 ^= val;
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		vv0 ^= val;
-	}
-
-	HALFSIPHASH_LAST
-
-	vv3 ^= val;
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	vv0 ^= val;
-
-	vv2 ^= 0xff;
-
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-
+static inline std::string _calc_halfsiphash24_32s (HALFSIPHASH_PARAMS)
+{
+	HALFSIPHASH24_32_BODY
 	return BIN::from_uint32 (vv1 ^ vv3);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// HalfSipHash-2-4 output 64bit  //////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-static inline Digest::SipHash64_t _calc_halfsiphash24_64t HALFSIPHASH_PARAMS
+static inline void _calc_halfsiphash24_32sv (HALFSIPHASH_PARAMS, std::string &out)
 {
-	HALFSIPHASH_BEGIN
-
-	vv1 ^= 0xee;
-
-	for (; in != end; in += 4) {
-		_siphash_to_uint32 (in, val);
-		vv3 ^= val;
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		vv0 ^= val;
-	}
-
-
-	HALFSIPHASH_LAST
-
-	vv3 ^= val;
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	vv0 ^= val;
-
-	vv2 ^= 0xee;
-
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-
-	val = vv1 ^ vv3;
-
-	vv1 ^= 0xdd;
-
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-
-	return std::make_pair (val, vv1 ^ vv3);
+	HALFSIPHASH24_32_BODY
+	out.resize (4);
+	BIN::_from_uint32 (vv1 ^ vv3, out.data ());
 }
 
-static inline std::string _calc_halfsiphash24_64s HALFSIPHASH_PARAMS
-{
-	HALFSIPHASH_BEGIN
-
-	vv1 ^= 0xee;
-
-	for (; in != end; in += 4) {
-		_siphash_to_uint32 (in, val);
-		vv3 ^= val;
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		vv0 ^= val;
-	}
-
-
-	HALFSIPHASH_LAST
-
-	vv3 ^= val;
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	vv0 ^= val;
-
-	vv2 ^= 0xee;
-
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-
-	val = vv1 ^ vv3;
-
-	vv1 ^= 0xdd;
-
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-
-	return BIN::from_uint32 (val) + BIN::from_uint32 (vv1 ^ vv3);
-}
+#undef HALFSIPHASH24_32_BODY
 
 ///////////////////////////////////////////////////////////////////////////////
 // HalfSipHash-4-8 output 32bit  //////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-static inline uint32_t _calc_halfsiphash48_32t HALFSIPHASH_PARAMS
+#define HALFSIPHASH48_32_BODY \
+	HALFSIPHASH_BEGIN				\
+	for (; in != end; in += 4) {	\
+		BIN::_to_uint32 (val, in);	\
+		vv3 ^= val;					\
+		HALFSIPHASH_ROUND			\
+		HALFSIPHASH_ROUND			\
+		HALFSIPHASH_ROUND			\
+		HALFSIPHASH_ROUND			\
+		vv0 ^= val;					\
+	}								\
+	HALFSIPHASH_LAST				\
+	vv3 ^= val;						\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	vv0 ^= val;						\
+	vv2 ^= 0xff;					\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND
+
+static inline uint32_t _calc_halfsiphash48_32t (HALFSIPHASH_PARAMS)
 {
-	HALFSIPHASH_BEGIN
-
-	for (; in != end; in += 4) {
-		_siphash_to_uint32 (in, val);
-		vv3 ^= val;
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		vv0 ^= val;
-	}
-
-	HALFSIPHASH_LAST
-
-	vv3 ^= val;
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	vv0 ^= val;
-
-	vv2 ^= 0xff;
-
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-
+	HALFSIPHASH48_32_BODY
 	return (vv1 ^ vv3);
 }
 
-static inline std::string _calc_halfsiphash48_32s HALFSIPHASH_PARAMS
+static inline void _calc_halfsiphash48_32tv (HALFSIPHASH_PARAMS, uint32_t &out)
 {
-	HALFSIPHASH_BEGIN
+	HALFSIPHASH48_32_BODY
+	out = (vv1 ^ vv3);
+}
 
-	for (; in != end; in += 4) {
-		_siphash_to_uint32 (in, val);
-		vv3 ^= val;
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		vv0 ^= val;
-	}
-
-	HALFSIPHASH_LAST
-
-	vv3 ^= val;
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	vv0 ^= val;
-
-	vv2 ^= 0xff;
-
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-
+static inline std::string _calc_halfsiphash48_32s (HALFSIPHASH_PARAMS)
+{
+	HALFSIPHASH48_32_BODY
 	return BIN::from_uint32 (vv1 ^ vv3);
 }
+
+static inline void _calc_halfsiphash48_32sv (HALFSIPHASH_PARAMS, std::string &out)
+{
+	HALFSIPHASH48_32_BODY
+	out.resize (4);
+	BIN::_from_uint32 (vv1 ^ vv3, out.data ());
+}
+
+#undef HALFSIPHASH48_32_BODY
+
+///////////////////////////////////////////////////////////////////////////////
+// HalfSipHash-2-4 output 64bit  //////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+#define HALFSIPHASH24_64_BODY \
+	HALFSIPHASH_BEGIN				\
+	vv1 ^= 0xee;					\
+	for (; in != end; in += 4) {	\
+		BIN::_to_uint32 (val, in);	\
+		vv3 ^= val;					\
+		HALFSIPHASH_ROUND			\
+		HALFSIPHASH_ROUND			\
+		vv0 ^= val;					\
+	}								\
+	HALFSIPHASH_LAST				\
+	vv3 ^= val;						\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	vv0 ^= val;						\
+	vv2 ^= 0xee;					\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	val = vv1 ^ vv3;				\
+	vv1 ^= 0xdd;					\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND
+
+static inline Digest::SipHash64_t _calc_halfsiphash24_64t (HALFSIPHASH_PARAMS)
+{
+	HALFSIPHASH24_64_BODY
+	return std::make_pair (val, vv1 ^ vv3);
+}
+
+static inline void _calc_halfsiphash24_64tv (HALFSIPHASH_PARAMS, Digest::SipHash64_t &out)
+{
+	HALFSIPHASH24_64_BODY
+	out.first = val;
+	out.second = (vv1 ^ vv3);
+}
+
+static inline std::string _calc_halfsiphash24_64s (HALFSIPHASH_PARAMS)
+{
+	HALFSIPHASH24_64_BODY
+	return BIN::from_uint32 (val) + BIN::from_uint32 (vv1 ^ vv3);
+}
+
+static inline void _calc_halfsiphash24_64sv (HALFSIPHASH_PARAMS, std::string &out)
+{
+	HALFSIPHASH24_64_BODY
+	out.resize (8);
+	BIN::_from_uint32 (val, out.data ());
+	BIN::_from_uint32 (vv1 ^ vv3, out.data () + 4);
+}
+
+#undef HALFSIPHASH24_64_BODY
 
 ///////////////////////////////////////////////////////////////////////////////
 // HalfSipHash-4-8 output 64bit  //////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-static inline Digest::SipHash64_t _calc_halfsiphash48_64t HALFSIPHASH_PARAMS
+#define HALFSIPHASH48_64_BODY \
+	HALFSIPHASH_BEGIN				\
+	vv1 ^= 0xee;					\
+	for (; in != end; in += 4) {	\
+		BIN::_to_uint32 (val, in);	\
+		vv3 ^= val;					\
+		HALFSIPHASH_ROUND			\
+		HALFSIPHASH_ROUND			\
+		HALFSIPHASH_ROUND			\
+		HALFSIPHASH_ROUND			\
+		vv0 ^= val;					\
+	}								\
+	HALFSIPHASH_LAST				\
+	vv3 ^= val;						\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	vv0 ^= val;						\
+	vv2 ^= 0xee;					\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	val = vv1 ^ vv3;				\
+	vv1 ^= 0xdd;					\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND				\
+	HALFSIPHASH_ROUND
+
+static inline Digest::SipHash64_t _calc_halfsiphash48_64t (HALFSIPHASH_PARAMS)
 {
-	HALFSIPHASH_BEGIN
-
-	vv1 ^= 0xee;
-
-	for (; in != end; in += 4) {
-		_siphash_to_uint32 (in, val);
-		vv3 ^= val;
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		vv0 ^= val;
-	}
-
-
-	HALFSIPHASH_LAST
-
-	vv3 ^= val;
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	vv0 ^= val;
-
-	vv2 ^= 0xee;
-
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-
-	val = vv1 ^ vv3;
-
-	vv1 ^= 0xdd;
-
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-
+	HALFSIPHASH48_64_BODY
 	return std::make_pair (val, vv1 ^ vv3);
 }
 
-static inline std::string _calc_halfsiphash48_64s HALFSIPHASH_PARAMS
+static inline void _calc_halfsiphash48_64tv (HALFSIPHASH_PARAMS, Digest::SipHash64_t &out)
 {
-	HALFSIPHASH_BEGIN
+	HALFSIPHASH48_64_BODY
+	out.first = val;
+	out.second = (vv1 ^ vv3);
+}
 
-	vv1 ^= 0xee;
-
-	for (; in != end; in += 4) {
-		_siphash_to_uint32 (in, val);
-		vv3 ^= val;
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		HALFSIPHASH_ROUND
-		vv0 ^= val;
-	}
-
-
-	HALFSIPHASH_LAST
-
-	vv3 ^= val;
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	vv0 ^= val;
-
-	vv2 ^= 0xee;
-
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-
-	val = vv1 ^ vv3;
-
-	vv1 ^= 0xdd;
-
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-	HALFSIPHASH_ROUND
-
+static inline std::string _calc_halfsiphash48_64s (HALFSIPHASH_PARAMS)
+{
+	HALFSIPHASH48_64_BODY
 	return BIN::from_uint32 (val) + BIN::from_uint32 (vv1 ^ vv3);
 }
+
+static inline void _calc_halfsiphash48_64sv (HALFSIPHASH_PARAMS, std::string &out)
+{
+	HALFSIPHASH48_64_BODY
+	out.resize (8);
+	BIN::_from_uint32 (val, out.data ());
+	BIN::_from_uint32 (vv1 ^ vv3, out.data () + 4);
+}
+
+#undef HALFSIPHASH48_64_BODY
 
 #undef HALFSIPHASH_ROUND
 #undef HALFSIPHASH_LAST

@@ -21,7 +21,7 @@ namespace shaga {
 			cThrow ("DiSig error: Null pointer in random"sv);
 		}
 		randutils::mt19937_r_rng *_rng = reinterpret_cast<randutils::mt19937_r_rng *> (p_rng);
-		_rng->generate_n<uint8_t> (output, output_len, 0x00, 0xff);
+		_rng->generate_n<uint8_t> (output, output_len);
 		return 0;
 	}
 

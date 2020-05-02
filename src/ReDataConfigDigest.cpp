@@ -17,6 +17,8 @@ namespace shaga {
 	SHAGA_NODISCARD static inline size_t _get_digest_result_size (const ReDataConfig::DIGEST digest)
 	{
 		switch (digest) {
+			case ReDataConfig::DIGEST::NONE: return (0);
+
 			case ReDataConfig::DIGEST::CRC8: return (1);
 			case ReDataConfig::DIGEST::CRC32: return (4);
 			case ReDataConfig::DIGEST::CRC64: return (8);
@@ -46,6 +48,7 @@ namespace shaga {
 	SHAGA_NODISCARD static inline size_t _get_digest_hmac_key_size (const ReDataConfig::DIGEST digest)
 	{
 		switch (digest) {
+			case ReDataConfig::DIGEST::NONE:
 			case ReDataConfig::DIGEST::CRC8:
 			case ReDataConfig::DIGEST::CRC32:
 			case ReDataConfig::DIGEST::CRC64:
@@ -80,6 +83,7 @@ namespace shaga {
 	SHAGA_NODISCARD static inline ReDataConfig::DIGEST_HMAC_TYPE _get_digest_hmac_type (const ReDataConfig::DIGEST digest)
 	{
 		switch (digest) {
+			case ReDataConfig::DIGEST::NONE:
 			case ReDataConfig::DIGEST::CRC8:
 			case ReDataConfig::DIGEST::CRC32:
 			case ReDataConfig::DIGEST::CRC64:
@@ -108,38 +112,49 @@ namespace shaga {
 		cThrow ("Unsupported digest"sv);
 	}
 
-	SHAGA_NODISCARD static inline std::string _calc_crc8 (const std::string_view plain, [[maybe_unused]] ReDataConfig::DigestCache &cache)
+	static inline void _calc_crc8 (const std::string_view plain, [[maybe_unused]] ReDataConfig::DigestCache &cache, std::string &out)
 	{
-		return BIN::from_uint8 (CRC::crc8_dallas (plain.data (), plain.size ()));
+		out.resize (sizeof (uint8_t));
+		BIN::_from_uint8 (CRC::crc8_dallas (plain.data (), plain.size ()), out.data ());
 	}
 
-	SHAGA_NODISCARD static inline std::string _calc_crc32 (const std::string_view plain, [[maybe_unused]] ReDataConfig::DigestCache &cache)
+	static inline void _calc_crc32 (const std::string_view plain, [[maybe_unused]] ReDataConfig::DigestCache &cache, std::string &out)
 	{
-		return BIN::from_uint32 (CRC::crc32c (plain.data (), plain.size ()));
+		out.resize (sizeof (uint32_t));
+		BIN::_from_uint32 (CRC::crc32c (plain.data (), plain.size ()), out.data ());
 	}
 
-	SHAGA_NODISCARD static inline std::string _calc_crc64 (const std::string_view plain, [[maybe_unused]] ReDataConfig::DigestCache &cache)
+	static inline void _calc_crc64 (const std::string_view plain, [[maybe_unused]] ReDataConfig::DigestCache &cache, std::string &out)
 	{
-		return BIN::from_uint64 (CRC::crc64 (plain.data (), plain.size ()));
+		out.resize (sizeof (uint64_t));
+		BIN::_from_uint64 (CRC::crc64 (plain.data (), plain.size ()), out.data ());
 	}
 
-	SHAGA_NODISCARD static inline std::string _calc_sha256 ([[maybe_unused]] const std::string_view plain, [[maybe_unused]] ReDataConfig::DigestCache &cache)
+	static inline void _calc_sha256 ([[maybe_unused]] const std::string_view plain, [[maybe_unused]] ReDataConfig::DigestCache &cache, [[maybe_unused]] std::string &out)
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = _get_digest_result_size (ReDataConfig::DIGEST::SHA256);
-		::mbedtls_sha256 (reinterpret_cast<const unsigned char *> (plain.data ()), plain.size (), cache.output, 0);
-		return std::string (reinterpret_cast<const char *> (cache.output), sze);
+		out.resize (sze);
+		::mbedtls_sha256 (
+			reinterpret_cast<const uint8_t *> (plain.data ()),
+			plain.size (),
+			reinterpret_cast<uint8_t *> (out.data ()),
+			0);
 #else
 		cThrow ("Digest is not supported in lite version"sv);
 #endif // SHAGA_FULL
 	}
 
-	SHAGA_NODISCARD static inline std::string _calc_sha512 ([[maybe_unused]] const std::string_view plain, [[maybe_unused]] ReDataConfig::DigestCache &cache)
+	static inline void _calc_sha512 ([[maybe_unused]] const std::string_view plain, [[maybe_unused]] ReDataConfig::DigestCache &cache, [[maybe_unused]] std::string &out)
 	{
 #ifdef SHAGA_FULL
 		const size_t sze = _get_digest_result_size (ReDataConfig::DIGEST::SHA512);
-		::mbedtls_sha512 (reinterpret_cast<const unsigned char *> (plain.data ()), plain.size (), cache.output, 0);
-		return std::string (reinterpret_cast<const char *> (cache.output), sze);
+		out.resize (sze);
+		::mbedtls_sha512 (
+			reinterpret_cast<const uint8_t *> (plain.data ()),
+			plain.size (),
+			reinterpret_cast<uint8_t *> (out.data ()),
+			0);
 #else
 		cThrow ("Digest is not supported in lite version"sv);
 #endif // SHAGA_FULL
@@ -147,7 +162,7 @@ namespace shaga {
 
 #define SIPHASH_DATA reinterpret_cast<const uint8_t *>(plain.data ())
 #define SIPHASH_DATA_SIZE plain.size ()
-#define SIPHASH_PARAMS (const std::string_view plain, const ReDataConfig::DigestCache &cache)
+#define SIPHASH_PARAMS const std::string_view plain, const ReDataConfig::DigestCache &cache
 
 #define SIPHASH_BEGIN_KEYS \
 	uint64_t vv0 = 0x736f6d6570736575ULL ^ cache.siphash_k0;				\
@@ -165,7 +180,7 @@ namespace shaga {
 
 #define HALFSIPHASH_DATA reinterpret_cast<const uint8_t *>(plain.data ())
 #define HALFSIPHASH_DATA_SIZE plain.size ()
-#define HALFSIPHASH_PARAMS (const std::string_view plain, const ReDataConfig::DigestCache &cache)
+#define HALFSIPHASH_PARAMS const std::string_view plain, const ReDataConfig::DigestCache &cache
 
 #define HALFSIPHASH_BEGIN_KEYS \
 	uint32_t vv0 = cache.halfsiphash_k0;				\
@@ -180,11 +195,13 @@ namespace shaga {
 #undef HALFSIPHASH_DATA_SIZE
 #undef HALFSIPHASH_DATA
 
-	typedef std::function<std::string(const std::string_view, ReDataConfig::DigestCache &)> HASH_FUNC;
+	typedef std::function<void(const std::string_view, ReDataConfig::DigestCache &, std::string &)> HASH_FUNC;
 
 	SHAGA_NODISCARD static inline HASH_FUNC _get_digest_calc_function (const ReDataConfig::DIGEST digest)
 	{
 		switch (digest) {
+			case ReDataConfig::DIGEST::NONE: break;
+
 			case ReDataConfig::DIGEST::CRC8: return _calc_crc8;
 			case ReDataConfig::DIGEST::CRC32: return _calc_crc32;
 			case ReDataConfig::DIGEST::CRC64: return _calc_crc64;
@@ -195,15 +212,15 @@ namespace shaga {
 			case ReDataConfig::DIGEST::HMAC_SHA256: return _calc_sha256;
 			case ReDataConfig::DIGEST::HMAC_SHA512: return _calc_sha512;
 
-			case ReDataConfig::DIGEST::HALFSIPHASH24_32: return _calc_halfsiphash24_32s;
-			case ReDataConfig::DIGEST::HALFSIPHASH24_64: return _calc_halfsiphash24_64s;
-			case ReDataConfig::DIGEST::HALFSIPHASH48_32: return _calc_halfsiphash48_32s;
-			case ReDataConfig::DIGEST::HALFSIPHASH48_64: return _calc_halfsiphash48_64s;
+			case ReDataConfig::DIGEST::HALFSIPHASH24_32: return _calc_halfsiphash24_32sv;
+			case ReDataConfig::DIGEST::HALFSIPHASH24_64: return _calc_halfsiphash24_64sv;
+			case ReDataConfig::DIGEST::HALFSIPHASH48_32: return _calc_halfsiphash48_32sv;
+			case ReDataConfig::DIGEST::HALFSIPHASH48_64: return _calc_halfsiphash48_64sv;
 
-			case ReDataConfig::DIGEST::SIPHASH24_64: return _calc_siphash24_64s;
-			case ReDataConfig::DIGEST::SIPHASH24_128: return _calc_siphash24_128s;
-			case ReDataConfig::DIGEST::SIPHASH48_64: return _calc_siphash48_64s;
-			case ReDataConfig::DIGEST::SIPHASH48_128: return _calc_siphash48_128s;
+			case ReDataConfig::DIGEST::SIPHASH24_64: return _calc_siphash24_64sv;
+			case ReDataConfig::DIGEST::SIPHASH24_128: return _calc_siphash24_128sv;
+			case ReDataConfig::DIGEST::SIPHASH48_64: return _calc_siphash48_64sv;
+			case ReDataConfig::DIGEST::SIPHASH48_128: return _calc_siphash48_128sv;
 
 			case ReDataConfig::DIGEST::_MAX: break;
 		}
@@ -223,55 +240,32 @@ namespace shaga {
 		digest (ReDataConfig::DIGEST::CRC32)
 	{ }
 
-	ReDataConfig::DigestCache::DigestCache (const ReDataConfig::DigestCache &other) :
-		digest (other.digest),
-		key (other.key),
-		ipad (other.ipad),
-		opad (other.opad),
-		siphash_k0 (other.siphash_k0),
-		siphash_k1 (other.siphash_k1)
-	{ }
-
-	ReDataConfig::DigestCache::DigestCache (ReDataConfig::DigestCache &&other) :
-		digest (std::move (other.digest)),
-		key (std::move (other.key)),
-		ipad (std::move (other.ipad)),
-		opad (std::move (other.opad)),
-		siphash_k0 (other.siphash_k0),
-		siphash_k1 (other.siphash_k1)
-	{ }
-
-	ReDataConfig::DigestCache& ReDataConfig::DigestCache::operator= (const ReDataConfig::DigestCache &other)
+	void ReDataConfig::DigestCache::reset (void)
 	{
-		digest = other.digest;
-		key = other.key;
-		ipad = other.ipad;
-		opad = other.opad;
-		siphash_k0 = other.siphash_k0;
-		siphash_k1 = other.siphash_k1;
-
-		return *this;
+		digest = DIGEST::CRC32;
+		key.clear ();
+		ipad.clear ();
+		opad.clear ();
+		temp.clear ();
+		siphash_k0 = 0;
+		siphash_k1 = 0;
+		halfsiphash_k0 = 0;
+		halfsiphash_k1 = 0;
 	}
 
-	ReDataConfig::DigestCache& ReDataConfig::DigestCache::operator= (ReDataConfig::DigestCache &&other)
+	void ReDataConfig::calc_digest (const std::string_view plain, std::string &out, const std::string_view key)
 	{
-		digest = std::move (other.digest);
-		key = std::move (other.key);
-		ipad = std::move (other.ipad);
-		opad = std::move (other.opad);
-		siphash_k0 = other.siphash_k0;
-		siphash_k1 = other.siphash_k1;
+		if (DIGEST::NONE == _used_digest) {
+			out.resize (0);
+			return;
+		}
 
-		return *this;
-	}
-
-	SHAGA_NODISCARD std::string ReDataConfig::calc_digest (const std::string_view plain, const std::string_view key)
-	{
 		HASH_FUNC hfunc = _get_digest_calc_function (_used_digest);
 		const DIGEST_HMAC_TYPE hmac_type = _get_digest_hmac_type (_used_digest);
 
 		if (DIGEST_HMAC_TYPE::NONE == hmac_type) {
-			return hfunc (plain, _cache_digest);
+			hfunc (plain, _cache_digest, out);
+			return;
 		}
 
 		if (key.empty () == true) {
@@ -290,21 +284,31 @@ namespace shaga {
 				_cache_digest.opad.assign (keysize, 0x5c);
 				_cache_digest.ipad.assign (keysize, 0x36);
 
-				std::string wkey;
 				if (key.size () > keysize) {
-					wkey = hfunc (key, _cache_digest);
+					hfunc (key, _cache_digest, _cache_digest.temp);
 				}
 				else {
-					wkey.assign (key);
+					_cache_digest.temp.assign (key);
 				}
-				wkey.resize (keysize, 0x00);
+				_cache_digest.temp.resize (keysize, 0x00);
 
-				BIN::XOR (_cache_digest.ipad, wkey);
-				BIN::XOR (_cache_digest.opad, wkey);
+				BIN::XOR (_cache_digest.ipad, _cache_digest.temp);
+				BIN::XOR (_cache_digest.opad, _cache_digest.temp);
 			}
 
 			/* Calculate HFUNC (OPAD + HFUNC (IPAD + TEXT)) */
-			return hfunc (_cache_digest.opad + hfunc (_cache_digest.ipad + std::string (plain), _cache_digest), _cache_digest);
+			_cache_digest.temp.resize (0);
+			_cache_digest.temp.append (_cache_digest.ipad);
+			_cache_digest.temp.append (plain);
+			hfunc (_cache_digest.temp, _cache_digest, out);
+
+			_cache_digest.temp.resize (0);
+			_cache_digest.temp.append (_cache_digest.opad);
+			_cache_digest.temp.append (out);
+			hfunc (_cache_digest.temp, _cache_digest, out);
+
+			_cache_digest.temp.resize (0);
+			return;
 #else
 		cThrow ("Digest is not supported in lite version"sv);
 #endif // SHAGA_FULL
@@ -323,7 +327,8 @@ namespace shaga {
 				BIN::_to_uint64 (_cache_digest.siphash_k1, key.data () + sizeof (uint64_t));
 			}
 
-			return hfunc (plain, _cache_digest);
+			hfunc (plain, _cache_digest, out);
+			return;
 		}
 		else if (DIGEST_HMAC_TYPE::HALFSIPHASH == hmac_type) {
 			if (key.size () != keysize) {
@@ -339,7 +344,22 @@ namespace shaga {
 				BIN::_to_uint32 (_cache_digest.halfsiphash_k1, key.data () + sizeof (uint32_t));
 			}
 
-			return hfunc (plain, _cache_digest);
+			hfunc (plain, _cache_digest, out);
+			return;
+		}
+		else if (DIGEST_HMAC_TYPE::RAWKEY == hmac_type) {
+			if (key.size () != keysize) {
+				cThrow ("Wrong digest key size. Expected {} bytes, got {} bytes."sv, keysize, key.size ());
+			}
+
+			if (_cache_digest.digest != _used_digest || _cache_digest.key != key) {
+				/* Key is not cached */
+				_cache_digest.digest = _used_digest;
+				_cache_digest.key.assign (key);
+			}
+
+			hfunc (plain, _cache_digest, out);
+			return;
 		}
 
 		cThrow ("Unsupported HMAC type"sv);

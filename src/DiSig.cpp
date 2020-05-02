@@ -45,16 +45,16 @@ namespace shaga {
 	//  Protected class methods  ////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void DiSigCommon::dump_to_file (const std::string_view fname, const unsigned char *buf) const
+	void DiSigCommon::dump_to_file (const std::string_view fname, const void *const buf) const
 	{
 		ShFile file (fname, ShFile::mWRITE | ShFile::mTRUNC);
-		file.write (reinterpret_cast<const char *> (buf));
+		file.write (buf);
 	}
 
-	void DiSigCommon::dump_to_file (const std::string_view fname, const unsigned char *buf, const size_t len) const
+	void DiSigCommon::dump_to_file (const std::string_view fname, const void *const buf, const size_t len) const
 	{
 		ShFile file (fname, ShFile::mWRITE | ShFile::mTRUNC);
-		file.write (reinterpret_cast<const char *> (buf), len);
+		file.write (buf, len);
 	}
 
 	void DiSigCommon::dump_to_file (const std::string_view fname, const std::string_view buf) const

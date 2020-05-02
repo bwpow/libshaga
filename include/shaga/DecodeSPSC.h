@@ -258,29 +258,19 @@ namespace shaga {
 				return true;
 			}
 
-			virtual void push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) final
+			virtual void push_buffer (const void *const buffer, const uint_fast32_t offset, const uint_fast32_t len) final
 			{
-				this->_push_buffer (buffer, offset, len);
+				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer), offset, len);
+			}
+
+			virtual void push_buffer (const void *const buffer, const uint_fast32_t len) final
+			{
+				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer), 0, len);
 			}
 
 			virtual void push_buffer (const std::string_view buffer) final
 			{
 				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer.data ()), 0, buffer.size ());
-			}
-
-			virtual void push_buffer (const uint8_t *const buffer, const uint_fast32_t len) final
-			{
-				this->_push_buffer (buffer, 0, len);
-			}
-
-			virtual void push_buffer (const char *const buffer, uint_fast32_t offset, const uint_fast32_t len) final
-			{
-				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer), offset, len);
-			}
-
-			virtual void push_buffer (const char *const buffer, const uint_fast32_t len) final
-			{
-				this->_push_buffer (reinterpret_cast<const uint8_t *> (buffer), 0, len);
 			}
 	};
 

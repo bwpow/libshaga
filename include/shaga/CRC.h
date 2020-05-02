@@ -24,10 +24,9 @@ namespace shaga::CRC {
 	static const uint64_t crc64_magic {0};
 	static const uint64_t crc64_startval {0};
 
-	uint64_t crc64 (const char *const buf, const size_t len, const uint64_t startval = crc64_startval);
-	uint64_t crc64 (const uint8_t *const buf, const size_t len, const uint64_t startval = crc64_startval);
+	uint64_t crc64 (const void *const buf, const size_t len, const uint64_t startval = crc64_startval);
 
-	template<typename T>
+	template<class T, typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr>
 	uint64_t crc64 (const T &plain, const uint64_t startval = crc64_startval)
 	{
 		return crc64 (plain.data (), plain.size (), startval);
@@ -41,10 +40,9 @@ namespace shaga::CRC {
 	static const uint32_t crc32_zlib_magic {0x2144df1c};
 	static const uint32_t crc32_zlib_startval {0};
 
-	uint32_t crc32_zlib (const char *const buf, const size_t len, const uint32_t startval = crc32_zlib_startval);
-	uint32_t crc32_zlib (const uint8_t *const buf, const size_t len, const uint32_t startval = crc32_zlib_startval);
+	uint32_t crc32_zlib (const void *const buf, const size_t len, const uint32_t startval = crc32_zlib_startval);
 
-	template<typename T>
+	template<class T, typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr>
 	uint32_t crc32_zlib (const T &plain, const uint32_t startval = crc32_zlib_startval)
 	{
 		return crc32_zlib (plain.data (), plain.size (), startval);
@@ -57,10 +55,9 @@ namespace shaga::CRC {
 	/*** CRC-32 Atmel CRCCU CCITT802.3 compatible ***/
 	static const uint32_t crc32_atmel_startval {UINT32_MAX};
 
-	uint32_t crc32_atmel (const char *const buf, const size_t len, const uint32_t startval = crc32_atmel_startval);
-	uint32_t crc32_atmel (const uint8_t *const buf, const size_t len, const uint32_t startval = crc32_atmel_startval);
+	uint32_t crc32_atmel (const void *const buf, const size_t len, const uint32_t startval = crc32_atmel_startval);
 
-	template<typename T>
+	template<class T, typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr>
 	uint32_t crc32_atmel (const T &plain, const uint32_t startval = crc32_atmel_startval)
 	{
 		return crc32_atmel (plain.data (), plain.size (), startval);
@@ -74,10 +71,9 @@ namespace shaga::CRC {
 	static const uint32_t crc32c_magic {0x48674bc7};
 	static const uint32_t crc32c_startval {0};
 
-	uint32_t crc32c (const char *const buf, const size_t len, const uint32_t startval = crc32c_startval);
-	uint32_t crc32c (const uint8_t *const buf, const size_t len, const uint32_t startval = crc32c_startval);
+	uint32_t crc32c (const void *const buf, const size_t len, const uint32_t startval = crc32c_startval);
 
-	template<typename T>
+	template<class T, typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr>
 	uint32_t crc32c (const T &plain, const uint32_t startval = crc32c_startval)
 	{
 		return crc32c (plain.data (), plain.size (), startval);
@@ -91,10 +87,9 @@ namespace shaga::CRC {
 	static const uint16_t crc16_modbus_magic {0};
 	static const uint16_t crc16_modbus_startval {UINT16_MAX};
 
-	uint16_t crc16_modbus (const char *const buf, const size_t len, const uint16_t startval = crc16_modbus_startval);
-	uint16_t crc16_modbus (const uint8_t *const buf, const size_t len, const uint16_t startval = crc16_modbus_startval);
+	uint16_t crc16_modbus (const void *const buf, const size_t len, const uint16_t startval = crc16_modbus_startval);
 
-	template<typename T>
+	template<class T, typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr>
 	uint16_t crc16_modbus (const T &plain, const uint16_t startval = crc16_modbus_startval)
 	{
 		return crc16_modbus (plain.data (), plain.size (), startval);
@@ -108,10 +103,9 @@ namespace shaga::CRC {
 	static const uint8_t crc8_dallas_magic {0};
 	static const uint8_t crc8_dallas_startval {0};
 
-	uint8_t crc8_dallas (const char *const buf, const size_t len, const uint8_t startval = crc8_dallas_startval);
-	uint8_t crc8_dallas (const uint8_t *const buf, const size_t len, const uint8_t startval = crc8_dallas_startval);
+	uint8_t crc8_dallas (const void *const buf, const size_t len, const uint8_t startval = crc8_dallas_startval);
 
-	template<typename T>
+	template<class T, typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr>
 	uint8_t crc8_dallas (const T &plain, const uint8_t startval = crc8_dallas_startval)
 	{
 		return crc8_dallas (plain.data (), plain.size (), startval);

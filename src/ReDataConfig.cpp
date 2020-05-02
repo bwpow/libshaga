@@ -31,10 +31,11 @@ namespace shaga {
 		_used_crypto = conf._used_crypto;
 		_used_digest = conf._used_digest;
 
-		_cache_digest = conf._cache_digest;
-
 		_user_iv = conf._user_iv;
 		_user_iv_enabled = conf._user_iv_enabled;
+
+		_counter_iv = conf._counter_iv;
+		_counter_iv_enabled = conf._counter_iv_enabled;
 	}
 
 	ReDataConfig::ReDataConfig (ReDataConfig &&conf)
@@ -42,10 +43,11 @@ namespace shaga {
 		_used_crypto = std::move (conf._used_crypto);
 		_used_digest = std::move (conf._used_digest);
 
-		_cache_digest = std::move (conf._cache_digest);
-
 		_user_iv = std::move (conf._user_iv);
 		_user_iv_enabled = std::move (conf._user_iv_enabled);
+
+		_counter_iv = std::move (conf._counter_iv);
+		_counter_iv_enabled = std::move (conf._counter_iv_enabled);
 	}
 
 	ReDataConfig& ReDataConfig::operator= (const ReDataConfig &conf)
@@ -53,10 +55,11 @@ namespace shaga {
 		_used_crypto = conf._used_crypto;
 		_used_digest = conf._used_digest;
 
-		_cache_digest = conf._cache_digest;
-
 		_user_iv = conf._user_iv;
 		_user_iv_enabled = conf._user_iv_enabled;
+
+		_counter_iv = conf._counter_iv;
+		_counter_iv_enabled = conf._counter_iv_enabled;
 
 		return *this;
 	}
@@ -66,10 +69,11 @@ namespace shaga {
 		_used_crypto = std::move (conf._used_crypto);
 		_used_digest = std::move (conf._used_digest);
 
-		_cache_digest = std::move (conf._cache_digest);
-
 		_user_iv = std::move (conf._user_iv);
 		_user_iv_enabled = std::move (conf._user_iv_enabled);
+
+		_counter_iv = std::move (conf._counter_iv);
+		_counter_iv_enabled = std::move (conf._counter_iv_enabled);
 
 		return *this;
 	}
@@ -78,12 +82,14 @@ namespace shaga {
 	{
 		_used_crypto = CRYPTO::NONE;
 		_used_digest = DIGEST::CRC32;
-#ifdef SHAGA_FULL
-		_cache_digest.digest = _used_digest;
-#endif // SHAGA_FULL
+
+		_cache_digest.reset ();
 
 		_user_iv.clear ();
 		_user_iv_enabled = false;
+
+		_counter_iv = 0;
+		_counter_iv_enabled = false;
 	}
 
 	void ReDataConfig::decode (const std::string_view msg, size_t &offset)
@@ -150,7 +156,7 @@ namespace shaga {
 			std::string vals;
 			for (const auto &v : DIGEST_MAP) {
 				if (vals.empty () == false) {
-					vals.append (" "s);
+					vals.append (" "sv);
 				}
 				vals.append (v.first);
 			}
@@ -206,6 +212,8 @@ namespace shaga {
 	SHAGA_STRV std::string_view ReDataConfig::get_digest_text (void) const
 	{
 		switch (_used_digest) {
+			case DIGEST::NONE: return "No digest"sv;
+
 			case DIGEST::CRC8: return "CRC-8"sv;
 			case DIGEST::CRC32: return "CRC-32"sv;
 			case DIGEST::CRC64: return "CRC-64"sv;
@@ -235,8 +243,12 @@ namespace shaga {
 	{
 		switch (_used_crypto) {
 			case CRYPTO::NONE: return "Plaintext"sv;
+
 			case CRYPTO::AES_128_CBC: return "AES-128-CBC"sv;
 			case CRYPTO::AES_256_CBC: return "AES-256-CBC"sv;
+
+			case CRYPTO::CHACHA20: return "ChaCha20"sv;
+			case CRYPTO::CHACHA20_POLY1305: return "ChaCha20-Poly1305"sv;
 
 			case CRYPTO::_MAX: break;
 		}

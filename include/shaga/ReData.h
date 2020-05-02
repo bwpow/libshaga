@@ -18,8 +18,7 @@ namespace shaga {
 	class ReDataConfig {
 		public:
 			static const uint8_t key_digest_mask   {0b0000'1111};
-			static const uint8_t key_crypto_mask   {0b0011'0000};
-			static const uint8_t key_reserved_mask {0b0100'0000};
+			static const uint8_t key_crypto_mask   {0b0111'0000};
 			static const uint8_t key_highbit_mask  {0b1000'0000};
 
 			static const constexpr uint32_t key_digest_shift = BIN::count_trailing_zeros (key_digest_mask);
@@ -28,12 +27,15 @@ namespace shaga {
 			enum class DIGEST_HMAC_TYPE {
 				NONE,
 				TYPICAL,
+				RAWKEY,
 				SIPHASH,
 				HALFSIPHASH,
 				_MAX
 			};
 
 			enum class DIGEST {
+				NONE,
+
 				CRC8, /* CRC-8 Dallas/Maxim */
 				CRC32, /* CRC-32-Castagnoli */
 				CRC64, /* CRC-64-Jones */
@@ -58,11 +60,15 @@ namespace shaga {
 			};
 
 			const std::map <std::string, DIGEST> DIGEST_MAP = {
+				{"none"s, DIGEST::NONE},
+
 				{"crc8"s, DIGEST::CRC8},
 				{"crc-8"s, DIGEST::CRC8},
 
 				{"crc32"s, DIGEST::CRC32},
 				{"crc-32"s, DIGEST::CRC32},
+				{"crc32c"s, DIGEST::CRC32},
+				{"crc-32c"s, DIGEST::CRC32},
 
 				{"crc64"s, DIGEST::CRC64},
 				{"crc-64"s, DIGEST::CRC64},
@@ -106,8 +112,13 @@ namespace shaga {
 
 			enum class CRYPTO {
 				NONE,
+
 				AES_128_CBC,
 				AES_256_CBC,
+
+				CHACHA20,
+				CHACHA20_POLY1305,
+
 				_MAX
 			};
 
@@ -121,37 +132,52 @@ namespace shaga {
 
 				{"aes256"s, CRYPTO::AES_256_CBC},
 				{"aes-256"s, CRYPTO::AES_256_CBC},
-				{"aes-256-cbc"s, CRYPTO::AES_256_CBC}
+				{"aes-256-cbc"s, CRYPTO::AES_256_CBC},
+
+				{"chacha20"s, CRYPTO::CHACHA20},
+				{"chacha"s, CRYPTO::CHACHA20},
+
+				{"chacha20-poly1305"s, CRYPTO::CHACHA20_POLY1305},
+				{"chacha-poly"s, CRYPTO::CHACHA20_POLY1305},
+				{"chachapoly"s, CRYPTO::CHACHA20_POLY1305},
 			};
 
 #ifdef SHAGA_FULL
 			struct CryptoCache {
-				randutils::mt19937_rng _rng;
+				randutils::mt19937_r_rng _rng;
 				mbedtls_aes_context _aes_ctx;
+				mbedtls_chacha20_context _chacha20_ctx;
+				mbedtls_chachapoly_context _chachapoly_ctx;
 
 				CryptoCache ()
 				{
 					::mbedtls_aes_init (&_aes_ctx);
+					::mbedtls_chacha20_init (&_chacha20_ctx);
+					::mbedtls_chachapoly_init (&_chachapoly_ctx);
 				}
 
 				~CryptoCache ()
 				{
+					::mbedtls_chachapoly_free (&_chachapoly_ctx);
+					::mbedtls_chacha20_free (&_chacha20_ctx);
 					::mbedtls_aes_free (&_aes_ctx);
 				}
 
 				CryptoCache (const CryptoCache &) = delete;
 				CryptoCache (CryptoCache &&) = delete;
+				CryptoCache& operator= (const CryptoCache &other) = delete;
+				CryptoCache& operator= (CryptoCache &&other) = delete;
 			};
 #else
 			struct CryptoCache { };
 #endif // SHAGA_FULL
 
 			struct DigestCache {
-				unsigned char output[64];
 				DIGEST digest {DIGEST::CRC32};
 				std::string key;
 				std::string ipad;
 				std::string opad;
+				std::string temp;
 
 				uint64_t siphash_k0;
 				uint64_t siphash_k1;
@@ -159,10 +185,13 @@ namespace shaga {
 				uint32_t halfsiphash_k1;
 
 				DigestCache ();
-				DigestCache (const DigestCache &other);
-				DigestCache (DigestCache &&other);
-				DigestCache& operator= (const DigestCache &other);
-				DigestCache& operator= (DigestCache &&other);
+
+				void reset (void);
+
+				DigestCache (const DigestCache &other) = delete;
+				DigestCache (DigestCache &&other) = delete;
+				DigestCache& operator= (const DigestCache &other) = delete;
+				DigestCache& operator= (DigestCache &&other) = delete;
 			};
 
 		private:
@@ -172,10 +201,13 @@ namespace shaga {
 			CryptoCache _cache_crypto;
 			DigestCache _cache_digest;
 
-			unsigned char _temp_iv[MBEDTLS_MAX_IV_LENGTH];
+			uint8_t _temp_iv[MBEDTLS_MAX_IV_LENGTH];
 
 			std::string _user_iv;
-			bool _user_iv_enabled{false};
+			bool _user_iv_enabled {false};
+
+			uint32_t _counter_iv {0};
+			bool _counter_iv_enabled {false};
 
 		public:
 			ReDataConfig ();
@@ -212,7 +244,7 @@ namespace shaga {
 			SHAGA_NODISCARD bool is_compatible (const ReDataConfig &other) const;
 
 			/* ReDataConfigDigest.cpp */
-			SHAGA_NODISCARD std::string calc_digest (const std::string_view plain, const std::string_view key);
+			void calc_digest (const std::string_view plain, std::string &out, const std::string_view key);
 
 			SHAGA_NODISCARD size_t get_digest_result_size (void) const;
 			SHAGA_NODISCARD size_t get_digest_hmac_key_size (void) const;
@@ -222,17 +254,24 @@ namespace shaga {
 			SHAGA_NODISCARD bool has_digest_hmac_key_size_at_least_bits (const size_t limit) const;
 
 			/* ReDataConfigCrypto.cpp */
-			void calc_crypto_enc (std::string &plain, std::string &out, const std::string_view key);
-			void calc_crypto_dec (const std::string_view msg, size_t offset, std::string &out, const std::string_view key);
+			void calc_crypto_enc (std::string &plain, std::string &out_append, const std::string_view key);
+			void calc_crypto_dec (std::string_view msg, std::string &out, const std::string_view key);
 
 			SHAGA_NODISCARD size_t get_crypto_block_size (void) const;
 			SHAGA_NODISCARD size_t get_crypto_key_size (void) const;
+			SHAGA_NODISCARD size_t get_crypto_iv_size (void) const;
+			SHAGA_NODISCARD size_t get_crypto_mac_size (void) const;
 
 			SHAGA_NODISCARD bool has_crypto (void) const;
+			SHAGA_NODISCARD bool has_mac (void) const;
 			SHAGA_NODISCARD bool has_crypto_key_size_at_least_bits (const size_t limit) const;
+			SHAGA_NODISCARD bool has_crypto_mac_size_at_least_bits (const size_t limit) const;
 
 			void set_user_iv (const std::string_view iv);
 			void unset_user_iv (void);
+
+			void set_iv_counter (const uint32_t counter = 0);
+			void unset_iv_counter (void);
 	};
 
 	class ReData {
@@ -243,8 +282,8 @@ namespace shaga {
 			enum class MixKeysUse {
 				ONLY_NORMAL, /* Use only un-mixed keys */
 				ONLY_MIXED, /* Use only mixed keys */
-				BOTH_NORMAL_FIRST, /* Use bot mixed and un-mixed keys, try un-mixed first */
-				BOTH_MIXED_FIRST /* Use bot mixed and un-mixed keys, try mixed first */
+				BOTH_NORMAL_FIRST, /* Use both mixed and un-mixed keys, try un-mixed first */
+				BOTH_MIXED_FIRST /* Use both mixed and un-mixed keys, try mixed first */
 			};
 
 		private:
@@ -264,12 +303,13 @@ namespace shaga {
 			size_t _key_id {0};
 			uint_fast16_t _last_key_ident {UINT_FAST16_MAX};
 			std::string _work_msg;
+			std::string _work_msg2;
 
 			std::string _mix_key;
 			bool _mix_key_enabled {false};
 			bool _last_decode_was_mixed {false};
 
-			void decode_message (const std::string_view msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed);
+			void decode_message (std::string_view msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed);
 			void encode_message (const std::string_view plain, std::string &msg, const size_t key_id, const bool key_mixed);
 
 			void mix_keys (const COMMON_VECTOR &keys, COMMON_VECTOR &out) const;

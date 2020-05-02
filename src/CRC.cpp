@@ -360,26 +360,13 @@ namespace shaga {
 	//  CRC-64 Jones  ///////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint64_t CRC::crc64 (const char *const buf, const size_t len, const uint64_t startval)
+	uint64_t CRC::crc64 (const void *const buf, const size_t len, const uint64_t startval)
 	{
 		uint_fast64_t val = startval;
 
-		#define UPDC64(octet,crc) crc=(_crc64_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
+		#define UPDC64(octet,crc) (crc)=(_crc64_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			UPDC64 (static_cast<uint_fast64_t> (buf[pos]), val);
-		}
-		#undef UPDC64
-
-		return val & UINT64_MAX;
-	}
-
-	uint64_t CRC::crc64 (const uint8_t *const buf, const size_t len, const uint64_t startval)
-	{
-		uint_fast64_t val = startval;
-
-		#define UPDC64(octet,crc) crc=(_crc64_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
-		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			UPDC64 (static_cast<uint_fast64_t> (buf[pos]), val);
+			UPDC64 (static_cast<uint_fast64_t> (reinterpret_cast<const char *> (buf)[pos]), val);
 		}
 		#undef UPDC64
 
@@ -422,26 +409,13 @@ namespace shaga {
 	//  CRC-32 zlib compatible  /////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint32_t CRC::crc32_zlib (const char *const buf, const size_t len, const uint32_t startval)
+	uint32_t CRC::crc32_zlib (const void *const buf, const size_t len, const uint32_t startval)
 	{
 		uint_fast32_t val = startval ^ UINT32_MAX;
 
 		#define UPDC32(octet,crc) crc=(_crc32_zlib_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			UPDC32 (static_cast<uint_fast32_t> (buf[pos]), val);
-		}
-		#undef UPDC32
-
-		return (val ^ UINT32_MAX);
-	}
-
-	uint32_t CRC::crc32_zlib (const uint8_t *const buf, const size_t len, const uint32_t startval)
-	{
-		uint_fast32_t val = startval ^ UINT32_MAX;
-
-		#define UPDC32(octet,crc) crc=(_crc32_zlib_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
-		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			UPDC32 (static_cast<uint_fast32_t> (buf[pos]), val);
+			UPDC32 (static_cast<uint_fast32_t> (reinterpret_cast<const char *> (buf)[pos]), val);
 		}
 		#undef UPDC32
 
@@ -484,26 +458,13 @@ namespace shaga {
 	//  CRC-32 Atmel CRCCU CCITT802.3 compatible  ///////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint32_t CRC::crc32_atmel (const char *const buf, const size_t len, const uint32_t startval)
+	uint32_t CRC::crc32_atmel (const void *const buf, const size_t len, const uint32_t startval)
 	{
 		uint_fast32_t val = startval;
 
 		#define UPDC32(octet,crc) crc=(_crc32_atmel_table[((crc >> 24) ^ (_bit_reverse_table[octet])) & 0xff] ^ (crc << 8))
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			UPDC32 (static_cast<uint_fast32_t> (buf[pos]), val);
-		}
-		#undef UPDC32
-
-		return val & UINT32_MAX;
-	}
-
-	uint32_t CRC::crc32_atmel (const uint8_t *const buf, const size_t len, const uint32_t startval)
-	{
-		uint_fast32_t val = startval;
-
-		#define UPDC32(octet,crc) crc=(_crc32_atmel_table[((crc >> 24) ^ (_bit_reverse_table[octet])) & 0xff] ^ (crc << 8))
-		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			UPDC32 (static_cast<uint_fast32_t> (buf[pos]), val);
+			UPDC32 (static_cast<uint_fast32_t> (reinterpret_cast<const char *> (buf)[pos]), val);
 		}
 		#undef UPDC32
 
@@ -550,26 +511,13 @@ namespace shaga {
 	//  CRC-32C /////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint32_t CRC::crc32c (const char *const buf, const size_t len, const uint32_t startval)
+	uint32_t CRC::crc32c (const void *const buf, const size_t len, const uint32_t startval)
 	{
 		uint_fast32_t val = startval ^ UINT32_MAX;
 
 		#define UPDC32(octet,crc) crc=(_crc32c_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			UPDC32 (static_cast<uint_fast32_t> (buf[pos]), val);
-		}
-		#undef UPDC32
-
-		return (val ^ UINT32_MAX);
-	}
-
-	uint32_t CRC::crc32c (const uint8_t *const buf, const size_t len, const uint32_t startval)
-	{
-		uint_fast32_t val = startval ^ UINT32_MAX;
-
-		#define UPDC32(octet,crc) crc=(_crc32c_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
-		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			UPDC32 (static_cast<uint_fast32_t> (buf[pos]), val);
+			UPDC32 (static_cast<uint_fast32_t> (reinterpret_cast<const char *> (buf)[pos]), val);
 		}
 		#undef UPDC32
 
@@ -612,23 +560,12 @@ namespace shaga {
 	//  CRC-16 Modbus  //////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint16_t CRC::crc16_modbus (const char *const buf, const size_t len, const uint16_t startval)
+	uint16_t CRC::crc16_modbus (const void *const buf, const size_t len, const uint16_t startval)
 	{
 		uint_fast16_t val = startval;
 
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			val = (val >> 8) ^ _crc16_modbus_table[(val ^ static_cast<uint_fast16_t> (buf[pos])) & 0xff];
-		}
-
-		return val & UINT16_MAX;
-	}
-
-	uint16_t CRC::crc16_modbus (const uint8_t *const buf, const size_t len, const uint16_t startval)
-	{
-		uint_fast16_t val = startval;
-
-		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			val = (val >> 8) ^ _crc16_modbus_table[(val ^ static_cast<uint_fast16_t> (buf[pos])) & 0xff];
+			val = (val >> 8) ^ _crc16_modbus_table[(val ^ static_cast<uint_fast16_t> (reinterpret_cast<const char *> (buf)[pos])) & 0xff];
 		}
 
 		return val & UINT16_MAX;
@@ -670,23 +607,12 @@ namespace shaga {
 	//  CRC-8 Dallas/Maxim  /////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	uint8_t CRC::crc8_dallas (const char *const buf, const size_t len, const uint8_t startval)
+	uint8_t CRC::crc8_dallas (const void *const buf, const size_t len, const uint8_t startval)
 	{
 		uint_fast8_t val = startval;
 
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			val = _crc8_dallas_table[(static_cast<uint_fast8_t> (buf[pos]) ^ val) & 0xFF];
-		}
-
-		return val & UINT8_MAX;
-	}
-
-	uint8_t CRC::crc8_dallas (const uint8_t *const buf, const size_t len, const uint8_t startval)
-	{
-		uint_fast8_t val = startval;
-
-		for (uint_fast32_t pos = 0; pos < len; ++pos) {
-			val = _crc8_dallas_table[(static_cast<uint_fast8_t> (buf[pos]) ^ val) & 0xFF];
+			val = _crc8_dallas_table[(static_cast<uint_fast8_t> (reinterpret_cast<const char *> (buf)[pos]) ^ val) & 0xFF];
 		}
 
 		return val & UINT8_MAX;

@@ -109,7 +109,7 @@ namespace shaga {
 				if (auto val = get_last_value (_map, get_key (section, key))) {
 					return T (*val);
 				}
-				return T("");
+				return T(""sv);
 			}
 
 			bool get_bool (const std::string_view section, const std::string_view key, const bool defvalue, const bool thr = false) const;

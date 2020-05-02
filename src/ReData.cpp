@@ -18,51 +18,58 @@ namespace shaga {
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void ReData::decode_message (const std::string_view msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed)
+	void ReData::decode_message (std::string_view msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed)
 	{
+		msg.remove_prefix (offset);
+
 		if (_conf.get_crypto () != ReDataConfig::CRYPTO::NONE) {
 			/* No need to clear _work_msg, because calc_crypto_dec will clear it for us */
-			_conf.calc_crypto_dec (msg, offset, _work_msg, (true == key_mixed) ? _crypto_keys_mixed.at (key_id) : _crypto_keys.at (key_id));
-		}
-		else {
-			/* No encryption, just copy the data */
-			_work_msg.assign (msg.substr (offset));
+			_conf.calc_crypto_dec (msg, _work_msg, (true == key_mixed) ? _crypto_keys_mixed.at (key_id) : _crypto_keys.at (key_id));
+			msg = _work_msg;
 		}
 
-		const size_t digest_size = _conf.get_digest_result_size ();
-		if (_work_msg.size () < digest_size) {
-			cThrow ("Message is too short, no digest present");
+		if (_conf.get_digest () != ReDataConfig::DIGEST::NONE) {
+			const size_t digest_size = _conf.get_digest_result_size ();
+			if (msg.size () < digest_size) {
+				cThrow ("Message is too short, no digest present"sv);
+			}
+
+			/* Calculate digest from plain data */
+			_conf.calc_digest (msg.substr (digest_size), _work_msg2, (true == key_mixed) ? _hmac_keys_mixed.at (key_id) : _hmac_keys.at (key_id));
+
+			/* Compare digest from message with calculated digest */
+			if (msg.compare (0, digest_size, _work_msg2) != 0) {
+				cThrow ("Digest check failed"sv);
+			}
+			_work_msg2.resize (0);
+
+			/* Skip digest and copy the rest of data to plain output */
+			msg.remove_prefix (digest_size);
 		}
 
-		/* Skip digest and copy the rest of data to plain output */
-		plain.assign (_work_msg.substr (digest_size));
+		plain.assign (msg);
 
-		/* Calculate digest from plain data */
-		const std::string tdigest = _conf.calc_digest (plain, (true == key_mixed) ? _hmac_keys_mixed.at (key_id) : _hmac_keys.at (key_id));
-
-		/* Compare digest from message with calculated digest */
-		if (_work_msg.compare (0, digest_size, tdigest) != 0) {
-			cThrow ("Digest check failed");
+		if (_conf.get_crypto () != ReDataConfig::CRYPTO::NONE) {
+			_work_msg.resize (0);
 		}
-
 		_last_decode_was_mixed = key_mixed;
 	}
 
 	void ReData::encode_message (const std::string_view plain, std::string &msg, const size_t key_id, const bool key_mixed)
 	{
-		/* This function is appending data to msg */
+		/* This function is appending data to msg. */
+		/* Data may be appended to msg and not cleaned up on fail. This has to be handled from caller! */
+		_conf.calc_digest (plain, _work_msg, (true == key_mixed) ? _hmac_keys_mixed.at (key_id) : _hmac_keys.at (key_id));
+		_work_msg.append (plain);
+
 		if (_conf.get_crypto () != ReDataConfig::CRYPTO::NONE) {
-			/* Compute digest and append plain data after digest to _work_msg */
-			_work_msg.assign (_conf.calc_digest (plain, (true == key_mixed) ? _hmac_keys_mixed.at (key_id) : _hmac_keys.at (key_id)));
-			_work_msg.append (plain);
 			/* Encrypt everything in _work_msg and append to msg */
 			_conf.calc_crypto_enc (_work_msg, msg, (true == key_mixed) ? _crypto_keys_mixed.at (key_id) : _crypto_keys.at (key_id));
 		}
 		else {
-			/* Compute digest and append plain data after digest and append everything to msg */
-			msg.append (_conf.calc_digest (plain, (true == key_mixed) ? _hmac_keys_mixed.at (key_id) : _hmac_keys.at (key_id)));
-			msg.append (plain);
+			msg.append (_work_msg);
 		}
+		_work_msg.resize (0);
 	}
 
 	void ReData::mix_keys (const COMMON_VECTOR &keys, COMMON_VECTOR &out) const
@@ -121,10 +128,10 @@ namespace shaga {
 			_key_ident_map.clear ();
 
 			_hmac_keys.clear ();
-			_hmac_keys.push_back ("");
+			_hmac_keys.push_back (""s);
 
 			_crypto_keys.clear ();
-			_crypto_keys.push_back ("");
+			_crypto_keys.push_back (""s);
 
 			_key_idents.clear ();
 			_key_ident_map.clear ();
@@ -145,9 +152,13 @@ namespace shaga {
 				_conf.decode (msg, offset);
 			}
 
+			if (0 == _conf.get_digest_result_size () && false == _conf.has_mac ()) {
+				cThrow ("Unable to decode message with no digest and no MAC"sv);
+			}
+
 			if (nullptr != check_callback) {
 				if (check_callback (_conf) == false) {
-					cThrow ("Checker callback function refused message parameters");
+					cThrow ("Checker callback function refused message parameters"sv);
 				}
 			}
 
@@ -160,7 +171,7 @@ namespace shaga {
 						/* We don't, so we need to find it in map */
 						auto res = _key_ident_map.find (ident);
 						if (res == _key_ident_map.end ()) {
-							cThrow ("Key ident not found");
+							cThrow ("Key ident not found"sv);
 						}
 
 						decode_message (msg, offset, out, res->second, use_mixed);
@@ -204,7 +215,7 @@ namespace shaga {
 						break;
 
 					case MixKeysUse::ONLY_MIXED:
-						cThrow ("Mix key is not set");
+						cThrow ("Mix key is not set"sv);
 				}
 			}
 			else {
@@ -246,7 +257,7 @@ namespace shaga {
 			/* Fail, truncate out and return offset to original value */
 			out.resize (0);
 			offset = orig_offset;
-			cThrow ("Unable to decode message: {}", e.what());
+			cThrow ("Unable to decode message: {}"sv, e.what());
 		}
 		catch (...) {
 			/* Fail, truncate out and return offset to original value */
@@ -264,10 +275,14 @@ namespace shaga {
 
 	void ReData::encode (const std::string_view plain, std::string &out, const bool use_mixed)
 	{
+		if (0 == _conf.get_digest_result_size () && false == _conf.has_mac ()) {
+			cThrow ("Unable to encode message with no digest and no MAC"sv);
+		}
+
 		const size_t original_size = out.size ();
 		try {
 			if (true == use_mixed && false == _mix_key_enabled) {
-				cThrow ("Mix key is not set");
+				cThrow ("Mix key is not set"sv);
 			}
 			if (true == _use_config_header) {
 				_conf.encode (out);
@@ -279,7 +294,7 @@ namespace shaga {
 		}
 		catch (const std::exception &e) {
 			out.resize (original_size);
-			cThrow ("Unable to encode message: {}", e.what());
+			cThrow ("Unable to encode message: {}"sv, e.what());
 		}
 		catch (...) {
 			out.resize (original_size);
@@ -351,7 +366,7 @@ namespace shaga {
 	{
 		_crypto_keys = keys;
 		if (_crypto_keys.empty () == true) {
-			_crypto_keys.push_back ("");
+			_crypto_keys.push_back (""s);
 		}
 
 		if (SIZE_MAX != key_id) {
@@ -374,7 +389,7 @@ namespace shaga {
 			(void) iter;
 
 			if (false == success) {
-				cThrow ("Duplicated key ident");
+				cThrow ("Duplicated key ident"sv);
 			}
 			++i;
 		}

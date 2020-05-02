@@ -141,7 +141,7 @@ namespace shaga {
 					return iter->second;
 				}
 
-				return T("");
+				return T(""sv);
 			}
 
 			void modify_value (const std::string_view key, ValueCallback callback);
