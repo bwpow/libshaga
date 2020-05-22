@@ -149,17 +149,17 @@ namespace shaga {
 
 	[[noreturn]] void exit (const int rcode) noexcept
 	{
-		_exit (nullptr, rcode);
+		_exit (""sv, rcode);
 	}
 
 	[[noreturn]] void exit_failure (void) noexcept
 	{
-		_exit (nullptr, EXIT_FAILURE);
+		_exit (""sv, EXIT_FAILURE);
 	}
 
 	[[noreturn]] void exit (void) noexcept
 	{
-		_exit (nullptr, EXIT_SUCCESS);
+		_exit (""sv, EXIT_SUCCESS);
 	}
 
 	void set_final_call (FINAL_CALL func)

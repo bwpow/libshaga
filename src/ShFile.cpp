@@ -301,7 +301,7 @@ namespace shaga {
 	{
 		seek (0, SEEK::SET);
 		const uint64_t file_sze = static_cast<uint64_t> (get_file_size ());
-		read (data, std::min (max_len, file_sze));
+		read (data, std::min (static_cast<uint64_t> (max_len), file_sze));
 	}
 
 	std::string ShFile::read_whole_file (const size_t max_len)
@@ -315,7 +315,7 @@ namespace shaga {
 	{
 		seek (0, SEEK::SET);
 		const uint64_t file_sze = static_cast<uint64_t> (get_file_size ());
-		read (data, std::min (max_len, file_sze));
+		read (data, std::min (static_cast<uint64_t> (max_len), file_sze));
 	}
 
 	void ShFile::dump_in_c_format (const std::string_view varname, const size_t len, std::function<std::string(const size_t pos)> callback, const size_t per_line, const bool add_len)

@@ -3244,9 +3244,9 @@ template <> struct formatter<bytes> {
 		specs_.precision, specs_.precision_ref, ctx);
 	using range_type =
 		internal::output_range<typename FormatContext::iterator, char>;
-	internal::basic_writer<range_type> awriter(range_type(ctx.out()));
-	awriter.write_bytes(b.data_, specs_);
-	return awriter.out();
+	internal::basic_writer<range_type> _writer(range_type(ctx.out()));
+	_writer.write_bytes(b.data_, specs_);
+	return _writer.out();
   }
 
  private:
