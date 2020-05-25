@@ -427,8 +427,6 @@ namespace shaga {
 				break;
 
 			default:
-				if (_counter < c._counter) return 1;
-				if (_counter > c._counter) return (-1);
 				break;
 		}
 
@@ -440,6 +438,9 @@ namespace shaga {
 
 		if (_hwid_dest < c._hwid_dest) return (-1);
 		if (_hwid_dest > c._hwid_dest) return 1;
+
+		if (_counter < c._counter) return 1;
+		if (_counter > c._counter) return (-1);
 
 		return 0;
 	}

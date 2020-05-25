@@ -4,7 +4,7 @@ TESTSRCDIR = test
 LIBSOURCES = $(wildcard $(SRCDIR)/*.cpp)
 TESTSOURCES = $(wildcard $(TESTSRCDIR)/*.cpp)
 
-FULLFLAGS = -s -Iinclude
+FULLFLAGS = -Iinclude
 MT_FULLDIR = $(OBJDIR)/full_mt
 MT_FULLLIB = $(LIBDIR)/libshaga_mt.a
 MT_FULLOBJS = $(addprefix $(MT_FULLDIR)/, $(LIBSOURCES:.cpp=.o))
@@ -15,7 +15,7 @@ ST_FULLLIB = $(LIBDIR)/libshaga_st.a
 ST_FULLOBJS = $(addprefix $(ST_FULLDIR)/, $(LIBSOURCES:.cpp=.o))
 ST_FULLFLAGS = $(FULLFLAGS) -include shaga_st.h
 
-LITEFLAGS = -s -Iinclude
+LITEFLAGS = -Iinclude
 MT_LITEDIR = $(OBJDIR)/lite_mt
 MT_LITELIB = $(LIBDIR)/libshagalite_mt.a
 MT_LITEOBJS = $(addprefix $(MT_LITEDIR)/, $(LIBSOURCES:.cpp=.o))
@@ -72,13 +72,13 @@ prep:
 	$(MKDIR) $(BINDIR)
 
 clean:
-	$(RM) -f $(MT_FULLLIB) $(MT_FULLOBJS) $(MT_LITELIB) $(MT_LITEOBJS) $(MT_DEBUGLIB) $(MT_DEBUGOBJS) $(MT_TESTBIN) $(MT_TESTOBJS)
-	$(RM) -f $(ST_FULLLIB) $(ST_FULLOBJS) $(ST_LITELIB) $(ST_LITEOBJS) $(ST_DEBUGLIB) $(ST_DEBUGOBJS) $(ST_TESTBIN) $(ST_TESTOBJS)
+	$(RM) $(MT_FULLLIB) $(MT_FULLOBJS) $(MT_LITELIB) $(MT_LITEOBJS) $(MT_DEBUGLIB) $(MT_DEBUGOBJS) $(MT_TESTBIN) $(MT_TESTOBJS)
+	$(RM) $(ST_FULLLIB) $(ST_FULLOBJS) $(ST_LITELIB) $(ST_LITEOBJS) $(ST_DEBUGLIB) $(ST_DEBUGOBJS) $(ST_TESTBIN) $(ST_TESTOBJS)
 
 distclean: clean
-	$(RM) -rf $(LIBDIR)/
-	$(RM) -rf $(OBJDIR)/
-	$(RM) -rf $(BINDIR)/
+	$(RM) -r $(LIBDIR)/
+	$(RM) -r $(OBJDIR)/
+	$(RM) -r $(BINDIR)/
 
 remake: | clean all
 
@@ -89,6 +89,7 @@ remake: | clean all
 debug_mt: | prep $(MT_DEBUGLIB)
 
 $(MT_DEBUGLIB): $(MT_DEBUGOBJS)
+	$(RM) $@
 	$(AR) rcsD $@ $^
 
 $(MT_DEBUGDIR)/%.o:%.cpp
@@ -98,6 +99,7 @@ $(MT_DEBUGDIR)/%.o:%.cpp
 debug_st: | prep $(ST_DEBUGLIB)
 
 $(ST_DEBUGLIB): $(ST_DEBUGOBJS)
+	$(RM) $@
 	$(AR) rcsD $@ $^
 
 $(ST_DEBUGDIR)/%.o:%.cpp
@@ -110,6 +112,8 @@ $(ST_DEBUGDIR)/%.o:%.cpp
 full_mt: | prep $(MT_FULLLIB)
 
 $(MT_FULLLIB): $(MT_FULLOBJS)
+	$(RM) $@
+	$(STRIP) $^
 	$(AR) rcsD $@ $^
 
 $(MT_FULLDIR)/%.o:%.cpp
@@ -119,6 +123,8 @@ $(MT_FULLDIR)/%.o:%.cpp
 full_st: | prep $(ST_FULLLIB)
 
 $(ST_FULLLIB): $(ST_FULLOBJS)
+	$(RM) $@
+	$(STRIP) $^
 	$(AR) rcsD $@ $^
 
 $(ST_FULLDIR)/%.o:%.cpp
@@ -131,6 +137,8 @@ $(ST_FULLDIR)/%.o:%.cpp
 lite_mt: | prep $(MT_LITELIB)
 
 $(MT_LITELIB): $(MT_LITEOBJS)
+	$(RM) $@
+	$(STRIP) $^
 	$(AR) rcsD $@ $^
 
 $(MT_LITEDIR)/%.o:%.cpp
@@ -140,6 +148,8 @@ $(MT_LITEDIR)/%.o:%.cpp
 lite_st: | prep $(ST_LITELIB)
 
 $(ST_LITELIB): $(ST_LITEOBJS)
+	$(RM) $@
+	$(STRIP) $^
 	$(AR) rcsD $@ $^
 
 $(ST_LITEDIR)/%.o:%.cpp

@@ -1,8 +1,9 @@
 GPP ?= g++
 AR ?= ar
-RM ?= rm
+RM ?= rm -f
 CP ?= cp
 MKDIR ?= @mkdir -p
+STRIP ?= strip --strip-unneeded --preserve-dates
 
 DESTINCLUDE ?= /usr/local/include/
 DESTLIB ?= /usr/local/lib/
@@ -19,10 +20,10 @@ ST_CPPFLAGS = \
 	-Wextra \
 	-Wshadow \
 	-fstack-protector-strong \
+	-fsized-deallocation \
 	-O3 \
 	-std=c++17 \
-	-march=native \
-
+	-march=native
 
 MT_LIBS = -pthread $(ST_LIBS)
 MT_CPPFLAGS = -pthread $(ST_CPPFLAGS)

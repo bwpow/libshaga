@@ -60,32 +60,35 @@ namespace shaga {
 		return 0;
 	}
 
-	DiSigVerify::DEC_CTX_ENTRY::DEC_CTX_ENTRY (const std::string_view key, const std::string_view name, const DiSigVerify::_TYPE type, const std::string_view curve_type) try :
+	DiSigVerify::DEC_CTX_ENTRY::DEC_CTX_ENTRY (const std::string_view key, const std::string_view name, const DiSigVerify::_TYPE type, const std::string_view curve_type) :
 		_name (name)
 	{
 		::mbedtls_pk_init  (&_ctx);
 
-		int ret = (-1);
+		try {
+			int ret = (-1);
 
-		switch (type) {
-			case DiSigVerify::_TYPE::PEM:
-				ret = ::mbedtls_pk_parse_public_key (&_ctx, reinterpret_cast<const unsigned char *> (s_c_str (key)), key.size () + 1);
-				break;
+			switch (type) {
+				case DiSigVerify::_TYPE::PEM:
+					ret = ::mbedtls_pk_parse_public_key (&_ctx, reinterpret_cast<const unsigned char *> (s_c_str (key)), key.size () + 1);
+					break;
 
-			case DiSigVerify::_TYPE::DER:
-				ret = ::mbedtls_pk_parse_public_key (&_ctx, reinterpret_cast<const unsigned char *> (key.data ()), key.size ());
-				break;
+				case DiSigVerify::_TYPE::DER:
+					ret = ::mbedtls_pk_parse_public_key (&_ctx, reinterpret_cast<const unsigned char *> (key.data ()), key.size ());
+					break;
 
-			case DiSigVerify::_TYPE::RAW:
-				ret = add_raw_key (key, curve_type);
-				break;
+				case DiSigVerify::_TYPE::RAW:
+					ret = add_raw_key (key, curve_type);
+					break;
+			}
+
+			DiSigVerify::check_error (ret);
+			DiSigVerify::can_do (_ctx);
 		}
-
-		DiSigVerify::check_error (ret);
-		DiSigVerify::can_do (_ctx);
-	}
-	catch (...) {
-		::mbedtls_pk_free (&_ctx);
+		catch (...) {
+			::mbedtls_pk_free (&_ctx);
+			throw;
+		}
 	}
 
 	DiSigVerify::DEC_CTX_ENTRY::DEC_CTX_ENTRY (const std::string_view key, const std::string_view name, const DiSigVerify::_TYPE type) :
@@ -284,7 +287,7 @@ namespace shaga {
 		RAW_SIGNATURE_ENTRY sgn (curve_type, sgn_raw);
 
 		/* TODO: This can be run in parallel when available */
-		return std::any_of (_dec_ctx_list.begin (), _dec_ctx_list.end (), [&md_alg, &hsh, &sgn](DEC_CTX_ENTRY &entry) -> bool {
+		return std::any_of (_dec_ctx_list.begin (), _dec_ctx_list.end (), [&hsh, &sgn](DEC_CTX_ENTRY &entry) -> bool {
 			if (::mbedtls_pk_get_type (&entry._ctx) != MBEDTLS_PK_ECKEY) {
 				/* This key is not suitable for ECDSA */
 				return false;

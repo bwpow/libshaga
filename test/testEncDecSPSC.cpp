@@ -9,11 +9,11 @@ All rights reserved.
 
 using namespace shaga;
 
-static const uint8_t STX = 0x45;
-static const uint8_t ETX = 0x4A;
-static const uint8_t NTX = 0x10;
+static const uint8_t STX {0x45};
+static const uint8_t ETX {0x4A};
+static const uint8_t NTX {0x10};
 
-static const std::array<uint8_t,2> STX16 = {0x45, 0x55};
+static const std::array<uint8_t, 2> STX16 = {0x45, 0x55};
 
 template<class T> static void _uart8spsc_sizes_test (void)
 {
@@ -340,7 +340,7 @@ template<class T> static void _uart16spsc_test (void)
 	Uart16EncodeSPSC<T> encodering (datasize, sze + 1, STX16);
 	Uart16DecodeSPSC<T> decodering (datasize, sze + 1, STX16);
 
-	char tempbuffer[600];
+	uint8_t tempbuffer[600];
 	size_t pos;
 
 	uint8_t buffer[totalsize];
@@ -368,7 +368,7 @@ template<class T> static void _uart16spsc_test (void)
 			tempbuffer[3] = 0;
 			tempbuffer[4] = 0;
 			tempbuffer[5] = 0;
-			decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, 6);
+			decodering.push_buffer (tempbuffer, 0, 6);
 		}
 		else {
 			/* Insert message larger than allocated */
@@ -376,7 +376,7 @@ template<class T> static void _uart16spsc_test (void)
 			tempbuffer[1] = STX16[1];
 			tempbuffer[2] = UINT8_MAX;
 			tempbuffer[3] = UINT8_MAX;
-			decodering.push_buffer (reinterpret_cast<const uint8_t *> (tempbuffer), 0, 4);
+			decodering.push_buffer (tempbuffer, 0, 4);
 		}
 
 		ASSERT_TRUE (decodering.get_err_count_reset () == 1);
@@ -385,7 +385,7 @@ template<class T> static void _uart16spsc_test (void)
 		pos = sze;
 		while (true) {
 			pos = (pos + 1) % sizeof (tempbuffer);
-			const size_t available = encodering.fill_front_buffer (tempbuffer, pos);
+			const size_t available = encodering.fill_front_buffer (reinterpret_cast<char *> (tempbuffer), pos);
 			if (0 == available) {
 				if (0 == pos) {
 					/* We actually requested 0 bytes */

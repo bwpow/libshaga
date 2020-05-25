@@ -189,6 +189,13 @@ namespace shaga {
 			}
 
 			template<typename ... Types>
+			void _construct (const HWIDMASK &hwidmask, Types&& ... rest)
+			{
+				_hwid_dest = hwidmask;
+				_construct (rest...);
+			}
+
+			template<typename ... Types>
 			void _construct (const ChunkMeta &m, Types&& ... rest)
 			{
 				meta = m;

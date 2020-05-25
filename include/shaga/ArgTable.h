@@ -6,7 +6,7 @@ Copyright (c) 2012-2020, SAGE team s.r.o., Samuel Kupka
 All rights reserved.
 *******************************************************************************/
 #ifndef HEAD_shaga_ArgTable
-#define HEAD_shaga_ArtTable
+#define HEAD_shaga_ArgTable
 
 #include "common.h"
 

@@ -25,18 +25,21 @@ namespace shaga {
 	ShFile::ShFile ()
 	{ }
 
-	ShFile::ShFile (const std::string_view filename, const uint8_t mode, const mode_t mask, const bool do_open) try
+	ShFile::ShFile (const std::string_view filename, const uint8_t mode, const mode_t mask, const bool do_open)
 	{
 		_filename.assign (filename);
 		_mode = mode;
 		_mask = mask;
 
-		if (true == do_open) {
-			open ();
+		try {
+			if (true == do_open) {
+				open ();
+			}
 		}
-	}
-	catch (...) {
-		close ();
+		catch (...) {
+			close ();
+			throw;
+		}
 	}
 
 	ShFile::~ShFile ()

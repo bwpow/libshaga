@@ -53,6 +53,11 @@ TEST (Chunk, compare)
 {
 	CHUNKLIST cl;
 	cl.emplace_back (0, "AAAA", Chunk::Priority::pDEBUG, Chunk::TrustLevel::TRUSTED);
+
+	cl.emplace_back (0, "AAAA", Chunk::Priority::pDEBUG, Chunk::TrustLevel::INTERNAL, HWIDMASK (0x20, HWID_MAX));
+	cl.emplace_back (0, "AAAA", Chunk::Priority::pDEBUG, Chunk::TrustLevel::INTERNAL, HWIDMASK (0x10, HWID_MAX));
+	cl.emplace_back (0, "AAAA", Chunk::Priority::pDEBUG, Chunk::TrustLevel::INTERNAL, HWIDMASK (0x10, 0));
+
 	cl.emplace_back (0, "AAAA", Chunk::Priority::pDEBUG, Chunk::TrustLevel::INTERNAL);
 
 	cl.emplace_back (0, "AAAA", Chunk::Priority::pOPTIONAL, Chunk::TrustLevel::TRUSTED);

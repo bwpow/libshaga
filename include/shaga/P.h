@@ -24,7 +24,7 @@ All rights reserved.
 #define MACRO_CONCAT(x, y) MACRO_CONCAT2(x, y)
 
 /* Create scoped variable that will keep CommonException muted */
-#define cMute shaga::CommonExceptionMute MACRO_CONCAT(_common_exception_mute_, __LINE__)()
+#define cMute shaga::CommonExceptionMute MACRO_CONCAT(_common_exception_mute_, __LINE__)
 
 namespace shaga::P {
 	/* Cache to avoid allocation for every P::print */

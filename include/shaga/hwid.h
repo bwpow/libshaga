@@ -22,37 +22,66 @@ namespace shaga {
 	#define str_to_hwid STR::to_uint32
 	#define str_from_hwid STR::from_int
 
-	struct HWIDMASK {
-		HWID hwid;
-		HWID mask;
+	struct HWIDMASK
+	{
+		HWID hwid {0};
+		HWID mask {0};
 
-		constexpr HWIDMASK (const HWID _hwid, const HWID _mask) : hwid (_hwid), mask (_mask) {}
+		constexpr HWIDMASK (const HWID _hwid, const HWID _mask) :
+			hwid (_hwid & _mask),
+			mask (_mask)
+		{}
+
 		constexpr HWIDMASK (const HWID _hwid) : HWIDMASK (_hwid, HWID_MAX) {}
-		constexpr HWIDMASK () : HWIDMASK (0, 0) {}
+		constexpr HWIDMASK () {}
 
 		constexpr bool operator== (const HWIDMASK &other) const
 		{
-			return (mask != other.mask) ? false : (hwid & mask) == (other.hwid & other.mask);
+			return ((mask == other.mask) && ((hwid & mask) == (other.hwid & other.mask)));
 		}
 
 		constexpr bool operator< (const HWIDMASK &other) const
 		{
-			return (mask < other.mask) ? true :	((mask > other.mask) ? false : (hwid & mask) < (other.hwid & other.mask));
+			return (mask < other.mask) ?
+				true
+				:
+				((mask > other.mask) ?
+					false
+					:
+					((hwid & mask) < (other.hwid & other.mask))
+				);
 		}
 
 		constexpr bool operator> (const HWIDMASK &other) const
 		{
-			return (mask > other.mask) ? true :	((mask < other.mask) ? false : (hwid & mask) > (other.hwid & other.mask));
+			return (mask > other.mask) ?
+				true
+				:
+				((mask < other.mask) ?
+					false
+					:
+					((hwid & mask) > (other.hwid & other.mask))
+				);
 		}
 
 		constexpr bool check (const HWID other_hwid) const
 		{
-			return (other_hwid & mask) == (hwid & mask);
+			return ((other_hwid & mask) == (hwid & mask));
 		}
 
 		constexpr bool empty (void) const
 		{
-			return (hwid == 0 && mask == 0);
+			return ((0 == hwid) && (0 == mask));
+		}
+
+		constexpr bool is_broadcast (void) const
+		{
+			return (0 == mask);
+		}
+
+		constexpr bool is_unicast (void) const
+		{
+			return (HWID_MAX == mask);
 		}
 	};
 
@@ -63,16 +92,14 @@ namespace shaga {
 
 	inline static std::string hwid_describe (const HWIDMASK &hwidmask)
 	{
-		if (0 == hwidmask.mask) {
-			if (0 == hwidmask.hwid) {
-				return "broadcast"s;
-			}
-			else {
-				return fmt::format ("{:08X}"sv, hwidmask.hwid);
-			}
+		if (hwidmask.is_broadcast ()) {
+			return "broadcast"s;
+		}
+		else if (hwidmask.is_unicast ()) {
+			return fmt::format ("{:08X}"sv, hwidmask.hwid);
 		}
 		else {
-			return fmt::format ("{:08X}/{:08X}"sv, hwidmask.hwid, hwidmask.mask);
+			return fmt::format ("{:08X}/{:08X}"sv, (hwidmask.hwid & hwidmask.mask), hwidmask.mask);
 		}
 	}
 

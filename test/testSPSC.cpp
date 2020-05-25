@@ -94,16 +94,16 @@ TEST (PaSPSC, empty)
 	PaSPSC<int> ring (sze);
 
 	for (int i = 0; i < loops; ++i) {
-		EXPECT_TRUE (ring.empty ());
-		EXPECT_NO_THROW (ring.back () = i);
-		EXPECT_NO_THROW (ring.push_back ());
-		EXPECT_FALSE (ring.empty ());
+		ASSERT_TRUE (ring.empty ());
+		ASSERT_NO_THROW (ring.back () = i);
+		ASSERT_NO_THROW (ring.push_back ());
+		ASSERT_FALSE (ring.empty ());
 
-		int val;
-		EXPECT_NO_THROW (val = ring.front ());
-		EXPECT_NO_THROW (ring.pop_front ());
-		EXPECT_TRUE (val == i);
-		EXPECT_THROW (ring.pop_front (), CommonException);
+		int val {0};
+		ASSERT_NO_THROW (val = ring.front ());
+		ASSERT_NO_THROW (ring.pop_front ());
+		ASSERT_TRUE (val == i);
+		ASSERT_THROW (ring.pop_front (), CommonException);
 	}
 }
 

@@ -11,30 +11,42 @@ namespace shaga {
 
 	#if BYTE_ORDER == LITTLE_ENDIAN
 		const bool _shaga_compiled_little_endian {true};
-		#pragma message "Endian: LITTLE"
+		#ifndef __clang__
+			#pragma message "Endian: LITTLE"
+		#endif // __clang__
 	#elif BYTE_ORDER == BIG_ENDIAN
 		const bool _shaga_compiled_little_endian {false};
-		#pragma message "Endian: BIG"
+		#ifndef __clang__
+			#pragma message "Endian: BIG"
+		#endif // __clang__
 	#else
 		#error Unable to detect version of the library
 	#endif
 
 	#if defined SHAGA_MULTI_THREAD
 		const bool _shaga_compiled_with_threading {true};
-		#pragma message "Threading support: YES"
+		#ifndef __clang__
+			#pragma message "Threading support: YES"
+		#endif // __clang__
 	#elif defined SHAGA_SINGLE_THREAD
 		const bool _shaga_compiled_with_threading {false};
-		#pragma message "Threading support: NO"
+		#ifndef __clang__
+			#pragma message "Threading support: NO"
+		#endif // __clang__
 	#else
 		#error Unable to detect version of the library
 	#endif
 
 	#if defined SHAGA_LITE
 		const bool _shaga_compiled_full {false};
-		#pragma message "Version: LITE"
+		#ifndef __clang__
+			#pragma message "Version: LITE"
+		#endif // __clang__
 	#elif defined SHAGA_FULL
 		const bool _shaga_compiled_full {true};
-		#pragma message "Version: FULL"
+		#ifndef __clang__
+			#pragma message "Version: FULL"
+		#endif // __clang__
 	#else
 		#error Unable to detect version of the library
 	#endif

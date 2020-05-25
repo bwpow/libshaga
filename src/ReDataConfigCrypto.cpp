@@ -13,7 +13,7 @@ namespace shaga {
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	static const constexpr std::string_view _ad {"ShaGaAD"sv};
+	[[maybe_unused]] static const constexpr std::string_view _ad {"ShaGaAD"sv};
 
 	SHAGA_NODISCARD static inline size_t _get_crypto_block_size (const ReDataConfig::CRYPTO crypto)
 	{
