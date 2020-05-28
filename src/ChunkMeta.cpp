@@ -29,7 +29,7 @@ namespace shaga {
 	static void _check_key_validity (uint16_t bkey, uint8_t *const out_chars = nullptr)
 	{
 		if (bkey < ChunkMeta::key_type_min || bkey > ChunkMeta::key_type_max) {
-			cThrow ("Unrecognized key value {:X}"sv, bkey);
+			cThrow ("Unrecognized key value {}"sv, bkey);
 		}
 
 		if (out_chars != nullptr) {
@@ -310,29 +310,29 @@ namespace shaga {
 		}
 	}
 
-	void ChunkMeta::to_bin (std::string &s) const
+	void ChunkMeta::to_bin (std::string &out_append) const
 	{
 		uint16_t last_key = UINT16_MAX;
-		for (ChunkMetaData::const_iterator iter = _data.begin (); iter != _data.end (); ++iter) {
-			if (last_key != iter->first) {
-				last_key = iter->first;
-				BIN::be_from_uint16 (last_key, s);
+		for (const auto &[key, value] : _data) {
+			if (last_key != key) {
+				last_key = key;
+				BIN::be_from_uint16 (last_key, out_append);
 			}
 			else {
 				/* Store only high 8-bit value meaning that the key is repeating */
-				BIN::from_uint8 (key_repeat_byte, s);
+				BIN::from_uint8 (key_repeat_byte, out_append);
 			}
 
-			BIN::from_size (iter->second.size (), s);
-			s.append (iter->second);
+			BIN::from_size (value.size (), out_append);
+			out_append.append (value);
 		}
 	}
 
 	std::string ChunkMeta::to_bin (void) const
 	{
-		std::string s;
-		to_bin (s);
-		return s;
+		std::string out;
+		to_bin (out);
+		return out;
 	}
 
 	void ChunkMeta::from_bin (const std::string_view s, size_t &offset)

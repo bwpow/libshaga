@@ -14,6 +14,9 @@ namespace shaga {
 	typedef uint32_t HWID;
 	#define HWID_MAX UINT32_MAX
 
+	#define HWID_UNKNOWN 0
+	#define HWID_PLACEHOLDER HWID_MAX
+
 	#define bin_be_from_hwid BIN::be_from_uint32
 	#define bin_be_to_hwid BIN::be_to_uint32
 	#define bin_from_hwid BIN::from_uint32
@@ -83,6 +86,16 @@ namespace shaga {
 		{
 			return (HWID_MAX == mask);
 		}
+
+		static constexpr bool is_placeholder (const HWID _hwid)
+		{
+			return (_hwid == HWID_PLACEHOLDER);
+		}
+
+		static constexpr bool is_unknown (const HWID _hwid)
+		{
+			return (_hwid == HWID_UNKNOWN);
+		}
 	};
 
 	typedef std::list<HWID> HWID_LIST;
@@ -105,7 +118,15 @@ namespace shaga {
 
 	inline static std::string hwid_describe (const HWID hwid)
 	{
-		return fmt::format ("{:08X}"sv, hwid);
+		if (HWIDMASK::is_placeholder (hwid)) {
+			return "placeholder"s;
+		}
+		else if (HWIDMASK::is_unknown (hwid)) {
+			return "unknown/unset"s;
+		}
+		else {
+			return fmt::format ("{:08X}"sv, hwid);
+		}
 	}
 }
 

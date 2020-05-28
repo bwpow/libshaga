@@ -13,8 +13,12 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	#ifdef SHAGA_THREADING
 		static std::atomic<uint_fast64_t> _chunk_global_counter (0);
+		static thread_local std::string _temp_str;
+		static thread_local std::string _out_str;
 	#else
 		static uint_fast64_t _chunk_global_counter {0};
+		static std::string _temp_str;
+		static std::string _out_str;
 	#endif // SHAGA_THREADING
 
 	static inline uint32_t _key_char_to_val (const unsigned char c)
@@ -30,7 +34,7 @@ namespace shaga {
 	static void _check_key_validity (uint32_t bkey, uint8_t *const out_chars = nullptr)
 	{
 		if (bkey < Chunk::key_type_min || bkey > Chunk::key_type_max) {
-			cThrow ("Unrecognized key value {:X}"sv, bkey);
+			cThrow ("Unrecognized key value {}"sv, bkey);
 		}
 
 		if (out_chars != nullptr) {
@@ -93,7 +97,7 @@ namespace shaga {
 	{
 		_construct ();
 		_channel = true;
-		_hwid_source = 0;
+		_hwid_source = HWID_UNKNOWN;
 		_type = 0;
 		_payload.resize (0);
 		_prio = Priority::pMANDATORY;
@@ -251,12 +255,12 @@ namespace shaga {
 		return _hwid_source;
 	}
 
-	bool Chunk::is_for_me (const HWID hwid) const
+	bool Chunk::is_for_destination (const HWID hwid) const
 	{
 		return _hwid_dest.check (hwid);
 	}
 
-	bool Chunk::is_for_me (const HWID_LIST &lst) const
+	bool Chunk::is_for_destination (const HWID_LIST &lst) const
 	{
 		return std::any_of (lst.begin (), lst.end (), [this](const HWID hwid) {
 			return _hwid_dest.check (hwid);
@@ -445,7 +449,7 @@ namespace shaga {
 		return 0;
 	}
 
-	void Chunk::to_bin (std::string &out) const
+	void Chunk::to_bin (std::string &out_append) const
 	{
 		uint32_t val = key_highbit_mask;
 
@@ -474,38 +478,38 @@ namespace shaga {
 			val |= key_is_tracert_mask;
 			val |= (static_cast<uint32_t> (_tracert_hops.size ()) << key_tracert_hop_shift) & key_tracert_hop_mask;
 
-			BIN::be_from_uint16 (val >> 16, out);
-			bin_from_hwid (_hwid_source, out);
+			BIN::be_from_uint16 (val >> 16, out_append);
+			bin_from_hwid (_hwid_source, out_append);
 
 			for (const auto &hop : _tracert_hops) {
-				bin_from_hwid (hop.hwid, out);
-				BIN::from_uint8 (hop.metric, out);
+				bin_from_hwid (hop.hwid, out_append);
+				BIN::from_uint8 (hop.metric, out_append);
 			}
 		}
 		else {
 			val |= _type & key_type_mask;
-			BIN::be_from_uint32 (val, out);
-			bin_from_hwid (_hwid_source, out);
+			BIN::be_from_uint32 (val, out_append);
+			bin_from_hwid (_hwid_source, out_append);
 		}
 
 		if (true == has_dest) {
-			bin_from_hwid (_hwid_dest.mask, out);
-			bin_from_hwid (_hwid_dest.hwid, out);
+			bin_from_hwid (_hwid_dest.mask, out_append);
+			bin_from_hwid (_hwid_dest.hwid, out_append);
 		}
 
 		if (true == has_payload) {
-			BIN::from_size (_payload.size (), out);
-			out.append (_payload);
+			BIN::from_size (_payload.size (), out_append);
+			out_append.append (_payload);
 		}
 
-		meta.to_bin (out);
+		meta.to_bin (out_append);
 	}
 
 	std::string Chunk::to_bin (void) const
 	{
-		std::string out;
-		to_bin (out);
-		return out;
+		_out_str.resize (0);
+		to_bin (_out_str);
+		return _out_str;
 	}
 
 	bool operator== (const Chunk &a, const Chunk &b)
@@ -527,6 +531,22 @@ namespace shaga {
 	//  Global functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	/*** TTL ***/
+	Chunk::TTL uint8_to_ttl (const uint8_t v)
+	{
+		const Chunk::TTL t = static_cast<Chunk::TTL> (v);
+		if (Chunk::_TTL_first <= t && t <= Chunk::_TTL_last) {
+			return t;
+		}
+		cThrow ("Value out of range"sv);
+	}
+
+	uint8_t ttl_to_uint8 (const Chunk::TTL v)
+	{
+		return std::underlying_type<Chunk::TTL>::type (v);
+	}
+
+	/*** TrustLevel ***/
 	Chunk::TrustLevel operator++ (Chunk::TrustLevel &x)
 	{
 		return x = static_cast<Chunk::TrustLevel>(std::underlying_type<Chunk::TrustLevel>::type (x) + 1);
@@ -592,6 +612,7 @@ namespace shaga {
 		cThrow ("Value out of range"sv);
 	}
 
+	/*** Priority ***/
 	Chunk::Priority uint8_to_priority (const uint8_t v)
 	{
 		const Chunk::Priority t = static_cast<Chunk::Priority> (v);
@@ -621,20 +642,7 @@ namespace shaga {
 		cThrow ("Unknown Priority"sv);
 	}
 
-	Chunk::TTL uint8_to_ttl (const uint8_t v)
-	{
-		const Chunk::TTL t = static_cast<Chunk::TTL> (v);
-		if (Chunk::_TTL_first <= t && t <= Chunk::_TTL_last) {
-			return t;
-		}
-		cThrow ("Value out of range"sv);
-	}
-
-	uint8_t ttl_to_uint8 (const Chunk::TTL v)
-	{
-		return std::underlying_type<Chunk::TTL>::type (v);
-	}
-
+	/*** Channel ***/
 	Chunk::Channel bool_to_channel (const bool val)
 	{
 		if (true == val) {
@@ -668,34 +676,7 @@ namespace shaga {
 		cThrow ("Unknown Channel"sv);
 	}
 
-	CHUNKLIST chunkset_extract_type (const CHUNKSET &cs, const std::string_view type)
-	{
-		CHUNKLIST out;
-		const uint32_t t = Chunk::key_to_bin (type);
-
-		for (const auto &c : cs) {
-			if (c.get_num_type () == t) {
-				out.push_back (c);
-			}
-		}
-
-		return out;
-	}
-
-	size_t chunkset_count_type (const CHUNKSET &cs, const std::string_view type)
-	{
-		size_t out = 0;
-		const uint32_t t = Chunk::key_to_bin (type);
-
-		for (const auto &c : cs) {
-			if (c.get_num_type () == t) {
-				++out;
-			}
-		}
-
-		return out;
-	}
-
+	/*** CHUNKLIST ***/
 	CHUNKLIST bin_to_chunklist (const std::string_view s, size_t &offset)
 	{
 		CHUNKLIST cs;
@@ -713,32 +694,31 @@ namespace shaga {
 		return bin_to_chunklist (s, offset);
 	}
 
-	void bin_to_chunklist (const std::string_view s, size_t &offset, CHUNKLIST &cs)
+	void bin_to_chunklist (const std::string_view s, size_t &offset, CHUNKLIST &cs_append)
 	{
 		while (offset != s.size ()) {
-			cs.emplace_back (s, offset);
+			cs_append.emplace_back (s, offset);
 		}
 	}
 
-	void bin_to_chunklist (const std::string_view s, CHUNKLIST &cs)
+	void bin_to_chunklist (const std::string_view s, CHUNKLIST &cs_append)
 	{
 		size_t offset = 0;
 
 		while (offset != s.size ()) {
-			cs.emplace_back (s, offset);
+			cs_append.emplace_back (s, offset);
 		}
 	}
 
-	void chunklist_to_bin (CHUNKLIST &cs, std::string &out, const size_t max_size, const Chunk::Priority max_priority, const bool erase_skipped)
+	void chunklist_to_bin (CHUNKLIST &lst_erase, std::string &out_append, const size_t max_size, const Chunk::Priority max_priority, const bool erase_skipped)
 	{
 		size_t sze = 0;
 		size_t cnt = 0;
-		std::string temp;
 
-		for (CHUNKLIST::iterator iter = cs.begin (); iter != cs.end ();) {
+		for (CHUNKLIST::iterator iter = lst_erase.begin (); iter != lst_erase.end ();) {
 			if (iter->get_prio () > max_priority) {
 				if (erase_skipped == true) {
-					cs.erase (iter++);
+					iter = lst_erase.erase (iter);
 				}
 				else {
 					++iter;
@@ -746,31 +726,57 @@ namespace shaga {
 				continue;
 			}
 
-			temp.resize (0);
-			iter->to_bin (temp);
-			if (max_size > 0 && (temp.size () + sze) > max_size) {
+			_temp_str.resize (0);
+			iter->to_bin (_temp_str);
+			if (max_size > 0 && (_temp_str.size () + sze) > max_size) {
 				if (cnt == 0) {
 					cThrow ("Unable to add first chunk."sv);
 				}
 				break;
 			}
 
-			out.append (temp);
-			sze += temp.size ();
+			out_append.append (_temp_str);
+			sze += _temp_str.size ();
 
-			cs.erase (iter++);
+			iter = lst_erase.erase (iter);
 			++cnt;
 		}
 	}
 
-	std::string chunklist_to_bin (CHUNKLIST &cs, const size_t max_size, const Chunk::Priority max_priority, const bool erase_skipped)
+	std::string chunklist_to_bin (CHUNKLIST &lst_erase, const size_t max_size, const Chunk::Priority max_priority, const bool erase_skipped)
 	{
-		std::string out;
-		out.reserve (max_size);
-		chunklist_to_bin (cs, out, max_size, max_priority, erase_skipped);
-		return out;
+		_out_str.resize (0);
+		chunklist_to_bin (lst_erase, _out_str, max_size, max_priority, erase_skipped);
+		return _out_str;
 	}
 
+	void chunklist_change_source_hwid (CHUNKLIST &lst, const HWID new_source_hwid, const bool replace_only_zero)
+	{
+		/* TODO: add std::execution::par */
+		std::for_each (lst.begin (), lst.end (), [new_source_hwid, replace_only_zero](Chunk &chunk) {
+			if (false == replace_only_zero || 0 == chunk._hwid_source) {
+				chunk._hwid_source = new_source_hwid;
+			}
+		});
+	}
+
+	void chunklist_purge (CHUNKLIST &lst, std::function<bool(const Chunk &)> callback)
+	{
+		if (nullptr == callback) {
+			cThrow ("Callback function is not defined"sv);
+		}
+
+		for (auto iter = lst.begin (); iter != lst.end ();) {
+			if (callback (*iter) == false) {
+				iter = lst.erase (iter);
+			}
+			else {
+				++iter;
+			}
+		}
+	}
+
+	/*** CHUNKSET ***/
 	CHUNKSET bin_to_chunkset (const std::string_view s, size_t &offset)
 	{
 		CHUNKSET cs;
@@ -794,36 +800,35 @@ namespace shaga {
 		return cs;
 	}
 
-	void bin_to_chunkset (const std::string_view s, size_t &offset, CHUNKSET &cs)
+	void bin_to_chunkset (const std::string_view s, size_t &offset, CHUNKSET &cs_append)
 	{
 		while (offset != s.size ()) {
-			cs.emplace (s, offset);
+			cs_append.emplace (s, offset);
 		}
 	}
 
-	void bin_to_chunkset (const std::string_view s, CHUNKSET &cs)
+	void bin_to_chunkset (const std::string_view s, CHUNKSET &cs_append)
 	{
 		size_t offset = 0;
 
 		while (offset != s.size ()) {
-			cs.emplace (s, offset);
+			cs_append.emplace (s, offset);
 		}
 	}
 
-	void chunkset_to_bin (CHUNKSET &cs, std::string &out, const size_t max_size, const Chunk::Priority max_priority, const bool thr)
+	void chunkset_to_bin (CHUNKSET &cs_erase, std::string &out_append, const size_t max_size, const Chunk::Priority max_priority, const bool thr)
 	{
 		size_t sze = 0;
 		size_t cnt = 0;
-		std::string temp;
 
-		for (CHUNKSET::iterator iter = cs.begin (); iter != cs.end ();) {
+		for (CHUNKSET::iterator iter = cs_erase.begin (); iter != cs_erase.end ();) {
 			if (iter->get_prio () > max_priority) {
 				break;
 			}
 
-			temp.resize (0);
-			iter->to_bin (temp);
-			if (max_size > 0 && (temp.size () + sze) > max_size) {
+			_temp_str.resize (0);
+			iter->to_bin (_temp_str);
+			if (max_size > 0 && (_temp_str.size () + sze) > max_size) {
 				if (true == thr) {
 					if (0 == cnt) {
 						cThrow ("Unable to add first chunk."sv);
@@ -835,50 +840,66 @@ namespace shaga {
 				break;
 			}
 
-			out.append (temp);
-			sze += temp.size ();
+			out_append.append (_temp_str);
+			sze += _temp_str.size ();
 
-			cs.erase (iter++);
+			iter = cs_erase.erase (iter);
 			++cnt;
 		}
 	}
 
-	std::string chunkset_to_bin (CHUNKSET &cs, const size_t max_size, const Chunk::Priority max_priority, const bool thr)
+	std::string chunkset_to_bin (CHUNKSET &cs_erase, const size_t max_size, const Chunk::Priority max_priority, const bool thr)
 	{
-		std::string out;
-		chunkset_to_bin (cs, out, max_size, max_priority, thr);
-		return out;
+		_out_str.resize (0);
+		chunkset_to_bin (cs_erase, _out_str, max_size, max_priority, thr);
+		return _out_str;
+	}
+
+	void chunkset_purge (CHUNKSET &cset, std::function<bool(const Chunk &)> callback)
+	{
+		if (nullptr == callback) {
+			cThrow ("Callback function is not defined"sv);
+		}
+
+		for (auto iter = cset.begin (); iter != cset.end ();) {
+			if (callback (*iter) == false) {
+				iter = cset.erase (iter);
+			}
+			else {
+				++iter;
+			}
+		}
 	}
 
 	void chunkset_trim (CHUNKSET &cset, const size_t treshold_size, const Chunk::Priority treshold_prio)
 	{
 		size_t sze = cset.size ();
+
 		if (sze <= treshold_size) {
+			/* Set contains less elements than is treshold_size, nothing to do */
 			return;
 		}
+
+		/* At this point, we have at least one element in set */
+
 		if (treshold_size == 0 && cset.begin ()->get_prio () >= treshold_prio) {
+			/* Treshold size is zero and the first element has priority greater or equal as treshold_prio, so delete everything */
 			cset.clear ();
 			return;
 		}
 
+		/* Start from the last element */
 		CHUNKSET::iterator iter = cset.end ();
 		--iter;
 
 		while (sze > treshold_size && iter->get_prio () >= treshold_prio) {
+			/* Iterate from back to front until there are more set elements than treshold_size and prio is
+			greater or equal than treshold_prio. */
 			--sze;
 			--iter;
 		}
 
+		/* Erase everything after last tested element till the end of list */
 		cset.erase (++iter, cset.end ());
-	}
-
-	void chunklist_change_source_hwid (CHUNKLIST &lst, const HWID new_source_hwid, const bool replace_only_zero)
-	{
-		/* When execution is properly implemented, add std::execution::par here */
-		std::for_each (lst.begin (), lst.end (), [new_source_hwid, replace_only_zero](Chunk &chunk) {
-			if (false == replace_only_zero || 0 == chunk._hwid_source) {
-				chunk._hwid_source = new_source_hwid;
-			}
-		});
 	}
 }

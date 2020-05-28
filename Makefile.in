@@ -1,10 +1,11 @@
 SRCDIR = src
+INCLUDEDIR = include
 TESTSRCDIR = test
 
 LIBSOURCES = $(wildcard $(SRCDIR)/*.cpp)
 TESTSOURCES = $(wildcard $(TESTSRCDIR)/*.cpp)
 
-FULLFLAGS = -Iinclude
+FULLFLAGS = -I$(INCLUDEDIR)
 MT_FULLDIR = $(OBJDIR)/full_mt
 MT_FULLLIB = $(LIBDIR)/libshaga_mt.a
 MT_FULLOBJS = $(addprefix $(MT_FULLDIR)/, $(LIBSOURCES:.cpp=.o))
@@ -15,7 +16,7 @@ ST_FULLLIB = $(LIBDIR)/libshaga_st.a
 ST_FULLOBJS = $(addprefix $(ST_FULLDIR)/, $(LIBSOURCES:.cpp=.o))
 ST_FULLFLAGS = $(FULLFLAGS) -include shaga_st.h
 
-LITEFLAGS = -Iinclude
+LITEFLAGS = -I$(INCLUDEDIR)
 MT_LITEDIR = $(OBJDIR)/lite_mt
 MT_LITELIB = $(LIBDIR)/libshagalite_mt.a
 MT_LITEOBJS = $(addprefix $(MT_LITEDIR)/, $(LIBSOURCES:.cpp=.o))
@@ -26,7 +27,7 @@ ST_LITELIB = $(LIBDIR)/libshagalite_st.a
 ST_LITEOBJS = $(addprefix $(ST_LITEDIR)/, $(LIBSOURCES:.cpp=.o))
 ST_LITEFLAGS = $(LITEFLAGS) -include shagalite_st.h
 
-DEBUGFLAGS = -g -Iinclude
+DEBUGFLAGS = -g -I$(INCLUDEDIR)
 MT_DEBUGDIR = $(OBJDIR)/debug_mt
 MT_DEBUGLIB = $(LIBDIR)/libshaga_mt_debug.a
 MT_DEBUGOBJS = $(addprefix $(MT_DEBUGDIR)/, $(LIBSOURCES:.cpp=.o))
@@ -37,7 +38,7 @@ ST_DEBUGLIB = $(LIBDIR)/libshaga_st_debug.a
 ST_DEBUGOBJS = $(addprefix $(ST_DEBUGDIR)/, $(LIBSOURCES:.cpp=.o))
 ST_DEBUGFLAGS = $(DEBUGFLAGS) -include shaga_st.h
 
-TESTFLAGS = -g -Iinclude
+TESTFLAGS = -g -I$(INCLUDEDIR)
 TESTLIBS = -lgtest
 MT_TESTDIR = $(OBJDIR)/test_mt
 MT_TESTBIN = $(BINDIR)/test_mt.$(BINEXT)

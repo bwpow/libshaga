@@ -14,9 +14,9 @@ namespace shaga {
 	/* ChunkMeta is key-value structure with repeating key allowed.	Every key has to be three capital letters ('A' to 'Z'). */
 	class Chunk;
 
-	typedef std::unordered_multimap <uint_fast16_t, std::string> ChunkMetaData;
-	typedef std::set <std::pair<uint_fast16_t, std::string>> ChunkMetaDataSet;
-	typedef std::pair <ChunkMetaData::const_iterator, ChunkMetaData::const_iterator> ChunkMetaDataRange;
+	typedef std::unordered_multimap<uint_fast16_t, std::string> ChunkMetaData;
+	typedef std::set<std::pair<uint_fast16_t, std::string>> ChunkMetaDataSet;
+	typedef std::pair<ChunkMetaData::const_iterator, ChunkMetaData::const_iterator> ChunkMetaDataRange;
 
 	static constexpr uint16_t _chunkmeta_key_to_bin_helper (const char str[4], const size_t pos)
 	{
@@ -28,10 +28,11 @@ namespace shaga {
 
 	static constexpr uint16_t _chunkmeta_key_to_bin (const char str[4])
 	{
-		return ((str[0] >= 'A' && str[0] <= 'Z') || str[0] == '_') &&
+		return
+			(((str[0] >= 'A' && str[0] <= 'Z') || str[0] == '_') &&
 			((str[1] >= 'A' && str[1] <= 'Z') || str[1] == '_') &&
 			((str[2] >= 'A' && str[2] <= 'Z') || str[2] == '_') &&
-			str[3] == '\0' ?
+			str[3] == '\0') ?
 				(_chunkmeta_key_to_bin_helper (str, 0) + 1)
 			:
 				0;
@@ -163,7 +164,7 @@ namespace shaga {
 				return vout;
 			}
 
-			void to_bin (std::string &s) const;
+			void to_bin (std::string &out_append) const;
 			std::string to_bin (void) const;
 
 			void from_bin (const std::string_view s, size_t &offset);

@@ -25,7 +25,7 @@ ST_CPPFLAGS = \
 	-std=c++17 \
 	-march=native
 
-MT_LIBS = -pthread $(ST_LIBS)
+MT_LIBS = -pthread $(ST_LIBS) -latomic
 MT_CPPFLAGS = -pthread $(ST_CPPFLAGS)
 
 ifdef SHAGA_SANITY

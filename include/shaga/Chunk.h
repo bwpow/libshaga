@@ -122,7 +122,7 @@ namespace shaga {
 
 		private:
 			bool _channel {true};
-			HWID _hwid_source {0};
+			HWID _hwid_source {HWID_UNKNOWN};
 			uint32_t _type {0};
 			std::string _payload;
 			Priority _prio {Priority::pMANDATORY};
@@ -238,8 +238,10 @@ namespace shaga {
 			uint_fast8_t get_channel_bitmask (void) const;
 
 			HWID get_source_hwid (void) const;
-			bool is_for_me (const HWID hwid) const;
-			bool is_for_me (const HWID_LIST &lst) const;
+
+			/* Check destination HWIDMASK against parameter */
+			bool is_for_destination (const HWID hwid) const;
+			bool is_for_destination (const HWID_LIST &lst) const;
 
 			std::string get_type (void) const;
 			uint32_t get_num_type (void) const;
@@ -281,7 +283,7 @@ namespace shaga {
 
 			int compare (const Chunk &c) const;
 
-			void to_bin (std::string &out) const;
+			void to_bin (std::string &out_append) const;
 			std::string to_bin (void) const;
 
 			friend bool operator== (const Chunk &a, const Chunk &b);
@@ -291,9 +293,14 @@ namespace shaga {
 			friend void chunklist_change_source_hwid (CHUNKLIST &lst, const HWID new_source_hwid, const bool replace_only_zero);
 	};
 
+	/*** TTL ***/
 	static const Chunk::TTL TTL_local {Chunk::TTL::TTL1};
 	static const Chunk::TTL TTL_wide {Chunk::_TTL_last};
 
+	Chunk::TTL uint8_to_ttl (const uint8_t v);
+	uint8_t ttl_to_uint8 (const Chunk::TTL v);
+
+	/*** TrustLevel ***/
 	Chunk::TrustLevel operator++ (Chunk::TrustLevel &x);
 	Chunk::TrustLevel operator++ (Chunk::TrustLevel &x, int r);
 	Chunk::TrustLevel operator* (Chunk::TrustLevel c);
@@ -304,47 +311,44 @@ namespace shaga {
 	SHAGA_STRV std::string_view trustlevel_to_string (const Chunk::TrustLevel level);
 	Chunk::TrustLevel string_to_trustlevel (const std::string_view str);
 
+	/*** Priority ***/
 	Chunk::Priority uint8_to_priority (const uint8_t v);
 	uint8_t priority_to_uint8 (const Chunk::Priority v);
 	SHAGA_STRV std::string_view priority_to_string (const Chunk::Priority prio);
 
-	Chunk::TTL uint8_to_ttl (const uint8_t v);
-	uint8_t ttl_to_uint8 (const Chunk::TTL v);
-
+	/*** Channel ***/
 	Chunk::Channel bool_to_channel (const bool val);
 	bool channel_to_bool (const Chunk::Channel channel);
 	SHAGA_STRV std::string_view channel_to_string (const Chunk::Channel channel);
 
-	CHUNKLIST chunkset_extract_type (const CHUNKSET &cs, const std::string_view type);
-	size_t chunkset_count_type (const CHUNKSET &cs, const std::string_view type);
-
+	/*** CHUNKLIST ***/
 	CHUNKLIST bin_to_chunklist (const std::string_view s, size_t &offset);
 	CHUNKLIST bin_to_chunklist (const std::string_view s);
+	void bin_to_chunklist (const std::string_view s, size_t &offset, CHUNKLIST &cs_append);
+	void bin_to_chunklist (const std::string_view s, CHUNKLIST &cs_append);
 
-	/* Append to CHUNKLIST &cs */
-	void bin_to_chunklist (const std::string_view s, size_t &offset, CHUNKLIST &cs);
-	/* Append to CHUNKLIST &cs */
-	void bin_to_chunklist (const std::string_view s, CHUNKLIST &cs);
-
-	/* Append out std::string &out */
-	void chunklist_to_bin (CHUNKLIST &cs, std::string &out, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool erase_skipped = false);
-	std::string chunklist_to_bin (CHUNKLIST &cs, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool erase_skipped = false);
-
-	CHUNKSET bin_to_chunkset (const std::string_view s, size_t &offset);
-	CHUNKSET bin_to_chunkset (const std::string_view s);
-
-	/* Append to CHUNKSET &cs */
-	void bin_to_chunkset (const std::string_view s, size_t &offset, CHUNKSET &cs);
-	/* Append to CHUNKSET &cs */
-	void bin_to_chunkset (const std::string_view s, CHUNKSET &cs);
-
-	/* Append out std::string &out */
-	void chunkset_to_bin (CHUNKSET &cs, std::string &out, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool thr = true);
-	std::string chunkset_to_bin (CHUNKSET &cs, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool thr = true);
-
-	void chunkset_trim (CHUNKSET &cset, const size_t treshold_size, const Chunk::Priority treshold_prio);
+	/* All entries that are converted to binary are erased from the list */
+	void chunklist_to_bin (CHUNKLIST &cs_erase, std::string &out_append, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool erase_skipped = false);
+	std::string chunklist_to_bin (CHUNKLIST &cs_erase, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool erase_skipped = false);
 
 	void chunklist_change_source_hwid (CHUNKLIST &lst, const HWID new_source_hwid, const bool replace_only_zero = false);
+
+	/* Purge entry if callback returns false */
+	void chunklist_purge (CHUNKLIST &lst, std::function<bool(const Chunk &)> callback);
+
+	/*** CHUNKSET ***/
+	CHUNKSET bin_to_chunkset (const std::string_view s, size_t &offset);
+	CHUNKSET bin_to_chunkset (const std::string_view s);
+	void bin_to_chunkset (const std::string_view s, size_t &offset, CHUNKSET &cs_append);
+	void bin_to_chunkset (const std::string_view s, CHUNKSET &cs_append);
+
+	/* All entries that are converted to binary are erased from the set */
+	void chunkset_to_bin (CHUNKSET &cs_erase, std::string &out_append, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool thr = true);
+	std::string chunkset_to_bin (CHUNKSET &cs_erase, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool thr = true);
+
+	void chunkset_purge (CHUNKSET &cset, std::function<bool(const Chunk &)> callback);
+
+	void chunkset_trim (CHUNKSET &cset, const size_t treshold_size, const Chunk::Priority treshold_prio);
 }
 
 #endif // HEAD_shaga_Chunk

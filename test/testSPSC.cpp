@@ -151,14 +151,14 @@ TEST (PaSPSC, non_trivial_container)
 
 	for (uint32_t i = 0; i < loops; ++i) {
 		EXPECT_NO_THROW (ring.back ().set_ttl (i & 0x7));
-		EXPECT_NO_THROW (ring.back ().set_destination_hwid (i));
+		EXPECT_NO_THROW (ring.back ().set_destination_hwid (i + 1));
 		EXPECT_NO_THROW (ring.push_back ());
 
 		EXPECT_NO_THROW (ring.front ());
 		EXPECT_TRUE (ring.front ().get_ttl () == (i & 0x7));
 		EXPECT_TRUE (ring.front ().get_type () == "AAAA");
-		EXPECT_TRUE (ring.front ().is_for_me (i));
-		EXPECT_FALSE (ring.front ().is_for_me (i + 1));
+		EXPECT_TRUE (ring.front ().is_for_destination (i + 1));
+		EXPECT_FALSE (ring.front ().is_for_destination (i + 2));
 		EXPECT_NO_THROW (ring.pop_front ());
 
 		EXPECT_THROW (ring.front (), CommonException);

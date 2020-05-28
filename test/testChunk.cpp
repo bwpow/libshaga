@@ -88,6 +88,37 @@ TEST (Chunk, compare)
 	}
 }
 
+TEST (Chunk, purge)
+{
+	const size_t sze = 1000;
+	std::vector<Chunk> v;
+
+	for (size_t i = 0; i < sze; ++i) {
+		v.emplace_back (0, "AAAA", Chunk::Priority::pCRITICAL);
+		v.emplace_back (0, "AAAA", Chunk::Priority::pMANDATORY);
+		v.emplace_back (0, "AAAA", Chunk::Priority::pOPTIONAL);
+		v.emplace_back (0, "AAAA", Chunk::Priority::pDEBUG);
+	}
+
+	CHUNKSET cset;
+	CHUNKLIST lst;
+	for (const auto &c : v) {
+		cset.insert (c);
+		lst.push_back (c);
+	}
+
+	auto func = [](const Chunk &chunk) -> bool {
+		/* Leave only optional chunks */
+		return (chunk.get_prio () == Chunk::Priority::pOPTIONAL);
+	};
+
+	ASSERT_NO_THROW (chunkset_purge (cset, func));
+	ASSERT_NO_THROW (chunklist_purge (lst, func));
+
+	EXPECT_TRUE (cset.size () == sze);
+	EXPECT_TRUE (lst.size () == sze);
+}
+
 TEST (Chunk, trim)
 {
 	const size_t sze = 1000;
@@ -178,7 +209,7 @@ TEST (Chunk, channel)
 			v1.back ().set_channel (true);
 		}
 
-		v1.emplace_back (i, "ZZZZ", std::string_view ("payload"));
+		v1.emplace_back (i, "ZZZZ", "payload"sv);
 		if ((i % 2) == 0) {
 			/* Channel == true is default */
 			v1.back ().set_channel (Chunk::Channel::PRIMARY);
