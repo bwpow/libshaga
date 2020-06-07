@@ -192,7 +192,7 @@ TEST (ReData, enc_dec)
 	}
 }
 
-#include "../src/internal_shake256.h"
+#include "shaga/internal_shake256.h"
 
 TEST (ReData, shake256)
 {

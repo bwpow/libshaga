@@ -63,7 +63,7 @@ namespace shaga {
 			uint64_t vv2 = 0x6c7967656e657261ULL ^ siphash_key.first;	\
 			uint64_t vv3 = 0x7465646279746573ULL ^ siphash_key.second;
 
-		#include "internal_siphash.h"
+		#include "shaga/internal_siphash.h"
 
 		#undef SIPHASH_BEGIN_KEYS
 		#undef SIPHASH_PARAMS
@@ -131,7 +131,7 @@ namespace shaga {
 			uint32_t vv2 = 0x6c796765 ^ halfsiphash_key.first;	\
 			uint32_t vv3 = 0x74656462 ^ halfsiphash_key.second;
 
-		#include "internal_halfsiphash.h"
+		#include "shaga/internal_halfsiphash.h"
 
 		#undef HALFSIPHASH_BEGIN_KEYS
 		#undef HALFSIPHASH_PARAMS
