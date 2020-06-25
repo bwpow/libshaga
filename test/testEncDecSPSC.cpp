@@ -20,8 +20,8 @@ template<class T> static void _uart8spsc_sizes_test (void)
 	const size_t datasize = 1024;
 	const size_t testsize = datasize * 2;
 
-	Uart8EncodeSPSC<T> encodering (datasize, testsize + 1, STX, ETX, NTX);
-	Uart8DecodeSPSC<T> decodering (datasize, testsize + 1, STX, ETX, NTX);
+	Simple8EncodeSPSC<T> encodering (datasize, testsize + 1, STX, ETX, NTX);
+	Simple8DecodeSPSC<T> decodering (datasize, testsize + 1, STX, ETX, NTX);
 
 	uint8_t buffer[testsize];
 	for (size_t pos = 0; pos < testsize; ++pos) {
@@ -75,8 +75,8 @@ template<class T> static void _uart16spsc_sizes_test (void)
 	const size_t datasize = 1024;
 	const size_t testsize = datasize * 2;
 
-	Uart16EncodeSPSC<T> encodering (datasize, testsize + 1, STX16);
-	Uart16DecodeSPSC<T> decodering (datasize, testsize + 1, STX16);
+	Simple16EncodeSPSC<T> encodering (datasize, testsize + 1, STX16);
+	Simple16DecodeSPSC<T> decodering (datasize, testsize + 1, STX16);
 
 	uint8_t buffer[testsize];
 	for (size_t pos = 0; pos < testsize; ++pos) {
@@ -256,8 +256,8 @@ template<class T> static void _uart8spsc_test (void)
 	const size_t loops = 64;
 	const size_t totalsize = datasize * sze;
 
-	Uart8EncodeSPSC<T> encodering (datasize, sze + 1, STX, ETX, NTX);
-	Uart8DecodeSPSC<T> decodering (datasize, sze + 1, STX, ETX, NTX);
+	Simple8EncodeSPSC<T> encodering (datasize, sze + 1, STX, ETX, NTX);
+	Simple8DecodeSPSC<T> decodering (datasize, sze + 1, STX, ETX, NTX);
 
 	char tempbuffer[600];
 	size_t pos;
@@ -337,8 +337,8 @@ template<class T> static void _uart16spsc_test (void)
 	const size_t loops = 64;
 	const size_t totalsize = datasize * sze;
 
-	Uart16EncodeSPSC<T> encodering (datasize, sze + 1, STX16);
-	Uart16DecodeSPSC<T> decodering (datasize, sze + 1, STX16);
+	Simple16EncodeSPSC<T> encodering (datasize, sze + 1, STX16);
+	Simple16DecodeSPSC<T> decodering (datasize, sze + 1, STX16);
 
 	uint8_t tempbuffer[600];
 	size_t pos;

@@ -13,11 +13,9 @@ All rights reserved.
 namespace shaga {
 #define RING(x) if ((x) >= _size) { (x) = 0; }
 
-	template<class T> class SPSC
+	template<class T = std::string> class SPSC
 	{
 		private:
-			typedef T value_type;
-
 			const uint_fast32_t _size;
 
 			#ifdef SHAGA_THREADING
@@ -274,8 +272,6 @@ namespace shaga {
 	template<class T> class PaSPSC
 	{
 		private:
-			typedef T value_type;
-
 			const uint_fast32_t _size;
 
 			#ifdef SHAGA_THREADING

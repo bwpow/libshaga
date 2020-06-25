@@ -10,10 +10,9 @@ All rights reserved.
 
 #include "common.h"
 
-namespace shaga {
-	typedef std::list <Chunk> CHUNKLIST;
-	typedef std::multiset <Chunk> CHUNKSET;
-	typedef std::pair <CHUNKSET::const_iterator, CHUNKSET::const_iterator> CHUNKSET_RANGE;
+namespace shaga
+{
+	class ChunkTool;
 
 	static constexpr uint32_t _chunk_key_to_bin_helper (const char str[5], const size_t pos)
 	{
@@ -89,33 +88,35 @@ namespace shaga {
 			/* TRAC chunk has one extra capability. It counts number of hops independently of TTL value and it has only 16-bit header
 			instead of 32-bit. It still retains all other capabilities standard chunk has like payload and metadata. */
 			static const constexpr uint32_t key_type_tracert = ChKEY ("TRAC");
-			static const uint32_t key_tracert_hop_mask {0b0000'0000'0000'0111'0000'0000'0000'0000};
 
-			static const uint32_t key_type_mask        {0b0000'0000'0000'0111'1111'1111'1111'1111};
-			static const uint32_t key_is_tracert_mask  {0b0000'0000'0000'1000'0000'0000'0000'0000};
-			static const uint32_t key_trust_mask       {0b0000'0000'0011'0000'0000'0000'0000'0000};
-			static const uint32_t key_prio_mask        {0b0000'0000'1100'0000'0000'0000'0000'0000};
-			static const uint32_t key_ttl_mask         {0b0000'0111'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_tracert_mask      {0b0000'0000'0000'1111'0000'0000'0000'0000};
 
-			static const uint32_t key_has_payload_mask {0b0000'1000'0000'0000'0000'0000'0000'0000};
-			static const uint32_t key_has_dest_mask    {0b0001'0000'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_type_mask         {0b0000'0000'0000'0111'1111'1111'1111'1111};
+			static const uint32_t key_special_type_mask {0b0000'0000'0000'1000'0000'0000'0000'0000};
+			static const uint32_t key_trust_mask        {0b0000'0000'0011'0000'0000'0000'0000'0000};
+			static const uint32_t key_prio_mask         {0b0000'0000'1100'0000'0000'0000'0000'0000};
+			static const uint32_t key_ttl_mask          {0b0000'0111'0000'0000'0000'0000'0000'0000};
 
-			static const uint32_t key_channel_mask     {0b0010'0000'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_has_payload_mask  {0b0000'1000'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_has_dest_mask     {0b0001'0000'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_has_cbor_mask     {0b0010'0000'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_channel_mask      {0b0100'0000'0000'0000'0000'0000'0000'0000};
 
-			static const uint32_t key_reserved_mask    {0b0100'0000'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_highbit_mask      {0b1000'0000'0000'0000'0000'0000'0000'0000};
 
-			static const uint32_t key_highbit_mask     {0b1000'0000'0000'0000'0000'0000'0000'0000};
-
-			static const constexpr uint32_t key_tracert_hop_shift = BIN::count_trailing_zeros (key_tracert_hop_mask);
 			static const constexpr uint32_t key_trust_shift = BIN::count_trailing_zeros (key_trust_mask);
 			static const constexpr uint32_t key_prio_shift = BIN::count_trailing_zeros (key_prio_mask);
 			static const constexpr uint32_t key_ttl_shift = BIN::count_trailing_zeros (key_ttl_mask);
 
-			static const uint8_t max_ttl {0x7};
-			static const uint8_t max_hop_counter {0x7};
+			static const constexpr uint8_t max_ttl {0x7};
+			static const constexpr uint8_t max_hop_counter {max_ttl};
 
-			static const uint_fast8_t channel_primary {0b01};
-			static const uint_fast8_t channel_secondary {0b10};
+			static const constexpr uint32_t num_special_types {0b111};
+
+			static const constexpr uint_fast8_t channel_primary {0b01};
+			static const constexpr uint_fast8_t channel_secondary {0b10};
+
+			typedef std::array<uint_fast32_t, num_special_types> SPECIAL_TYPES;
 
 			static uint32_t key_to_bin (const std::string_view key);
 			static std::string bin_to_key (const uint32_t bkey);
@@ -125,12 +126,13 @@ namespace shaga {
 			HWID _hwid_source {HWID_UNKNOWN};
 			uint32_t _type {0};
 			std::string _payload;
+			std::vector<uint8_t> _cbor;
 			Priority _prio {Priority::pMANDATORY};
 			TrustLevel _trust {TrustLevel::INTERNAL};
 			uint_fast64_t _counter {0};
 			uint_fast8_t _ttl {max_ttl};
 			HWIDMASK _hwid_dest;
-			std::list<TRACERT_HOP> _tracert_hops;
+			std::vector<TRACERT_HOP> _tracert_hops;
 
 			bool should_continue (const std::string_view s, const size_t offset) const;
 
@@ -140,6 +142,13 @@ namespace shaga {
 
 			template<typename ... Types>
 			void _construct (const std::string_view payload, Types&& ... rest)
+			{
+				_payload.assign (payload);
+				_construct (rest...);
+			}
+
+			template<typename ... Types>
+			void _construct (const std::string &payload, Types&& ... rest)
 			{
 				_payload.assign (payload);
 				_construct (rest...);
@@ -209,11 +218,32 @@ namespace shaga {
 				_construct (rest...);
 			}
 
+			template<typename ... Types>
+			void _construct (const nlohmann::json &data, Types&& ... rest)
+			{
+				_cbor = nlohmann::json::to_cbor (data);
+				_construct (rest...);
+			}
+
+			template<typename ... Types>
+			void _construct (const std::vector<uint8_t> &cbor, Types&& ... rest)
+			{
+				_cbor = cbor;
+				_construct (rest...);
+			}
+
+			template<typename ... Types>
+			void _construct (std::vector<uint8_t> &&cbor, Types&& ... rest)
+			{
+				_cbor = std::move (cbor);
+				_construct (rest...);
+			}
+
 		public:
 			ChunkMeta meta;
 
 			Chunk ();
-			Chunk (const std::string_view bin, size_t &offset);
+			Chunk (const std::string_view bin, size_t &offset, const SPECIAL_TYPES *const special_types = nullptr);
 
 			Chunk (const HWID hwid_source, const std::string_view type);
 			Chunk (const HWID hwid_source, const uint32_t type);
@@ -243,8 +273,13 @@ namespace shaga {
 			bool is_for_destination (const HWID hwid) const;
 			bool is_for_destination (const HWID_LIST &lst) const;
 
+			/* Type */
 			std::string get_type (void) const;
 			uint32_t get_num_type (void) const;
+
+			/* Payload */
+			bool has_payload (void) const;
+			void reset_payload (void);
 
 			void set_payload (const std::string_view payload);
 			void set_payload (std::string &&payload);
@@ -256,26 +291,43 @@ namespace shaga {
 				return _payload;
 			}
 
+			/* CBOR and JSON */
+			bool has_cbor (void) const;
+			void reset_cbor (void);
+
+			void set_json (const nlohmann::json &data);
+			void set_cbor (const std::vector<uint8_t> &cbor);
+			void set_cbor (std::vector<uint8_t> &&cbor);
+			void swap_cbor (std::vector<uint8_t> &other);
+
+			nlohmann::json get_json (void) const;
+			std::vector<uint8_t> get_cbor (void) const;
+
+			/* Priority */
 			void set_prio (const Priority prio);
 			Priority get_prio (void) const;
 			SHAGA_STRV std::string_view get_prio_text (void) const;
 
+			/* Trustlevel */
 			void set_minimal_trustlevel (const Chunk::TrustLevel trust);
 			void set_trustlevel (const Chunk::TrustLevel trust);
 			TrustLevel get_trustlevel (void) const;
 			SHAGA_STRV std::string_view get_trustlevel_text (void) const;
 			bool check_maximal_trustlevel (const Chunk::TrustLevel trust) const;
 
+			/* TTL */
 			void set_ttl (const uint8_t ttl);
 			void set_ttl (const TTL ttl);
 			uint8_t get_ttl (void) const;
 			bool is_zero_ttl (void) const;
 			bool hop_ttl (void);
 
+			/* Tracert */
 			bool tracert_hops_add (const shaga::HWID hwid, const uint8_t metric);
-			std::list<TRACERT_HOP> tracert_hops_get (void) const;
+			std::vector<TRACERT_HOP> tracert_hops_get (void) const;
 			size_t tracert_hops_count (void) const;
 
+			/* Destination */
 			HWIDMASK get_destination_hwidmask (void) const;
 			void set_destination_hwid (const HWID hwid);
 			void set_destination_hwid (const HWIDMASK &hwidmask);
@@ -283,72 +335,15 @@ namespace shaga {
 
 			int compare (const Chunk &c) const;
 
-			void to_bin (std::string &out_append) const;
-			std::string to_bin (void) const;
+			void to_bin (std::string &out_append, const SPECIAL_TYPES *const special_types = nullptr) const;
+			std::string to_bin (const SPECIAL_TYPES *const special_types = nullptr) const;
 
 			friend bool operator== (const Chunk &a, const Chunk &b);
 			friend bool operator!= (const Chunk &a, const Chunk &b);
 			friend bool operator< (const Chunk &a, const Chunk &b);
 
-			friend void chunklist_change_source_hwid (CHUNKLIST &lst, const HWID new_source_hwid, const bool replace_only_zero);
+			friend ChunkTool;
 	};
-
-	/*** TTL ***/
-	static const Chunk::TTL TTL_local {Chunk::TTL::TTL1};
-	static const Chunk::TTL TTL_wide {Chunk::_TTL_last};
-
-	Chunk::TTL uint8_to_ttl (const uint8_t v);
-	uint8_t ttl_to_uint8 (const Chunk::TTL v);
-
-	/*** TrustLevel ***/
-	Chunk::TrustLevel operator++ (Chunk::TrustLevel &x);
-	Chunk::TrustLevel operator++ (Chunk::TrustLevel &x, int r);
-	Chunk::TrustLevel operator* (Chunk::TrustLevel c);
-	Chunk::TrustLevel begin (Chunk::TrustLevel r);
-	Chunk::TrustLevel end (Chunk::TrustLevel r);
-	Chunk::TrustLevel uint8_to_trustlevel (const uint8_t v);
-	uint8_t trustlevel_to_uint8 (const Chunk::TrustLevel v);
-	SHAGA_STRV std::string_view trustlevel_to_string (const Chunk::TrustLevel level);
-	Chunk::TrustLevel string_to_trustlevel (const std::string_view str);
-
-	/*** Priority ***/
-	Chunk::Priority uint8_to_priority (const uint8_t v);
-	uint8_t priority_to_uint8 (const Chunk::Priority v);
-	SHAGA_STRV std::string_view priority_to_string (const Chunk::Priority prio);
-
-	/*** Channel ***/
-	Chunk::Channel bool_to_channel (const bool val);
-	bool channel_to_bool (const Chunk::Channel channel);
-	SHAGA_STRV std::string_view channel_to_string (const Chunk::Channel channel);
-
-	/*** CHUNKLIST ***/
-	CHUNKLIST bin_to_chunklist (const std::string_view s, size_t &offset);
-	CHUNKLIST bin_to_chunklist (const std::string_view s);
-	void bin_to_chunklist (const std::string_view s, size_t &offset, CHUNKLIST &cs_append);
-	void bin_to_chunklist (const std::string_view s, CHUNKLIST &cs_append);
-
-	/* All entries that are converted to binary are erased from the list */
-	void chunklist_to_bin (CHUNKLIST &cs_erase, std::string &out_append, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool erase_skipped = false);
-	std::string chunklist_to_bin (CHUNKLIST &cs_erase, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool erase_skipped = false);
-
-	void chunklist_change_source_hwid (CHUNKLIST &lst, const HWID new_source_hwid, const bool replace_only_zero = false);
-
-	/* Purge entry if callback returns false */
-	void chunklist_purge (CHUNKLIST &lst, std::function<bool(const Chunk &)> callback);
-
-	/*** CHUNKSET ***/
-	CHUNKSET bin_to_chunkset (const std::string_view s, size_t &offset);
-	CHUNKSET bin_to_chunkset (const std::string_view s);
-	void bin_to_chunkset (const std::string_view s, size_t &offset, CHUNKSET &cs_append);
-	void bin_to_chunkset (const std::string_view s, CHUNKSET &cs_append);
-
-	/* All entries that are converted to binary are erased from the set */
-	void chunkset_to_bin (CHUNKSET &cs_erase, std::string &out_append, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool thr = true);
-	std::string chunkset_to_bin (CHUNKSET &cs_erase, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool thr = true);
-
-	void chunkset_purge (CHUNKSET &cset, std::function<bool(const Chunk &)> callback);
-
-	void chunkset_trim (CHUNKSET &cset, const size_t treshold_size, const Chunk::Priority treshold_prio);
 }
 
 #endif // HEAD_shaga_Chunk

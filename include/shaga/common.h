@@ -387,6 +387,7 @@ namespace shaga
 
 #include "3rdparty/aho_corasick.h"
 #include "3rdparty/randutils.h"
+#include "3rdparty/json.hpp"
 
 #include "BINstatic.h"
 #include "BIN.h"
@@ -398,6 +399,7 @@ namespace shaga
 #include "FS.h"
 #include "ChunkMeta.h"
 #include "Chunk.h"
+#include "ChunkTool.h"
 #include "ReData.h"
 #include "INI.h"
 #include "UNIX.h"
@@ -519,22 +521,19 @@ namespace shaga
 
 	static_assert (BIN::check_bit_coverage (UINT32_MAX,
 		Chunk::key_type_mask,
-		Chunk::key_is_tracert_mask,
+		Chunk::key_special_type_mask,
 		Chunk::key_trust_mask,
 		Chunk::key_prio_mask,
 		Chunk::key_ttl_mask,
 		Chunk::key_has_payload_mask,
 		Chunk::key_has_dest_mask,
+		Chunk::key_has_cbor_mask,
 		Chunk::key_channel_mask,
-		Chunk::key_reserved_mask,
 		Chunk::key_highbit_mask),
 		"Chunk key don't add up or overlap");
 
 	static_assert ((Chunk::key_type_min < Chunk::key_type_max) && (Chunk::key_type_max <= Chunk::key_type_mask),
 		"Chunk type key doesn't fit mask");
-
-	static_assert ((Chunk::key_tracert_hop_shift >= 16) && ((Chunk::key_is_tracert_mask & 0xffff) == 0),
-		"Tracert hop shift and mask must be defined in high 16-bits");
 
 	/*** ChunkMeta ***/
 	static_assert ((ChunkMeta::key_type_min < ChunkMeta::key_type_max) && (ChunkMeta::key_type_max <= ChunkMeta::key_type_mask),
@@ -561,11 +560,11 @@ namespace shaga
 
 	extern template class SPSC<std::string>;
 
-	extern template class Uart8EncodeSPSC<SPSCDataPreAlloc>;
-	extern template class Uart8DecodeSPSC<SPSCDataPreAlloc>;
+	extern template class Simple8EncodeSPSC<SPSCDataPreAlloc>;
+	extern template class Simple8DecodeSPSC<SPSCDataPreAlloc>;
 
-	extern template class Uart16EncodeSPSC<SPSCDataPreAlloc>;
-	extern template class Uart16DecodeSPSC<SPSCDataPreAlloc>;
+	extern template class Simple16EncodeSPSC<SPSCDataPreAlloc>;
+	extern template class Simple16DecodeSPSC<SPSCDataPreAlloc>;
 
 	extern template class PacketEncodeSPSC<SPSCDataDynAlloc>;
 	extern template class PacketDecodeSPSC<SPSCDataDynAlloc>;

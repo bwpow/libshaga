@@ -17,7 +17,8 @@ namespace shaga {
 	//  EncodeSPSC  /////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	template<class T> class EncodeSPSC
+	template<class DataInterface = SPSCDataDynAlloc, typename std::enable_if_t<std::is_base_of<SPSCDataInterface, DataInterface>::value, int> = 0>
+	class EncodeSPSC
 	{
 		private:
 			#ifdef OS_LINUX
@@ -32,10 +33,8 @@ namespace shaga {
 			const uint_fast32_t _num_packets;
 			std::string _name;
 
-			typedef T value_type;
-
-			std::vector<std::unique_ptr<value_type>> _data;
-			value_type* _curdata;
+			std::vector<std::unique_ptr<DataInterface>> _data;
+			DataInterface* _curdata;
 
 			#ifdef SHAGA_THREADING
 				std::atomic<uint_fast32_t> _pos_read {0};
@@ -116,7 +115,7 @@ namespace shaga {
 
 				this->_data.reserve (_num_packets);
 				for (uint_fast32_t i = 0; i < _num_packets; ++i) {
-					this->_data.push_back (std::make_unique<T> (_max_packet_size));
+					this->_data.push_back (std::make_unique<DataInterface> (_max_packet_size));
 				}
 				this->_curdata = this->_data.front ().get ();
 
@@ -485,11 +484,11 @@ namespace shaga {
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  Uart8EncodeSPSC  ////////////////////////////////////////////////////////////////////////////////////////////
+	//  Simple8EncodeSPSC  ////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	template<class T>
-	class Uart8EncodeSPSC : public ContStreamEncodeSPSC<T>
+	class Simple8EncodeSPSC : public ContStreamEncodeSPSC<T>
 	{
 		private:
 			const uint8_t _stx;
@@ -535,7 +534,7 @@ namespace shaga {
 
 		public:
 			/* Result can have every byte escaped (max_packet_size * 2) plus STX, ETX and escaped CRC (+4) */
-			Uart8EncodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const uint8_t stx, const uint8_t etx, const uint8_t ntx) :
+			Simple8EncodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const uint8_t stx, const uint8_t etx, const uint8_t ntx) :
 				ContStreamEncodeSPSC<T> ((max_packet_size * 2) + 4, num_packets),
 				_stx (stx),
 				_etx (etx),
@@ -549,11 +548,11 @@ namespace shaga {
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  Uart16EncodeSPSC  ///////////////////////////////////////////////////////////////////////////////////////////
+	//  Simple16EncodeSPSC  /////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	template<class T>
-	class Uart16EncodeSPSC : public ContStreamEncodeSPSC<T>
+	class Simple16EncodeSPSC : public ContStreamEncodeSPSC<T>
 	{
 		private:
 			const std::array<uint8_t,2> _stx;
@@ -603,7 +602,7 @@ namespace shaga {
 
 		public:
 			/* Result can have max_packet_size plus STX (2 bytes) + LEN (2 bytes) + CRC (2 bytes) */
-			Uart16EncodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const std::array<uint8_t,2> stx) :
+			Simple16EncodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const std::array<uint8_t,2> stx) :
 				ContStreamEncodeSPSC<T> (max_packet_size + 6, num_packets),
 				_stx (stx)
 			{ }

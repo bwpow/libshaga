@@ -11,7 +11,7 @@ Basic fields covered by this library:
 * Argument parsing
 * Chunk operations
 * Digital signatures (using [mbed TLS](https://tls.mbed.org/))
-* CRC, SipHash
+* CRC, SipHash, HalfSipHash
 * Single producer single consumer queues
 * Possibility to compile with or without multithreading support
 
@@ -59,7 +59,7 @@ source code to use C++17 types and structures (like string_view). I am also plan
 
 ## Help needed
 If you are willing to help with documentation, unit tests or building process, please, fork this library. Any help is appreciated.
-The goal is to be able to compile library using any C++17 compiler. Right now, I am using gcc8 during development.
+The goal is to be able to compile library using any C++17 compiler. Right now, I am using gcc9 and clang9 during development.
 
 ## Name
 Name of the library comes from my favorite band [Shadow Gallery]( https://en.wikipedia.org/wiki/Shadow_Gallery).

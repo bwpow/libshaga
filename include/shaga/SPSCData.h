@@ -32,7 +32,7 @@ namespace shaga {
 			virtual void free (void) = 0;
 	};
 
-	class SPSCDataPreAlloc : private SPSCDataInterface
+	class SPSCDataPreAlloc : public SPSCDataInterface
 	{
 		private:
 			const uint_fast32_t _bufsize;
@@ -111,7 +111,7 @@ namespace shaga {
 			virtual void free (void) override {}
 	};
 
-	class SPSCDataDynAlloc : private SPSCDataInterface
+	class SPSCDataDynAlloc : public SPSCDataInterface
 	{
 		private:
 			const uint_fast32_t _bufsize;

@@ -88,74 +88,111 @@ TEST (Chunk, compare)
 	}
 }
 
-TEST (Chunk, purge)
+TEST (Chunk, special_types)
 {
-	const size_t sze = 1000;
-	std::vector<Chunk> v;
+	const auto key = ChKEY ("ABCD");
 
-	for (size_t i = 0; i < sze; ++i) {
-		v.emplace_back (0, "AAAA", Chunk::Priority::pCRITICAL);
-		v.emplace_back (0, "AAAA", Chunk::Priority::pMANDATORY);
-		v.emplace_back (0, "AAAA", Chunk::Priority::pOPTIONAL);
-		v.emplace_back (0, "AAAA", Chunk::Priority::pDEBUG);
+	Chunk::SPECIAL_TYPES special_types;
+	std::iota (special_types.begin (), special_types.end (), key);
+
+	std::vector<Chunk> cv1, cv2;
+	COMMON_VECTOR cs1, cs2;
+
+	for (size_t id = 0; id < (Chunk::num_special_types + 128); ++id) {
+		cv1.emplace_back (0, key + id);
 	}
 
-	CHUNKSET cset;
-	CHUNKLIST lst;
-	for (const auto &c : v) {
-		cset.insert (c);
-		lst.push_back (c);
+	for (const auto &item : cv1) {
+		ASSERT_NO_THROW (cs1.push_back (item.to_bin (&special_types)));
+		ASSERT_NO_THROW (cs2.push_back (item.to_bin ()));
 	}
 
-	auto func = [](const Chunk &chunk) -> bool {
-		/* Leave only optional chunks */
-		return (chunk.get_prio () == Chunk::Priority::pOPTIONAL);
-	};
+	/* Fill cv2 from binary */
+	for (const auto &item : cs1) {
+		size_t offset = 0;
+		ASSERT_NO_THROW (cv2.emplace_back (item, offset, &special_types));
+	}
 
-	ASSERT_NO_THROW (chunkset_purge (cset, func));
-	ASSERT_NO_THROW (chunklist_purge (lst, func));
+	{
+		/* Can't decode from bin without special types */
+		size_t offset = 0;
+		ASSERT_THROW (cv2.emplace_back (cs1.front (), offset), CommonException);
+	}
 
-	EXPECT_TRUE (cset.size () == sze);
-	EXPECT_TRUE (lst.size () == sze);
+	ASSERT_TRUE (cs1.size () == cs2.size ());
+	ASSERT_TRUE (cv1.size () == cv2.size ());
+	ASSERT_TRUE (cv1.size () == cs1.size ());
+
+	/* First Chunk::num_special_types should be 2 bytes smaller generated with special_types */
+	for (size_t id = 0; id < cs1.size (); ++id) {
+		if (id < Chunk::num_special_types) {
+			EXPECT_TRUE ((cs1.at (id).size () + 2) == cs2.at (id).size ());
+		}
+		else {
+			EXPECT_TRUE (cs1.at (id).size () == cs2.at (id).size ());
+		}
+
+		/* Check original and decoded types */
+		EXPECT_TRUE (cv1.at (id).get_num_type () == cv2.at (id).get_num_type ());
+	}
 }
 
-TEST (Chunk, trim)
+TEST (Chunk, cbor)
 {
-	const size_t sze = 1000;
-	std::vector<Chunk> v;
+	const auto data = "{ \"happy\": true, \"pi\": 3.141 }"_json;
+	auto cbor = nlohmann::json::to_cbor (data);
+	std::string payload {"some payload"s};
 
-	for (size_t i = 0; i < sze; ++i) {
-		v.emplace_back (0, "AAAA", Chunk::Priority::pCRITICAL);
-		v.emplace_back (0, "AAAA", Chunk::Priority::pMANDATORY);
-		v.emplace_back (0, "AAAA", Chunk::Priority::pOPTIONAL);
-		v.emplace_back (0, "AAAA", Chunk::Priority::pDEBUG);
+	std::vector<Chunk> cv;
+	COMMON_VECTOR cs;
+
+	cv.emplace_back (0, "ABCD", payload);
+	cv.emplace_back (0, "ABCD", payload, data);
+	cv.emplace_back (0, "ABCD", payload, cbor);
+	cv.emplace_back (0, "ABCD", std::move (payload), std::move (cbor));
+
+	/* Convert to binary representation */
+	for (size_t id = 0; id < cv.size (); id++) {
+		if (0 == id) {
+			EXPECT_FALSE (cv[id].has_cbor ());
+		}
+		else {
+			EXPECT_TRUE (cv[id].has_cbor ());
+		}
+
+		cs.push_back (cv[id].to_bin ());
 	}
 
-	std::random_shuffle (v.begin (), v.end ());
-
-	CHUNKSET cset;
-	for (const auto &c : v) {
-		cset.insert (c);
+	for (size_t id = 2; id < cs.size (); id++) {
+		EXPECT_TRUE (cs[1] == cs[id]);
 	}
 
-	ASSERT_TRUE (cset.size () == sze * 4);
+	cv.clear ();
 
-	{
-		CHUNKSET cs = cset;
-		chunkset_trim (cs, sze * 3, Chunk::Priority::pOPTIONAL);
-		EXPECT_TRUE (cs.size () == (sze * 3));
+	/* Convert back from binary representation */
+	for (size_t id = 0; id < cs.size (); id++) {
+		size_t offset = 0;
+		cv.emplace_back (cs[id], offset);
 	}
 
-	{
-		CHUNKSET cs = cset;
-		chunkset_trim (cs, 0, Chunk::Priority::pOPTIONAL);
-		EXPECT_TRUE (cs.size () == (sze * 2));
-	}
+	/* Check restored chunks */
+	for (size_t id = 0; id < cv.size (); id++) {
+		EXPECT_TRUE (cv[id].get_type () == "ABCD"s);
 
-	{
-		CHUNKSET cs = cset;
-		chunkset_trim (cs, 0, Chunk::Priority::pCRITICAL);
-		EXPECT_TRUE (cs.size () == 0);
+		if (0 == id) {
+			EXPECT_FALSE (cv[id].has_cbor ());
+		}
+		else {
+			EXPECT_TRUE (cv[id].has_cbor ());
+			EXPECT_TRUE (cbor == cv[id].get_cbor ());
+
+			const auto data2 = cv[id].get_json ();
+			EXPECT_TRUE (data == data2);
+
+			EXPECT_TRUE (data2.contains ("happy"s));
+			EXPECT_TRUE (data2.contains ("pi"s));
+			EXPECT_FALSE (data2.contains ("sad"s));
+		}
 	}
 }
 
@@ -164,29 +201,32 @@ TEST (Chunk, tracert)
 	Chunk c1 (0, "TRAC");
 	Chunk c2 (0, "ABCD");
 
-	c1.tracert_hops_add (0, 0);
-	c1.tracert_hops_add (1, 1);
+	EXPECT_TRUE (c1.tracert_hops_add (0, 0));
+	EXPECT_TRUE (c1.tracert_hops_add (1, 1));
+	EXPECT_TRUE (c1.tracert_hops_add (2, 2));
 
-	c2.tracert_hops_add (0, 0);
-	c2.tracert_hops_add (1, 1);
+	EXPECT_FALSE (c2.tracert_hops_add (0, 0));
 
 	size_t offset = 0;
 	Chunk d1 (c1.to_bin (), offset);
 	offset = 0;
 	Chunk d2 (c2.to_bin (), offset);
 
-	EXPECT_TRUE (c1.tracert_hops_get ().size () == 2);
-	EXPECT_TRUE (d1.tracert_hops_get ().size () == 2);
+	EXPECT_TRUE (c1.tracert_hops_count () == 3);
+	EXPECT_TRUE (d1.tracert_hops_count () == 3);
 
 	const auto v1 = c1.tracert_hops_get ();
 	const auto v2 = d1.tracert_hops_get ();
+
+	EXPECT_TRUE (v1.size () == 3);
+	EXPECT_TRUE (v2.size () == 3);
 
 	EXPECT_TRUE (std::equal (v1.cbegin (), v1.cend (), v2.cbegin (), v2.cend (), [](const auto &a, const auto &b) -> bool {
 		return (a.hwid == b.hwid) && (a.metric == b.metric);
 	}));
 
-	EXPECT_TRUE (c2.tracert_hops_get ().size () == 0);
-	EXPECT_TRUE (d2.tracert_hops_get ().size () == 0);
+	EXPECT_TRUE (c2.tracert_hops_count () == 0);
+	EXPECT_TRUE (d2.tracert_hops_count () == 0);
 }
 
 TEST (Chunk, channel)

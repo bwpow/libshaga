@@ -17,7 +17,8 @@ namespace shaga {
 	//  DecodeSPSC  /////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	template<class T> class DecodeSPSC
+	template<class DataInterface = SPSCDataDynAlloc, typename std::enable_if_t<std::is_base_of<SPSCDataInterface, DataInterface>::value, int> = 0>
+	class DecodeSPSC
 	{
 		private:
 			#ifdef SHAGA_THREADING
@@ -41,9 +42,8 @@ namespace shaga {
 			const uint_fast32_t _num_packets;
 			std::string _name;
 
-			typedef T value_type;
-			std::vector<std::unique_ptr<value_type>> _data;
-			value_type* _curdata;
+			std::vector<std::unique_ptr<DataInterface>> _data;
+			DataInterface* _curdata;
 
 			#ifdef SHAGA_THREADING
 				std::atomic<uint_fast32_t> _pos_read {0};
@@ -143,7 +143,7 @@ namespace shaga {
 
 				_data.reserve (_num_packets);
 				for (uint_fast32_t i = 0; i < num_packets; i++) {
-					_data.push_back (std::make_unique<T> (_max_packet_size));
+					_data.push_back (std::make_unique<DataInterface> (_max_packet_size));
 				}
 				_curdata = _data.front ().get ();
 
@@ -275,10 +275,10 @@ namespace shaga {
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  Uart8DecodeSPSC  ////////////////////////////////////////////////////////////////////////////////////////////
+	//  Simple8DecodeSPSC  ////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	template<class T> class Uart8DecodeSPSC : public DecodeSPSC<T>
+	template<class T> class Simple8DecodeSPSC : public DecodeSPSC<T>
 	{
 		private:
 			const uint8_t _stx;
@@ -358,7 +358,7 @@ namespace shaga {
 			}
 
 		public:
-			Uart8DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const uint8_t stx, const uint8_t etx, const uint8_t ntx) :
+			Simple8DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const uint8_t stx, const uint8_t etx, const uint8_t ntx) :
 				DecodeSPSC<T> (max_packet_size + 1, num_packets),
 				_stx (stx),
 				_etx (etx),
@@ -372,10 +372,10 @@ namespace shaga {
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  Uart16DecodeSPSC  ///////////////////////////////////////////////////////////////////////////////////////////
+	//  Simple16DecodeSPSC  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	template<class T> class Uart16DecodeSPSC : public DecodeSPSC<T>
+	template<class T> class Simple16DecodeSPSC : public DecodeSPSC<T>
 	{
 		private:
 			const std::array<uint8_t,2> _stx;
@@ -478,7 +478,7 @@ namespace shaga {
 			}
 
 		public:
-			Uart16DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const std::array<uint8_t,2> stx) :
+			Simple16DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const std::array<uint8_t,2> stx) :
 				DecodeSPSC<T> (max_packet_size + 2, num_packets),
 				_stx (stx)
 			{ }

@@ -57,11 +57,11 @@ namespace shaga {
 
 	template class SPSC<std::string>;
 
-	template class Uart8EncodeSPSC<SPSCDataPreAlloc>;
-	template class Uart8DecodeSPSC<SPSCDataPreAlloc>;
+	template class Simple8EncodeSPSC<SPSCDataPreAlloc>;
+	template class Simple8DecodeSPSC<SPSCDataPreAlloc>;
 
-	template class Uart16EncodeSPSC<SPSCDataPreAlloc>;
-	template class Uart16DecodeSPSC<SPSCDataPreAlloc>;
+	template class Simple16EncodeSPSC<SPSCDataPreAlloc>;
+	template class Simple16DecodeSPSC<SPSCDataPreAlloc>;
 
 	template class PacketEncodeSPSC<SPSCDataDynAlloc>;
 	template class PacketDecodeSPSC<SPSCDataDynAlloc>;
