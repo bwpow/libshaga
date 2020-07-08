@@ -22,9 +22,9 @@ namespace shaga {
 	{
 		private:
 			#ifdef SHAGA_THREADING
-				std::atomic<int> _err_count {0};
+				std::atomic<uint_fast32_t> _err_count {0};
 			#else
-				volatile int _err_count {0};
+				volatile uint_fast32_t _err_count {0};
 			#endif // SHAGA_THREADING
 
 			std::weak_ptr<StringSPSC> _err_spsc;
@@ -74,7 +74,7 @@ namespace shaga {
 			virtual void nonfatal_error (const std::string_view buf) final
 			{
 				#ifdef SHAGA_THREADING
-					_err_count.fetch_add (1, std::memory_order::memory_order_acq_rel);
+					_err_count.fetch_add (1, std::memory_order::memory_order_relaxed);
 				#else
 					++_err_count;
 				#endif // SHAGA_THREADING
@@ -187,7 +187,7 @@ namespace shaga {
 				_err_spsc = err_spsc;
 			}
 
-			virtual int get_err_count (void) const final
+			virtual uint_fast32_t get_err_count (void) const final
 			{
 				#ifdef SHAGA_THREADING
 					return _err_count.load (std::memory_order::memory_order_relaxed);
@@ -196,7 +196,7 @@ namespace shaga {
 				#endif // SHAGA_THREADING
 			}
 
-			virtual int get_err_count_reset (void) final
+			virtual uint_fast32_t get_err_count_reset (void) final
 			{
 				#ifdef SHAGA_THREADING
 					return _err_count.exchange (0, std::memory_order::memory_order_acq_rel);
@@ -380,6 +380,12 @@ namespace shaga {
 		private:
 			const std::array<uint8_t,2> _stx;
 
+			#ifdef SHAGA_THREADING
+				std::atomic<uint_fast32_t> _ignored_bytes {0};
+			#else
+				volatile uint_fast32_t _ignored_bytes {0};
+			#endif // SHAGA_THREADING
+
 			uint_fast8_t _got_stx {0};
 
 			bool _has_crc16 {false};
@@ -416,6 +422,13 @@ namespace shaga {
 						if (_stx[0] == buffer[offset]) {
 							_got_stx = 1;
 						}
+						else {
+							#ifdef SHAGA_THREADING
+								_ignored_bytes.fetch_add (1, std::memory_order::memory_order_relaxed);
+							#else
+								_ignored_bytes += 1;
+							#endif // SHAGA_THREADING
+						}
 					}
 					else if (1 == _got_stx) {
 						if (_stx[1] == buffer[offset]) {
@@ -424,6 +437,11 @@ namespace shaga {
 						else {
 							/* Expected second STX character, return to the beginning */
 							_got_stx = 0;
+							#ifdef SHAGA_THREADING
+								_ignored_bytes.fetch_add (2, std::memory_order::memory_order_relaxed);
+							#else
+								_ignored_bytes += 2;
+							#endif // SHAGA_THREADING
 						}
 					}
 					else if (2 == _got_stx) {
@@ -442,6 +460,12 @@ namespace shaga {
 							this->nonfatal_error ("Packet size larger than allocated size, skipping..."sv);
 							_got_stx = 0;
 							_remaining_len = UINT32_MAX;
+
+							#ifdef SHAGA_THREADING
+								_ignored_bytes.fetch_add (4, std::memory_order::memory_order_relaxed);
+							#else
+								_ignored_bytes += 4;
+							#endif // SHAGA_THREADING
 						}
 						else {
 							_got_stx = 4;
@@ -496,6 +520,24 @@ namespace shaga {
 					crc16_val = (crc16_val >> 8) ^ CRC::_crc16_modbus_table[(crc16_val ^ static_cast<uint_fast16_t> (_stx[1])) & 0xff];
 					_crc16_startval = crc16_val;
 				}
+			}
+
+			virtual uint_fast32_t get_ignored_bytes (void) const
+			{
+				#ifdef SHAGA_THREADING
+					return _ignored_bytes.load (std::memory_order::memory_order_relaxed);
+				#else
+					return _ignored_bytes;
+				#endif // SHAGA_THREADING
+			}
+
+			virtual uint_fast32_t get_ignored_bytes_reset (void)
+			{
+				#ifdef SHAGA_THREADING
+					return _ignored_bytes.exchange (0, std::memory_order::memory_order_acq_rel);
+				#else
+					return std::exchange (_ignored_bytes, 0);
+				#endif // SHAGA_THREADING
 			}
 	};
 
