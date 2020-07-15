@@ -35,9 +35,9 @@ namespace shaga {
 	{
 		/* mbedtls_ecp_curve_info points to static memory, it is safe to return string_view */
 		can_do (ctx);
-		mbedtls_ecp_keypair *ec = mbedtls_pk_ec (ctx);
+		mbedtls_ecp_keypair *ec = ::mbedtls_pk_ec (ctx);
 		const mbedtls_ecp_group *grp = &(ec->grp);
-		const mbedtls_ecp_curve_info *info = mbedtls_ecp_curve_info_from_grp_id (grp->id);
+		const mbedtls_ecp_curve_info *info = ::mbedtls_ecp_curve_info_from_grp_id (grp->id);
 		return std::string_view (info->name);
 	}
 

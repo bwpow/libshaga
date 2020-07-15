@@ -51,7 +51,8 @@ namespace shaga {
 
 		func (&ec->Q.X);
 		func (&ec->Q.Y);
-		mbedtls_mpi_lset (&ec->Q.Z, 1);
+		ret = ::mbedtls_mpi_lset (&ec->Q.Z, 1);
+		check_error (ret);
 
 		if (pos != key.size ()) {
 			cThrow ("DiSig error: Extra raw data for selected curve type"sv);

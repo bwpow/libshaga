@@ -199,7 +199,7 @@ namespace shaga {
 		if (mbedtls_pk_get_type (&_enc_ctx) != MBEDTLS_PK_ECKEY) {
 			cThrow ("DiSig error: Raw export is only supported for EC keys"sv);
 		}
-		const mbedtls_ecp_keypair *ec = mbedtls_pk_ec (_enc_ctx);
+		const mbedtls_ecp_keypair *ec = ::mbedtls_pk_ec (_enc_ctx);
 
 		const size_t expected_len = ::mbedtls_mpi_size (&ec->grp.P);
 		const size_t len = ::mbedtls_mpi_size (&ec->d);
@@ -233,7 +233,7 @@ namespace shaga {
 
 	std::string DiSigPrivate::get_public_key_raw (void)
 	{
-		if (mbedtls_pk_get_type (&_enc_ctx) != MBEDTLS_PK_ECKEY) {
+		if (::mbedtls_pk_get_type (&_enc_ctx) != MBEDTLS_PK_ECKEY) {
 			cThrow ("DiSig error: Raw export is only supported for EC keys"sv);
 		}
 		const mbedtls_ecp_keypair *ec = ::mbedtls_pk_ec (_enc_ctx);

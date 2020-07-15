@@ -135,11 +135,15 @@ namespace shaga {
 #ifdef SHAGA_FULL
 		const size_t sze = _get_digest_result_size (ReDataConfig::DIGEST::SHA256);
 		out.resize (sze);
-		::mbedtls_sha256 (
+		const int ret = ::mbedtls_sha256_ret (
 			reinterpret_cast<const uint8_t *> (plain.data ()),
 			plain.size (),
 			reinterpret_cast<uint8_t *> (out.data ()),
 			0);
+
+		if (0 != ret) {
+			cThrow ("SHA-256 failed"sv);
+		}
 #else
 		cThrow ("Digest is not supported in lite version"sv);
 #endif // SHAGA_FULL
@@ -150,11 +154,16 @@ namespace shaga {
 #ifdef SHAGA_FULL
 		const size_t sze = _get_digest_result_size (ReDataConfig::DIGEST::SHA512);
 		out.resize (sze);
-		::mbedtls_sha512 (
+		const int ret = ::mbedtls_sha512_ret (
 			reinterpret_cast<const uint8_t *> (plain.data ()),
 			plain.size (),
 			reinterpret_cast<uint8_t *> (out.data ()),
 			0);
+
+		if (0 != ret) {
+			cThrow ("SHA-512 failed"sv);
+		}
+
 #else
 		cThrow ("Digest is not supported in lite version"sv);
 #endif // SHAGA_FULL

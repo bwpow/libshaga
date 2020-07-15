@@ -17,11 +17,16 @@ namespace shaga {
 #ifdef SHAGA_FULL
 		const size_t sze = 32;
 		std::string output (sze, '\0');
-		::mbedtls_sha256 (
+		const int ret = ::mbedtls_sha256_ret (
 			reinterpret_cast<const uint8_t *> (buf),
 			len,
 			reinterpret_cast<uint8_t *> (output.data ()),
 			0);
+
+		if (0 != ret) {
+			cThrow ("SHA-256 failed"sv);
+		}
+
 		return output;
 #else
 		cThrow ("SHA-256 is not supported in lite version"sv);
@@ -37,11 +42,16 @@ namespace shaga {
 #ifdef SHAGA_FULL
 		const size_t sze = 64;
 		std::string output (sze, '\0');
-		::mbedtls_sha512 (
+		const int ret = ::mbedtls_sha512_ret (
 			reinterpret_cast<const uint8_t *> (buf),
 			len,
 			reinterpret_cast<uint8_t *> (output.data ()),
 			0);
+
+		if (0 != ret) {
+			cThrow ("SHA-512 failed"sv);
+		}
+
 		return output;
 #else
 		cThrow ("SHA-512 is not supported in lite version"sv);
