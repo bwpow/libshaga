@@ -207,9 +207,9 @@ using namespace std::literals;
 	#error Unable to detect endian
 #endif
 
-#define ENDIAN_BSWAP16(val) (val)= __builtin_bswap16 (val)
-#define ENDIAN_BSWAP32(val) (val)= __builtin_bswap32 (val)
-#define ENDIAN_BSWAP64(val) (val)= __builtin_bswap64 (val)
+#define ENDIAN_BSWAP16(val) (val) = __builtin_bswap16 (val)
+#define ENDIAN_BSWAP32(val) (val) = __builtin_bswap32 (val)
+#define ENDIAN_BSWAP64(val) (val) = __builtin_bswap64 (val)
 
 #if __has_cpp_attribute(fallthrough)
 	#define SHAGA_FALLTHROUGH [[fallthrough]]
@@ -234,6 +234,10 @@ using namespace std::literals;
 #else
 	#define SHAGA_INLINE inline
 #endif
+
+#define _SHAGA_SPSC_RING(x,y) const uint_fast32_t x = ((y) + 1) % _size
+#define _SHAGA_SPSC_D_RING(x,y) const uint_fast32_t x = ((y) + 1) % this->_num_packets
+#define _SHAGA_SPSC_I_RING(x) x = (x + 1) % this->_num_packets
 
 /* This macro is used to identify methods and functions that return std::string view */
 /* Useful for static analysis to point out potentially dangerous methods. */
@@ -394,6 +398,7 @@ namespace shaga
 #include "hwid.h"
 #include "CRC.h"
 #include "Digest.h"
+#include "DiSig.h"
 #include "ShSocket.h"
 #include "ShFile.h"
 #include "FS.h"
@@ -408,11 +413,16 @@ namespace shaga
 #include "ArgTable.h"
 #include "Semaphore.h"
 #include "IPHelper.h"
+
 #include "SPSC.h"
+namespace shaga
+{
+	typedef SPSC<std::string> StringSPSC;
+}
+#include "PreAllocSPSC.h"
 #include "SPSCData.h"
 #include "EncodeSPSC.h"
 #include "DecodeSPSC.h"
-#include "DiSig.h"
 
 namespace shaga
 {

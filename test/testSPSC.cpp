@@ -87,11 +87,11 @@ TEST (SPSC, non_trivial_container)
 	}
 }
 
-TEST (PaSPSC, empty)
+TEST (PreAllocSPSC, empty)
 {
 	const int sze = 16;
 	const int loops = 128;
-	PaSPSC<int> ring (sze);
+	PreAllocSPSC<int> ring (sze);
 
 	for (int i = 0; i < loops; ++i) {
 		ASSERT_TRUE (ring.empty ());
@@ -107,11 +107,11 @@ TEST (PaSPSC, empty)
 	}
 }
 
-TEST (PaSPSC, full)
+TEST (PreAllocSPSC, full)
 {
 	const int sze = 16;
 	const int loops = 128;
-	PaSPSC<int> ring (sze);
+	PreAllocSPSC<int> ring (sze);
 
 	for (int i = 0; i < loops; ++i) {
 		if (i < sze - 1) {
@@ -142,12 +142,12 @@ TEST (PaSPSC, full)
 	}
 }
 
-TEST (PaSPSC, non_trivial_container)
+TEST (PreAllocSPSC, non_trivial_container)
 {
 	const int sze = 16;
 	const int loops = 128;
 
-	PaSPSC<Chunk> ring (sze, 0, "AAAA");
+	PreAllocSPSC<Chunk> ring (sze, 0, "AAAA");
 
 	for (uint32_t i = 0; i < loops; ++i) {
 		EXPECT_NO_THROW (ring.back ().set_ttl (i & 0x7));

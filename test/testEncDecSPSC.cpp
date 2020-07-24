@@ -61,13 +61,17 @@ template<class T> static void _uart8spsc_sizes_test (void)
 		ASSERT_TRUE (str.size () == cursize);
 		ASSERT_TRUE (::memcmp (buffer, str.data (), str.size ()) == 0);
 
-		ASSERT_TRUE (decodering.pop_buffer (str));
-		ASSERT_TRUE (str.size () == cursize);
-		ASSERT_TRUE (::memcmp (buffer + 1, str.data (), str.size ()) == 0);
+		auto ret = decodering.peek_buffer ();
+		ASSERT_TRUE (ret);
+		ASSERT_TRUE (ret->size () == cursize);
+		ASSERT_TRUE (::memcmp (buffer + 1, ret->data (), ret->size ()) == 0);
+		ASSERT_TRUE (decodering.pop_buffer ());
 	}
 
 	/* Nothing more to read, should return false */
 	ASSERT_FALSE (decodering.pop_buffer (str));
+	ASSERT_FALSE (decodering.pop_buffer ());
+	ASSERT_FALSE (decodering.peek_buffer ());
 }
 
 template<class T> static void _uart16spsc_sizes_test (void)
@@ -116,13 +120,17 @@ template<class T> static void _uart16spsc_sizes_test (void)
 		ASSERT_TRUE (str.size () == cursize);
 		ASSERT_TRUE (::memcmp (buffer, str.data (), str.size ()) == 0);
 
-		ASSERT_TRUE (decodering.pop_buffer (str));
-		ASSERT_TRUE (str.size () == cursize);
-		ASSERT_TRUE (::memcmp (buffer + 1, str.data (), str.size ()) == 0);
+		auto ret = decodering.peek_buffer ();
+		ASSERT_TRUE (ret);
+		ASSERT_TRUE (ret->size () == cursize);
+		ASSERT_TRUE (::memcmp (buffer + 1, ret->data (), ret->size ()) == 0);
+		ASSERT_TRUE (decodering.pop_buffer ());
 	}
 
 	/* Nothing more to read, should return false */
 	ASSERT_FALSE (decodering.pop_buffer (str));
+	ASSERT_FALSE (decodering.pop_buffer ());
+	ASSERT_FALSE (decodering.peek_buffer ());
 }
 
 template<class T> static void _packet_sizes_test (void)
@@ -178,13 +186,17 @@ template<class T> static void _packet_sizes_test (void)
 		ASSERT_TRUE (str.size () == cursize);
 		ASSERT_TRUE (::memcmp (buffer, str.data (), str.size ()) == 0);
 
-		ASSERT_TRUE (decodering.pop_buffer (str));
-		ASSERT_TRUE (str.size () == cursize);
-		ASSERT_TRUE (::memcmp (buffer + 1, str.data (), str.size ()) == 0);
+		auto ret = decodering.peek_buffer ();
+		ASSERT_TRUE (ret);
+		ASSERT_TRUE (ret->size () == cursize);
+		ASSERT_TRUE (::memcmp (buffer + 1, ret->data (), ret->size ()) == 0);
+		ASSERT_TRUE (decodering.pop_buffer ());
 	}
 
 	/* Nothing more to read, should return false */
 	ASSERT_FALSE (decodering.pop_buffer (str));
+	ASSERT_FALSE (decodering.pop_buffer ());
+	ASSERT_FALSE (decodering.peek_buffer ());
 }
 
 template<class T> static void _seqpacket_sizes_test (void)
@@ -543,6 +555,7 @@ static void _seqpacketspsc_test (void)
 		}
 
 		ASSERT_TRUE (pos == totalsize);
+		ASSERT_FALSE (decodering.pop_buffer ());
 	}
 }
 

@@ -10,9 +10,8 @@ All rights reserved.
 
 #include "common.h"
 
-namespace shaga {
-#define RING(x) { if ((x) >= this->_num_packets) { (x) = 0; } }
-
+namespace shaga
+{
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  EncodeSPSC  /////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -67,8 +66,7 @@ namespace shaga {
 			virtual void push (void) final
 			{
 				#ifdef SHAGA_THREADING
-					uint_fast32_t next = _pos_write.load (std::memory_order::memory_order_relaxed) + 1;
-					RING (next);
+					_SHAGA_SPSC_D_RING (next, _pos_write.load (std::memory_order::memory_order_relaxed));
 
 					if (next == _pos_read.load (std::memory_order::memory_order_acquire)) {
 						cThrow ("{}: Ring full"sv, _name);
@@ -77,8 +75,7 @@ namespace shaga {
 					_pos_write.store (next, std::memory_order::memory_order_relaxed);
 					_stored_bytes.fetch_add (_curdata->size (), std::memory_order::memory_order_seq_cst);
 				#else
-					uint_fast32_t next = _pos_write + 1;
-					RING (next);
+					_SHAGA_SPSC_D_RING (next, _pos_write);
 
 					if (next == _pos_read) {
 						cThrow ("{}: Ring full"sv, _name);
@@ -229,8 +226,7 @@ namespace shaga {
 
 				while (now_read != now_write) {
 					this->_data[now_read]->free ();
-					++now_read;
-					RING (now_read);
+					_SHAGA_SPSC_I_RING (now_read);
 				}
 
 				_read_offset = 0;
@@ -285,7 +281,6 @@ namespace shaga {
 					remaining = this->_data[now_read]->size () - read_offset;
 					if (remaining >= len) {
 						/* We got enought data */
-
 						::memcpy (outbuffer + offset, this->_data[now_read]->buffer + read_offset, len);
 						offset += len;
 						break;
@@ -294,9 +289,7 @@ namespace shaga {
 						::memcpy (outbuffer + offset, this->_data[now_read]->buffer + read_offset, remaining);
 						offset += remaining;
 						len -= remaining;
-
-						++now_read;
-						RING (now_read);
+						_SHAGA_SPSC_I_RING (now_read);
 						read_offset = 0;
 					}
 				}
@@ -346,8 +339,7 @@ namespace shaga {
 					remaining = this->_data[now_read]->size () - read_offset;
 					if (remaining == len) {
 						this->_data[now_read]->free ();
-						++now_read;
-						RING (now_read);
+						_SHAGA_SPSC_I_RING (now_read);
 						read_offset = 0;
 						break;
 					}
@@ -359,8 +351,7 @@ namespace shaga {
 					else {
 						len -= remaining;
 						this->_data[now_read]->free ();
-						++now_read;
-						RING (now_read);
+						_SHAGA_SPSC_I_RING (now_read);
 						read_offset = 0;
 					}
 				}
@@ -399,8 +390,7 @@ namespace shaga {
 
 				while (now_read != now_write) {
 					this->_data[now_read]->free ();
-					++now_read;
-					RING (now_read);
+					_SHAGA_SPSC_I_RING (now_read);
 				}
 
 				#ifdef SHAGA_THREADING
@@ -470,8 +460,7 @@ namespace shaga {
 				}
 
 				this->_data[now_read]->free ();
-				++now_read;
-				RING (now_read);
+				_SHAGA_SPSC_I_RING (now_read);
 
 				#ifdef SHAGA_THREADING
 					this->_pos_read.store (now_read, std::memory_order::memory_order_relaxed);
@@ -728,8 +717,6 @@ namespace shaga {
 				header.reserve (_header_size);
 			}
 	};
-
-#undef RING
 }
 
 #endif // HEAD_shaga_EncodeSPSC

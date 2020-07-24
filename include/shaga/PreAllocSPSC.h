@@ -5,15 +5,15 @@ Copyright (c) 2012-2020, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_SPSC
-#define HEAD_shaga_SPSC
+#ifndef HEAD_shaga_PreAllocSPSC
+#define HEAD_shaga_PreAllocSPSC
 
 #include "common.h"
 
 namespace shaga
 {
 	template<class T = std::string>
-	class SPSC
+	class PreAllocSPSC
 	{
 		private:
 			const uint_fast32_t _size;
@@ -29,7 +29,8 @@ namespace shaga
 			T* const _data {nullptr};
 
 		public:
-			explicit SPSC (const uint_fast32_t sze) :
+			template<class ...Args>
+			explicit PreAllocSPSC (const uint_fast32_t sze, Args&&... args) :
 				_size (sze),
 				_data (static_cast<T*> (::malloc (sizeof (T) * sze)))
 			{
@@ -48,21 +49,27 @@ namespace shaga
 					}
 					throw;
 				}
+
+				for (uint_fast32_t now = 0; now < _size; ++now) {
+					try {
+						new (&_data[now]) T(std::forward<Args>(args)...);
+					}
+					catch (...) {
+						/* Clear all already created objects */
+						while (now > 0) {
+							--now;
+							_data[now].~T();
+						}
+						::free(_data);
+						throw;
+					}
+				}
 			}
 
-			~SPSC ()
+			~PreAllocSPSC ()
 			{
-				#ifdef SHAGA_THREADING
-					uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
-					const uint_fast32_t last = _pos_write.load (std::memory_order_acquire);
-				#else
-					uint_fast32_t now = _pos_read;
-					const uint_fast32_t last = _pos_write;
-				#endif // SHAGA_THREADING
-
-				while (now != last) {
-					_data[now++].~T();
-					now %= _size;
+				for (uint_fast32_t now = 0; now < _size; ++now) {
+					_data[now].~T();
 				}
 
 				::free(_data);
@@ -77,7 +84,7 @@ namespace shaga
 				#endif // SHAGA_THREADING
 			}
 
-			bool push_back (const T &entry)
+			T& back (void)
 			{
 				#ifdef SHAGA_THREADING
 					const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
@@ -92,21 +99,13 @@ namespace shaga
 				#else
 					if (next == _pos_read) {
 				#endif // SHAGA_THREADING
-					return false;
+					cThrow ("Ring full"sv);
 				}
 
-				new (&_data[now]) T(entry);
-
-				#ifdef SHAGA_THREADING
-					_pos_write.store (next, std::memory_order_release);
-				#else
-					_pos_write = next;
-				#endif // SHAGA_THREADING
-
-				return true;
+				return _data[now];
 			}
 
-			bool push_back (T &&entry)
+			T& push_back (void)
 			{
 				#ifdef SHAGA_THREADING
 					const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
@@ -121,11 +120,8 @@ namespace shaga
 				#else
 					if (next == _pos_read) {
 				#endif // SHAGA_THREADING
-					return false;
+					cThrow ("Ring full");
 				}
-
-				new (&_data[now]) T();
-				_data[now] = std::move (entry);
 
 				#ifdef SHAGA_THREADING
 					_pos_write.store (next, std::memory_order_release);
@@ -133,109 +129,43 @@ namespace shaga
 					_pos_write = next;
 				#endif // SHAGA_THREADING
 
-				return true;
+				return _data[next];
 			}
 
-			template<class ...Args>
-			bool emplace_back (Args&&... args)
-			{
-				#ifdef SHAGA_THREADING
-					const uint_fast32_t now = _pos_write.load (std::memory_order_relaxed);
-				#else
-					const uint_fast32_t now = _pos_write;
-				#endif // SHAGA_THREADING
-
-				_SHAGA_SPSC_RING (next, now);
-
-				#ifdef SHAGA_THREADING
-					if (next == _pos_read.load (std::memory_order_acquire)) {
-				#else
-					if (next == _pos_read) {
-				#endif // SHAGA_THREADING
-					return false;
-				}
-
-				new (&_data[now]) T(std::forward<Args>(args)...);
-
-				#ifdef SHAGA_THREADING
-					_pos_write.store (next, std::memory_order_release);
-				#else
-					_pos_write = next;
-				#endif // SHAGA_THREADING
-
-				return true;
-			}
-
-			bool pop_front (T &entry)
+			T& front (void)
 			{
 				#ifdef SHAGA_THREADING
 					const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
 					if (now == _pos_write.load (std::memory_order_acquire)) {
-						return false;
-					}
 				#else
 					const uint_fast32_t now = _pos_read;
 					if (now == _pos_write) {
-						return false;
-					}
 				#endif // SHAGA_THREADING
+					cThrow ("Ring empty"sv);
+				}
+
+				return _data[now];
+			}
+
+			void pop_front (void)
+			{
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
+					if (now == _pos_write.load (std::memory_order_acquire)) {
+				#else
+					const uint_fast32_t now = _pos_read;
+					if (now == _pos_write) {
+				#endif // SHAGA_THREADING
+					cThrow ("Ring empty"sv);
+				}
 
 				_SHAGA_SPSC_RING (next, now);
-
-				entry = std::move (_data[now]);
-				_data[now].~T();
 
 				#ifdef SHAGA_THREADING
 					_pos_read.store (next, std::memory_order_release);
 				#else
 					_pos_read = next;
 				#endif // SHAGA_THREADING
-
-				return true;
-			}
-
-			bool pop_front (void)
-			{
-				#ifdef SHAGA_THREADING
-					const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
-					if (now == _pos_write.load (std::memory_order_acquire)) {
-						return false;
-					}
-				#else
-					const uint_fast32_t now = _pos_read;
-					if (now == _pos_write) {
-						return false;
-					}
-				#endif // SHAGA_THREADING
-
-				_SHAGA_SPSC_RING (next, now);
-
-				_data[now].~T();
-
-				#ifdef SHAGA_THREADING
-					_pos_read.store (next, std::memory_order_release);
-				#else
-					_pos_read = next;
-				#endif // SHAGA_THREADING
-
-				return true;
-			}
-
-			T* front (void)
-			{
-				#ifdef SHAGA_THREADING
-					const uint_fast32_t now = _pos_read.load (std::memory_order_relaxed);
-					if (now == _pos_write.load (std::memory_order_acquire)) {
-						return nullptr;
-					}
-				#else
-					const uint_fast32_t now = _pos_read;
-					if (now == _pos_write) {
-						return nullptr;
-					}
-				#endif // SHAGA_THREADING
-
-				return &_data[now];
 			}
 
 			void clear (void)
@@ -263,10 +193,10 @@ namespace shaga
 				#endif // SHAGA_THREADING
 			}
 
-			/* Disable copy and assignment */
-			SPSC (const SPSC &) = delete;
-			SPSC& operator= (const SPSC &) = delete;
+			/* Disable default copy constructors */
+			PreAllocSPSC (const PreAllocSPSC &) = delete;
+			PreAllocSPSC& operator= (const PreAllocSPSC &) = delete;
 	};
 }
 
-#endif // HEAD_shaga_SPSC
+#endif // HEAD_shaga_PreAllocSPSC

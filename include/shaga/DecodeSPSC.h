@@ -10,9 +10,8 @@ All rights reserved.
 
 #include "common.h"
 
-namespace shaga {
-#define RING(x) { if ((x) >= this->_num_packets) { (x) = 0; } }
-
+namespace shaga
+{
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  DecodeSPSC  /////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,7 +42,7 @@ namespace shaga {
 			std::string _name;
 
 			std::vector<std::unique_ptr<DataInterface>> _data;
-			DataInterface* _curdata;
+			DataInterface* _curdata {nullptr};
 
 			#ifdef SHAGA_THREADING
 				std::atomic<uint_fast32_t> _pos_read {0};
@@ -97,8 +96,7 @@ namespace shaga {
 			virtual void push (void) final
 			{
 				#ifdef SHAGA_THREADING
-					uint_fast32_t next = _pos_write.load (std::memory_order_relaxed) + 1;
-					RING (next);
+					_SHAGA_SPSC_D_RING (next, _pos_write.load (std::memory_order_relaxed));
 
 					if (next == _pos_read.load (std::memory_order_acquire)) {
 						cThrow ("{}: Ring full"sv, _name);
@@ -106,8 +104,7 @@ namespace shaga {
 
 					_pos_write.store (next, std::memory_order_release);
 				#else
-					uint_fast32_t next = _pos_write + 1;
-					RING (next);
+					_SHAGA_SPSC_D_RING (next, _pos_write);
 
 					if (next == _pos_read) {
 						cThrow ("{}: Ring full"sv, _name);
@@ -246,8 +243,7 @@ namespace shaga {
 				out.assign (reinterpret_cast<const char *> (this->_data[now]->buffer), this->_data[now]->size ());
 				this->_data[now]->free ();
 
-				uint_fast32_t next = now + 1;
-				RING (next);
+				_SHAGA_SPSC_D_RING (next, now);
 
 				#ifdef SHAGA_THREADING
 					this->_pos_read.store (next, std::memory_order_release);
@@ -256,6 +252,62 @@ namespace shaga {
 				#endif // SHAGA_THREADING
 
 				return true;
+			}
+
+			virtual bool pop_buffer (void) final
+			{
+				#ifdef OS_LINUX
+				if (this->read_eventfd () == false) {
+					return false;
+				}
+				#endif // OS_LINUX
+
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = this->_pos_read.load (std::memory_order_relaxed);
+					if (now == this->_pos_write.load (std::memory_order_acquire)) {
+						#ifdef OS_LINUX
+						cThrow ("{}: Internal error: eventfd test passed but atomic position didn't"sv, this->_name);
+						#endif // OS_LINUX
+						return false;
+					}
+				#else
+					const uint_fast32_t now = this->_pos_read;
+					if (now == this->_pos_write) {
+						#ifdef OS_LINUX
+						cThrow ("{}: Internal error: eventfd test passed but read/write position didn't"sv, this->_name);
+						#endif // OS_LINUX
+						return false;
+					}
+				#endif // SHAGA_THREADING
+
+				this->_data[now]->free ();
+
+				_SHAGA_SPSC_D_RING (next, now);
+
+				#ifdef SHAGA_THREADING
+					this->_pos_read.store (next, std::memory_order_release);
+				#else
+					this->_pos_read = next;
+				#endif // SHAGA_THREADING
+
+				return true;
+			}
+
+			virtual std::optional<std::string_view> peek_buffer (void) final
+			{
+				#ifdef SHAGA_THREADING
+					const uint_fast32_t now = this->_pos_read.load (std::memory_order_relaxed);
+					if (now == this->_pos_write.load (std::memory_order_acquire)) {
+						return std::nullopt;
+					}
+				#else
+					const uint_fast32_t now = this->_pos_read;
+					if (now == this->_pos_write) {
+						return std::nullopt;
+					}
+				#endif // SHAGA_THREADING
+
+				return std::optional<std::string_view> {std::in_place, reinterpret_cast<const char *> (this->_data[now]->buffer), this->_data[now]->size ()};
 			}
 
 			virtual void push_buffer (const void *const buffer, const uint_fast32_t offset, const uint_fast32_t len) final
@@ -692,7 +744,6 @@ namespace shaga {
 				DecodeSPSC<T> (max_packet_size, num_packets)
 			{ }
 	};
-#undef RING
 }
 
 #endif // HEAD_shaga_DecodeSPSC
