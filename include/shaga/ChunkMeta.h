@@ -89,6 +89,8 @@ namespace shaga {
 			void add_value (const uint16_t key, std::string &&value);
 			void add_value (const std::string_view key, std::string &&value);
 
+			size_t get_max_bytes (void) const;
+
 			size_t size (void) const;
 			size_t count (const std::string_view key) const;
 			size_t count (const uint16_t key) const;

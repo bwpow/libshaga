@@ -262,14 +262,14 @@ namespace shaga {
 		halfsiphash_k1 = 0;
 	}
 
-	void ReDataConfig::calc_digest (const std::string_view plain, std::string &out, const std::string_view key)
+	void ReDataConfig::calc_digest (const std::string_view plain, std::string &out, const std::string_view key) const
 	{
 		if (DIGEST::NONE == _used_digest) {
 			out.resize (0);
 			return;
 		}
 
-		HASH_FUNC hfunc = _get_digest_calc_function (_used_digest);
+		const HASH_FUNC hfunc = _get_digest_calc_function (_used_digest);
 		const DIGEST_HMAC_TYPE hmac_type = _get_digest_hmac_type (_used_digest);
 
 		if (DIGEST_HMAC_TYPE::NONE == hmac_type) {

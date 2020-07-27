@@ -197,6 +197,18 @@ namespace shaga {
 		_data.insert (std::make_pair (key_to_bin (key), std::move (value)));
 	}
 
+	size_t ChunkMeta::get_max_bytes (void) const
+	{
+		size_t len {0};
+
+		for (const auto &entry : _data) {
+			/* 2B type + 4B size + data */
+			len += 6 + entry.second.size ();
+		}
+
+		return len;
+	}
+
 	size_t ChunkMeta::size (void) const
 	{
 		return _data.size ();
@@ -312,7 +324,7 @@ namespace shaga {
 
 	void ChunkMeta::to_bin (std::string &out_append) const
 	{
-		uint16_t last_key = UINT16_MAX;
+		uint16_t last_key {UINT16_MAX};
 		for (const auto &[key, value] : _data) {
 			if (last_key != key) {
 				last_key = key;
@@ -331,6 +343,7 @@ namespace shaga {
 	std::string ChunkMeta::to_bin (void) const
 	{
 		std::string out;
+		out.reserve (get_max_bytes ());
 		to_bin (out);
 		return out;
 	}

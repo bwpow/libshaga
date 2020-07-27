@@ -33,7 +33,7 @@ namespace shaga
 			std::string _name;
 
 			std::vector<std::unique_ptr<DataInterface>> _data;
-			DataInterface* _curdata;
+			DataInterface* _curdata {nullptr};
 
 			#ifdef SHAGA_THREADING
 				std::atomic<uint_fast32_t> _pos_read {0};
@@ -48,17 +48,15 @@ namespace shaga
 			#ifdef OS_LINUX
 			virtual void clear_eventfd (void) final
 			{
-				while (true) {
-					const ssize_t sze = ::read (this->_eventfd, &_eventfd_read_val, sizeof (_eventfd_read_val));
-					if (sze < 0) {
-						if (EWOULDBLOCK == errno) {
-							break;
-						}
-						cThrow ("{}: Error reading from notice eventfd: {}"sv, this->_name, strerror (errno));
+				const ssize_t sze = ::read (this->_eventfd, &_eventfd_read_val, sizeof (_eventfd_read_val));
+				if (sze < 0) {
+					if (EWOULDBLOCK == errno) {
+						return;
 					}
-					else if (sze != sizeof (_eventfd_read_val)) {
-						cThrow ("{}: Error reading from notice eventfd: Unknown error"sv, this->_name);
-					}
+					cThrow ("{}: Error reading from notice eventfd: {}"sv, this->_name, strerror (errno));
+				}
+				else if (sze != sizeof (_eventfd_read_val)) {
+					cThrow ("{}: Error reading from notice eventfd: Unknown error"sv, this->_name);
 				}
 			}
 			#endif // OS_LINUX
@@ -118,7 +116,7 @@ namespace shaga
 
 				#ifdef OS_LINUX
 					/* This will work as a trigger for new push, can be used to poll for new data */
-					this->_eventfd = ::eventfd (0, EFD_NONBLOCK | EFD_SEMAPHORE);
+					this->_eventfd = ::eventfd (0, EFD_NONBLOCK);
 					if (this->_eventfd < 0) {
 						cThrow ("{}: Unable to init eventfd: {}"sv, _name, strerror (errno));
 					}
@@ -182,6 +180,11 @@ namespace shaga
 
 			virtual void clear (void) = 0;
 			virtual uint_fast32_t fill_front_buffer (char *outbuffer, uint_fast32_t len) = 0;
+
+			#ifdef OS_LINUX
+			virtual int fill_front_buffer (struct iovec *iov, const uint_fast32_t max_iovcnt) = 0;
+			#endif // OS_LINUX
+
 			virtual void move_front_buffer (uint_fast32_t len) = 0;
 
 			virtual void push_buffer (const void *const buffer, const uint_fast32_t offset, const uint_fast32_t len) final
@@ -239,6 +242,7 @@ namespace shaga
 				#endif // SHAGA_THREADING
 			}
 
+			/* Fills data into continuous buffer and returns number of bytes */
 			virtual uint_fast32_t fill_front_buffer (char *outbuffer, uint_fast32_t len) override final
 			{
 				#ifdef OS_LINUX
@@ -296,6 +300,43 @@ namespace shaga
 
 				return offset;
 			}
+
+			#ifdef OS_LINUX
+			/* Fills data into several iovec structures and returns number of structures filled */
+			virtual int fill_front_buffer (struct iovec *iov, const uint_fast32_t max_iovcnt) override final
+			{
+				this->clear_eventfd ();
+
+				#ifdef SHAGA_THREADING
+					uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
+					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#else
+					uint_fast32_t now_read = this->_pos_read;
+					const uint_fast32_t now_write = this->_pos_write;
+				#endif // SHAGA_THREADING
+
+				if (now_write == now_read) {
+					return 0;
+				}
+
+				uint_fast32_t read_offset = _read_offset;
+				uint_fast32_t remaining;
+				uint_fast32_t iovcnt {0};
+
+				while (now_read != now_write && iovcnt < max_iovcnt) {
+					remaining = this->_data[now_read]->size () - read_offset;
+
+					iov[iovcnt].iov_base = (this->_data[now_read]->buffer + read_offset);
+					iov[iovcnt].iov_len = remaining;
+					++iovcnt;
+
+					_SHAGA_SPSC_I_RING (now_read);
+					read_offset = 0;
+				}
+
+				return static_cast<int> (iovcnt);
+			}
+			#endif // OS_LINUX
 
 			virtual void move_front_buffer (uint_fast32_t len) override final
 			{
@@ -432,6 +473,38 @@ namespace shaga
 
 				return this->_data[now_read]->size ();
 			}
+
+			#ifdef OS_LINUX
+			/* Fills data into several iovec structures and returns number of structures filled */
+			virtual int fill_front_buffer (struct iovec *iov, const uint_fast32_t max_iovcnt) override final
+			{
+				this->clear_eventfd ();
+
+				#ifdef SHAGA_THREADING
+					uint_fast32_t now_read = this->_pos_read.load (std::memory_order_relaxed);
+					const uint_fast32_t now_write = this->_pos_write.load (std::memory_order_acquire);
+				#else
+					uint_fast32_t now_read = this->_pos_read;
+					const uint_fast32_t now_write = this->_pos_write;
+				#endif // SHAGA_THREADING
+
+				if (now_write == now_read) {
+					return 0;
+				}
+
+				uint_fast32_t iovcnt {0};
+
+				while (now_read != now_write && iovcnt < max_iovcnt) {
+					iov[iovcnt].iov_base = this->_data[now_read]->buffer;
+					iov[iovcnt].iov_len = this->_data[now_read]->size ();
+					++iovcnt;
+
+					_SHAGA_SPSC_I_RING (now_read);
+				}
+
+				return static_cast<int> (iovcnt);
+			}
+			#endif // OS_LINUX
 
 			virtual void move_front_buffer (uint_fast32_t len) override final
 			{

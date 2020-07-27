@@ -18,7 +18,7 @@ namespace shaga {
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void ReData::decode_message (std::string_view msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed)
+	void ReData::decode_message (std::string_view msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed) const
 	{
 		msg.remove_prefix (offset);
 
@@ -52,10 +52,9 @@ namespace shaga {
 		if (_conf.get_crypto () != ReDataConfig::CRYPTO::NONE) {
 			_work_msg.resize (0);
 		}
-		_last_decode_was_mixed = key_mixed;
 	}
 
-	void ReData::encode_message (const std::string_view plain, std::string &msg, const size_t key_id, const bool key_mixed)
+	void ReData::encode_message (const std::string_view plain, std::string &msg, const size_t key_id, const bool key_mixed) const
 	{
 		/* This function is appending data to msg. */
 		/* Data may be appended to msg and not cleaned up on fail. This has to be handled from caller! */
@@ -175,14 +174,16 @@ namespace shaga {
 						}
 
 						decode_message (msg, offset, out, res->second, use_mixed);
-
 						/* If it didn't throw exception, decode is successfull, so cache key_id and ident */
+						_last_decode_was_mixed = use_mixed;
 						_key_id = res->second;
 						_last_key_ident = ident;
 					}
 					else {
 						/* We have cached key_id, so just use it */
 						decode_message (msg, offset, out, _key_id, use_mixed);
+						/* If it didn't throw exception, decode is successfull */
+						_last_decode_was_mixed = use_mixed;
 					}
 				}
 				else {
@@ -193,6 +194,7 @@ namespace shaga {
 							cMute;
 							decode_message (msg, offset, out, (i + _key_id) % len, use_mixed);
 							/* If it didn't throw exception, decode is successfull */
+							_last_decode_was_mixed = use_mixed;
 							_key_id = (i + _key_id) % len;
 							break;
 						}

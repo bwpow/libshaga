@@ -22,6 +22,11 @@ namespace shaga {
 	#define bin_from_hwid BIN::from_uint32
 	#define bin_to_hwid BIN::to_uint32
 
+	#define _bin_be_from_hwid BIN::_be_from_uint32
+	#define _bin_be_to_hwid BIN::_be_to_uint32
+	#define _bin_from_hwid BIN::_from_uint32
+	#define _bin_to_hwid BIN::_to_uint32
+
 	#define str_to_hwid STR::to_uint32
 	#define str_from_hwid STR::from_int
 

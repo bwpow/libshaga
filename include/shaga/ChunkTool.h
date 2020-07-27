@@ -21,6 +21,7 @@ namespace shaga
 			const Chunk::SPECIAL_TYPES *const _special_types {nullptr};
 
 			bool _enable_thr {true};
+			bool _store_binary {false};
 
 			std::string _temp_str;
 			std::string _out_str;
@@ -30,6 +31,7 @@ namespace shaga
 			ChunkTool (const Chunk::SPECIAL_TYPES *const special_types);
 
 			void set_enable_thr (const bool enable_thr);
+			void set_store_binary (const bool store_binary);
 
 			/*** From binary string ***/
 			void from_bin (const std::string_view buf, size_t &offset, CHUNKLIST &out_append) const;

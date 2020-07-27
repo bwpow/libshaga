@@ -89,6 +89,58 @@ namespace shaga {
 		return (static_cast<uint8_t> (s[offset]) & 0x80) != 0;
 	}
 
+	uint32_t Chunk::generate_header (char *const out, size_t &offset, const SPECIAL_TYPES *const special_types) const
+	{
+		uint32_t val {key_highbit_mask};
+
+		val |= (static_cast<uint32_t>(_prio) << key_prio_shift) & key_prio_mask;
+		val |= (static_cast<uint32_t>(_trust) << key_trust_shift) & key_trust_mask;
+		val |= (static_cast<uint32_t>(_ttl) << key_ttl_shift) & key_ttl_mask;
+
+		if (true == _channel) {
+			val |= key_channel_mask;
+		}
+
+		if (this->has_payload ()) {
+			val |= key_has_payload_mask;
+		}
+
+		if (this->has_cbor ()) {
+			val |= key_has_cbor_mask;
+		}
+
+		if (false == _hwid_dest.empty ()) {
+			val |= key_has_dest_mask;
+		}
+
+		if (key_type_tracert == _type) {
+			/* This is the tracert type, so store only high 16-bits and set flag */
+			val |= key_tracert_mask;
+			BIN::_be_from_uint16 (val >> 16, out, offset);
+		}
+		else if (special_types != nullptr) {
+			/* If special_types is provided, it may contain most used types */
+			if (auto result = std::find (special_types->cbegin (), special_types->cend (), _type); result != special_types->cend ()) {
+				/* Type found in special types. Store it in the upper 16 bits. */
+				val |= key_special_type_mask;
+				val |= std::distance (special_types->cbegin (), result) << 16;
+				BIN::_be_from_uint16 (val >> 16, out, offset);
+			}
+			else {
+				val |= _type & key_type_mask;
+				BIN::_be_from_uint32 (val, out, offset);
+			}
+		}
+		else {
+			val |= _type & key_type_mask;
+			BIN::_be_from_uint32 (val, out, offset);
+		}
+
+		_bin_from_hwid (_hwid_source, out, offset);
+
+		return val;
+	}
+
 	void Chunk::_reset (void)
 	{
 		_construct ();
@@ -102,7 +154,10 @@ namespace shaga {
 		_ttl = max_ttl;
 		_hwid_dest = HWIDMASK ();
 		_tracert_hops.clear ();
+
 		meta.reset ();
+
+		invalidate_stored_binary_representation ();
 	}
 
 	void Chunk::_construct (void)
@@ -124,12 +179,14 @@ namespace shaga {
 		_type = key_type_min;
 	}
 
-	Chunk::Chunk (const std::string_view bin, size_t &offset, const SPECIAL_TYPES *const special_types)
+	Chunk::Chunk (const std::string_view bin, size_t &offset, const SPECIAL_TYPES *const special_types, bool store_binary_representation)
 	{
 		if (should_continue (bin, offset) == false) {
 			cThrow ("Buffer is empty"sv);
 		}
 		_reset ();
+
+		const size_t start_offset {offset};
 
 		/* Read high 16-bit first (big endian) */
 		const uint32_t val = BIN::be_to_uint16 (bin, offset) << 16;
@@ -147,16 +204,7 @@ namespace shaga {
 
 		if ((val & key_tracert_mask) == key_tracert_mask) {
 			_type = key_type_tracert;
-
-			const uint_fast8_t hop_counter = BIN::to_uint8 (bin, offset);
-			_tracert_hops.reserve (hop_counter);
-
-			for (uint_fast8_t i = 0; i < hop_counter; ++i) {
-				TRACERT_HOP hop;
-				hop.hwid = bin_to_hwid (bin, offset);
-				hop.metric = BIN::to_uint8 (bin, offset);
-				_tracert_hops.push_back (std::move (hop));
-			}
+			store_binary_representation = false;
 		}
 		else if (val & key_special_type_mask) {
 			if (special_types == nullptr) {
@@ -174,6 +222,19 @@ namespace shaga {
 
 		_hwid_source = bin_to_hwid (bin, offset);
 
+		_stored_header_size = offset - start_offset;
+
+		if (key_type_tracert == _type) {
+			const uint_fast32_t hop_counter = BIN::to_uint8 (bin, offset);
+
+			for (uint_fast32_t i = 0; i < hop_counter; ++i) {
+				TRACERT_HOP hop;
+				hop.hwid = bin_to_hwid (bin, offset);
+				hop.metric = BIN::to_uint8 (bin, offset);
+				_tracert_hops.push_back (std::move (hop));
+			}
+		}
+
 		if (val & key_has_dest_mask) {
 			_hwid_dest.mask = bin_to_hwid (bin, offset);
 			_hwid_dest.hwid = bin_to_hwid (bin, offset);
@@ -181,12 +242,18 @@ namespace shaga {
 
 		if (val & key_has_payload_mask) {
 			const size_t len = BIN::to_size (bin, offset);
+			if ((offset + len) > bin.size ()) {
+				cThrow ("Not enough data in buffer"sv);
+			}
 			_payload.assign (bin.substr (offset, len));
 			offset += len;
 		}
 
 		if (val & key_has_cbor_mask) {
 			const size_t len = BIN::to_size (bin, offset);
+			if ((offset + len) > bin.size ()) {
+				cThrow ("Not enough data in buffer"sv);
+			}
 			_cbor.resize (len);
 			::memcpy (_cbor.data (), bin.data () + offset, len);
 			offset += len;
@@ -197,6 +264,14 @@ namespace shaga {
 		}
 
 		meta.from_bin (bin, offset);
+
+		if (true == store_binary_representation) {
+			/* Save binary representation if requested and this is not tracert chunk */
+			_stored_binary.assign (bin.substr (start_offset, offset - start_offset));
+		}
+		else {
+			invalidate_stored_binary_representation ();
+		}
 	}
 
 	Chunk::Chunk (const HWID hwid_source, const std::string_view type)
@@ -215,6 +290,20 @@ namespace shaga {
 		_reset ();
 		_hwid_source = hwid_source;
 		_type = type;
+	}
+
+	size_t Chunk::get_max_bytes (void) const
+	{
+		size_t len {8};
+
+		len += sizeof (HWID) * 3;
+		len += _tracert_hops.size () * (sizeof (HWID) + 1);
+		len += get_payload<std::string_view> ().size ();
+		len += _cbor.size ();
+
+		len += meta.get_max_bytes ();
+
+		return len;
 	}
 
 	void Chunk::set_channel (const bool is_primary)
@@ -289,57 +378,66 @@ namespace shaga {
 
 	bool Chunk::has_payload (void) const
 	{
-		return _payload.empty () == false;
+		return (_payload.empty () == false);
 	}
 
 	void Chunk::reset_payload (void)
 	{
 		_payload.resize (0);
+		invalidate_stored_binary_representation ();
 	}
 
 	void Chunk::set_payload (const std::string_view payload)
 	{
 		_payload.assign (payload);
+		invalidate_stored_binary_representation ();
 	}
 
 	void Chunk::set_payload (std::string &&payload)
 	{
 		_payload = std::move (payload);
+		invalidate_stored_binary_representation ();
 	}
 
 	void Chunk::swap_payload (std::string &other)
 	{
 		_payload.swap (other);
+		invalidate_stored_binary_representation ();
 	}
 
 	bool Chunk::has_cbor (void) const
 	{
-		return _cbor.empty () == false;
+		return (_cbor.empty () == false);
 	}
 
 	void Chunk::reset_cbor (void)
 	{
 		_cbor.resize (0);
+		invalidate_stored_binary_representation ();
 	}
 
 	void Chunk::set_json (const nlohmann::json &data)
 	{
 		_cbor = nlohmann::json::to_cbor (data);
+		invalidate_stored_binary_representation ();
 	}
 
 	void Chunk::set_cbor (const std::vector<uint8_t> &cbor)
 	{
 		_cbor = cbor;
+		invalidate_stored_binary_representation ();
 	}
 
 	void Chunk::set_cbor (std::vector<uint8_t> &&cbor)
 	{
 		_cbor = std::move (cbor);
+		invalidate_stored_binary_representation ();
 	}
 
 	void Chunk::swap_cbor (std::vector<uint8_t> &other)
 	{
 		_cbor.swap (other);
+		invalidate_stored_binary_representation ();
 	}
 
 	nlohmann::json Chunk::get_json (void) const
@@ -347,7 +445,7 @@ namespace shaga {
 		return nlohmann::json::from_cbor (_cbor);
 	}
 
-	std::vector<uint8_t> Chunk::get_cbor (void) const
+	const std::vector<uint8_t>& Chunk::get_cbor (void) const
 	{
 		return _cbor;
 	}
@@ -445,7 +543,7 @@ namespace shaga {
 		return true;
 	}
 
-	std::vector<Chunk::TRACERT_HOP> Chunk::tracert_hops_get (void) const
+	std::list<Chunk::TRACERT_HOP> Chunk::tracert_hops_get (void) const
 	{
 		return _tracert_hops;
 	}
@@ -463,16 +561,19 @@ namespace shaga {
 	void Chunk::set_destination_hwid (const HWID hwid)
 	{
 		_hwid_dest = HWIDMASK (hwid);
+		invalidate_stored_binary_representation ();
 	}
 
 	void Chunk::set_destination_hwid (const HWIDMASK &hwidmask)
 	{
 		_hwid_dest = hwidmask;
+		invalidate_stored_binary_representation ();
 	}
 
 	void Chunk::set_destination_broadcast (void)
 	{
 		_hwid_dest = HWIDMASK ();
+		invalidate_stored_binary_representation ();
 	}
 
 	int Chunk::compare (const Chunk &c) const
@@ -509,78 +610,81 @@ namespace shaga {
 		return 0;
 	}
 
+	void Chunk::restore_bin (std::string &out, const bool do_swap, const SPECIAL_TYPES *const special_types) const
+	{
+		size_t offset {0};
+		char header[8];
+		generate_header (header, offset, special_types);
+
+		if (_stored_binary.size () < offset || key_type_tracert == _type || _stored_header_size != offset) {
+			out.resize (0);
+			out.reserve (get_max_bytes ());
+			to_bin (out, special_types);
+
+			if (key_type_tracert != _type) {
+				_stored_binary.assign (out);
+				_stored_header_size = offset;
+			}
+		}
+		else {
+			::memcpy (_stored_binary.data (), header, offset);
+
+			if (true == do_swap) {
+				/* Swap out stored binary, it will have to be generated next time. */
+				out.swap (_stored_binary);
+				_stored_binary.clear ();
+				_stored_header_size = 0;
+			}
+			else {
+				out.assign (_stored_binary);
+			}
+		}
+	}
+
+	void Chunk::invalidate_stored_binary_representation (void) const
+	{
+		_stored_binary.clear ();
+		_stored_header_size = 0;
+	}
+
+	SHAGA_STRV std::string_view Chunk::get_stored_binary_representation (void) const
+	{
+		if (true == _stored_binary.empty () || key_type_tracert == _type || 0 == _stored_header_size) {
+			return ""sv;
+		}
+		else {
+			return std::string_view (_stored_binary);
+		}
+	}
+
 	void Chunk::to_bin (std::string &out_append, const SPECIAL_TYPES *const special_types) const
 	{
-		uint32_t val = key_highbit_mask;
+		size_t offset {0};
+		char header[8];
+		const uint32_t val = generate_header (header, offset, special_types);
 
-		val |= (static_cast<uint32_t>(_prio) << key_prio_shift) & key_prio_mask;
-		val |= (static_cast<uint32_t>(_trust) << key_trust_shift) & key_trust_mask;
-		val |= (static_cast<uint32_t>(_ttl) << key_ttl_shift) & key_ttl_mask;
-
-		if (true == _channel) {
-			val |= key_channel_mask;
-		}
-
-		bool has_payload = false;
-		if (_payload.empty () == false) {
-			val |= key_has_payload_mask;
-			has_payload = true;
-		}
-
-		bool has_cbor = false;
-		if (_cbor.empty () == false) {
-			val |= key_has_cbor_mask;
-			has_cbor = true;
-		}
-
-		bool has_dest = false;
-		if (_hwid_dest.empty () == false) {
-			val |= key_has_dest_mask;
-			has_dest = true;
-		}
+		out_append.append (header, offset);
 
 		if (key_type_tracert == _type) {
-			/* This is the tracert type, so store only high 16-bits and set flag */
-			val |= key_tracert_mask;
-			BIN::be_from_uint16 (val >> 16, out_append);
-
 			BIN::from_uint8 (_tracert_hops.size (), out_append);
 			for (const auto &hop : _tracert_hops) {
 				bin_from_hwid (hop.hwid, out_append);
 				BIN::from_uint8 (hop.metric, out_append);
 			}
 		}
-		else if (special_types != nullptr) {
-			/* If special_types is provided, it may contain most used types */
-			if (auto result = std::find (special_types->cbegin (), special_types->cend (), _type); result != special_types->cend ()) {
-				/* Type found in special types. Store it in the upper 16 bits. */
-				val |= key_special_type_mask;
-				val |= std::distance (special_types->cbegin (), result) << 16;
-				BIN::be_from_uint16 (val >> 16, out_append);
-			}
-			else {
-				val |= _type & key_type_mask;
-				BIN::be_from_uint32 (val, out_append);
-			}
-		}
-		else {
-			val |= _type & key_type_mask;
-			BIN::be_from_uint32 (val, out_append);
-		}
 
-		bin_from_hwid (_hwid_source, out_append);
-
-		if (true == has_dest) {
+		if (val & key_has_dest_mask) {
 			bin_from_hwid (_hwid_dest.mask, out_append);
 			bin_from_hwid (_hwid_dest.hwid, out_append);
 		}
 
-		if (true == has_payload) {
-			BIN::from_size (_payload.size (), out_append);
-			out_append.append (_payload);
+		if (val & key_has_payload_mask) {
+			const auto payload = get_payload<std::string_view> ();
+			BIN::from_size (payload.size (), out_append);
+			out_append.append (payload);
 		}
 
-		if (true == has_cbor) {
+		if (val & key_has_cbor_mask) {
 			BIN::from_size (_cbor.size (), out_append);
 			out_append.append (reinterpret_cast<const char *> (_cbor.data ()), _cbor.size ());
 		}
@@ -591,7 +695,7 @@ namespace shaga {
 	std::string Chunk::to_bin (const SPECIAL_TYPES *const special_types) const
 	{
 		std::string out;
-		out.reserve (32 + _payload.size () + _cbor.size ());
+		out.reserve (get_max_bytes ());
 		to_bin (out, special_types);
 		return out;
 	}

@@ -229,6 +229,133 @@ TEST (Chunk, tracert)
 	EXPECT_TRUE (d2.tracert_hops_count () == 0);
 }
 
+TEST (Chunk, stored_binary)
+{
+	ChunkMeta meta;
+	meta.add_value ("ABC", "abc"sv);
+
+	Chunk orig_chunk (0x1234, "ABCD", "payload"sv, "{ \"happy\": true, \"pi\": 3.141 }"_json, std::move (meta));
+	std::string bin = orig_chunk.to_bin ();
+
+	ASSERT_TRUE (bin.size () <= orig_chunk.get_max_bytes ());
+
+	size_t offset = 0;
+	Chunk stored_chunk (bin, offset, nullptr, true);
+
+	/* Used whole string */
+	ASSERT_TRUE (offset = bin.size ());
+
+	ASSERT_TRUE (stored_chunk.get_max_bytes () == orig_chunk.get_max_bytes ());
+
+	{
+		/* Is stored version the same as internal? */
+		const auto bin2 = stored_chunk.get_stored_binary_representation ();
+		ASSERT_TRUE (bin.compare (bin2) == 0);
+	}
+
+	auto test = [&]() -> void
+	{
+		stored_chunk.set_prio (Chunk::_Priority_first);
+		stored_chunk.set_trustlevel (Chunk::_TrustLevel_first);
+		stored_chunk.set_ttl (Chunk::max_ttl);
+
+		orig_chunk.set_prio (stored_chunk.get_prio ());
+		orig_chunk.set_trustlevel (stored_chunk.get_trustlevel ());
+		orig_chunk.set_ttl (stored_chunk.get_ttl ());
+
+		orig_chunk.set_payload (stored_chunk.get_payload ());
+		orig_chunk.set_cbor (stored_chunk.get_cbor ());
+		orig_chunk.set_destination_hwid (stored_chunk.get_destination_hwidmask ());
+
+		bin.resize (0);
+		orig_chunk.to_bin (bin);
+
+		std::string out1;
+		std::string out2;
+		const char *ptr = nullptr;
+
+		/* First call should be empty */
+		{
+			const auto bin2 = stored_chunk.get_stored_binary_representation ();
+			ASSERT_TRUE (bin2.empty ());
+		}
+
+		/* This will generate new version */
+		stored_chunk.restore_bin (out1, true, nullptr);
+		ASSERT_TRUE (bin.compare (out1) == 0);
+
+		/* Second call should return stored version */
+		{
+			const auto bin2 = stored_chunk.get_stored_binary_representation ();
+			ASSERT_TRUE (bin.compare (bin2) == 0);
+
+			/* Store pointer to cached data */
+			ptr = bin2.data ();
+		}
+
+		/* Change some data in header in both chunks */
+		stored_chunk.set_prio (Chunk::_Priority_last);
+		stored_chunk.set_trustlevel (Chunk::_TrustLevel_last);
+		stored_chunk.set_ttl (3);
+
+		orig_chunk.set_prio (stored_chunk.get_prio ());
+		orig_chunk.set_trustlevel (stored_chunk.get_trustlevel ());
+		orig_chunk.set_ttl (stored_chunk.get_ttl ());
+
+		bin.resize (0);
+		orig_chunk.to_bin (bin);
+
+		/* This will return swapped version and with updated header */
+		stored_chunk.restore_bin (out2, true, nullptr);
+		ASSERT_TRUE (bin.compare (out2) == 0);
+
+		/* Since this string is just swapped, it should have the same pointer as previously stored */
+		ASSERT_TRUE (out2.data () == ptr);
+		ptr = nullptr;
+
+		/* Should be empty again */
+		{
+			const auto bin2 = stored_chunk.get_stored_binary_representation ();
+			ASSERT_TRUE (bin2.empty ());
+		}
+
+		/* This will generate new version again */
+		stored_chunk.restore_bin (out1, false, nullptr);
+		ASSERT_TRUE (bin.compare (out1) == 0);
+
+		/* Should return stored version */
+		{
+			const auto bin2 = stored_chunk.get_stored_binary_representation ();
+			ASSERT_TRUE (bin.compare (bin2) == 0);
+		}
+
+		/* This will return copy of stored version */
+		stored_chunk.restore_bin (out2, false, nullptr);
+		ASSERT_TRUE (bin.compare (out2) == 0);
+
+		/* Should return stored version */
+		{
+			const auto bin2 = stored_chunk.get_stored_binary_representation ();
+			ASSERT_TRUE (bin.compare (bin2) == 0);
+		}
+
+		/* At this point, stored_chunk has binary version stored */
+	};
+
+	/* Now test several methods to invalidate stored binary */
+	stored_chunk.invalidate_stored_binary_representation ();
+	test ();
+
+	stored_chunk.set_payload ("some other payload"sv);
+	test ();
+
+	stored_chunk.set_json ("{ \"happy\": false, \"pi\": 4 }"_json);
+	test ();
+
+	stored_chunk.set_destination_hwid (0x4567);
+	test ();
+}
+
 TEST (Chunk, channel)
 {
 	const size_t sze = 1000;

@@ -132,9 +132,13 @@ namespace shaga
 			uint_fast64_t _counter {0};
 			uint_fast8_t _ttl {max_ttl};
 			HWIDMASK _hwid_dest;
-			std::vector<TRACERT_HOP> _tracert_hops;
+			std::list<TRACERT_HOP> _tracert_hops;
+
+			mutable std::string _stored_binary;
+			mutable size_t _stored_header_size {0};
 
 			bool should_continue (const std::string_view s, const size_t offset) const;
+			uint32_t generate_header (char *const out, size_t &offset, const SPECIAL_TYPES *const special_types) const;
 
 			void _reset (void);
 
@@ -240,10 +244,20 @@ namespace shaga
 			}
 
 		public:
+			/* Important note about store_binary_representation: This function is intended for message routers and other usages, where main content
+			 * of the Chunk is not changed - payload, cbor, destinaton and meta. You can change TTL, source HWID, priority and trustlevel, these
+			 * are stored in header, which is always regenerated. It is quite expensive to check meta for changes, so you need to make sure manually
+			 * that when you change meta data (ChunkMeta), you invalidate stored binary representation by calling invalidate_stored_binary_representation ().
+			 *
+			 * Methods to_bin() never use stored binary representation.
+			 *
+			 * By calling setters for payload, cbor/json and destination, invalidate_stored_binary_representation() is automatically called. Only meta data
+			 * are not checked.
+			 */
 			ChunkMeta meta;
 
 			Chunk ();
-			Chunk (const std::string_view bin, size_t &offset, const SPECIAL_TYPES *const special_types = nullptr);
+			Chunk (const std::string_view bin, size_t &offset, const SPECIAL_TYPES *const special_types = nullptr, bool store_binary_representation = false);
 
 			Chunk (const HWID hwid_source, const std::string_view type);
 			Chunk (const HWID hwid_source, const uint32_t type);
@@ -260,6 +274,10 @@ namespace shaga
 				_construct (rest...);
 			}
 
+			/* Returns number of bytes needed to store this chunk in binary format. May return more than actually needed but never less. */
+			size_t get_max_bytes (void) const;
+
+			/* Channel - primary / secondary */
 			void set_channel (const bool is_primary);
 			void set_channel (const Channel channel);
 			bool is_primary_channel (void) const;
@@ -267,6 +285,7 @@ namespace shaga
 			Channel get_channel (void) const;
 			uint_fast8_t get_channel_bitmask (void) const;
 
+			/* Return source HWID */
 			HWID get_source_hwid (void) const;
 
 			/* Check destination HWIDMASK against parameter */
@@ -301,7 +320,7 @@ namespace shaga
 			void swap_cbor (std::vector<uint8_t> &other);
 
 			nlohmann::json get_json (void) const;
-			std::vector<uint8_t> get_cbor (void) const;
+			const std::vector<uint8_t>& get_cbor (void) const;
 
 			/* Priority */
 			void set_prio (const Priority prio);
@@ -324,7 +343,7 @@ namespace shaga
 
 			/* Tracert */
 			bool tracert_hops_add (const shaga::HWID hwid, const uint8_t metric);
-			std::vector<TRACERT_HOP> tracert_hops_get (void) const;
+			std::list<TRACERT_HOP> tracert_hops_get (void) const;
 			size_t tracert_hops_count (void) const;
 
 			/* Destination */
@@ -335,6 +354,18 @@ namespace shaga
 
 			int compare (const Chunk &c) const;
 
+			/* This method uses stored binary version or generates new version if content changed. Header is updated. */
+			/* IMPORTANT: It has no way of checking if meta data changed. Don't use this method if you don't control all
+			 * aspects of Chunk life cycle. Read more above. */
+			void restore_bin (std::string &out, const bool do_swap, const SPECIAL_TYPES *const special_types = nullptr) const;
+
+			/* Invalidate stored binary representation */
+			void invalidate_stored_binary_representation (void) const;
+
+			/* Returns stored binary representation or empty string_view is it is not valid. HEADER IS NOT UPDATED! */
+			SHAGA_STRV std::string_view get_stored_binary_representation (void) const;
+
+			/* These methods (to_bin) don't use stored binary version, they always generate output */
 			void to_bin (std::string &out_append, const SPECIAL_TYPES *const special_types = nullptr) const;
 			std::string to_bin (const SPECIAL_TYPES *const special_types = nullptr) const;
 

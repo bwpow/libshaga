@@ -301,7 +301,7 @@ namespace shaga {
 	//  Public class methods  ///////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	void ReDataConfig::calc_crypto_enc (std::string &plain, std::string &out_append, const std::string_view key)
+	void ReDataConfig::calc_crypto_enc (std::string &plain, std::string &out_append, const std::string_view key) const
 	{
 		/* This function is appending data to out, because header might already be present */
 		/* Data may be appended to plain and out_append and not cleaned up on fail. This has to be handled from caller! */
@@ -324,7 +324,7 @@ namespace shaga {
 			}
 
 			const size_t block_size = _get_crypto_block_size (_used_crypto);
-			CRYPTO_FUNC func = _get_crypto_calc_function (_used_crypto);
+			const CRYPTO_FUNC func = _get_crypto_calc_function (_used_crypto);
 			const size_t mac_data = _get_crypto_mac_size (_used_crypto);
 
 			const size_t orig_out_size = out_append.size ();
@@ -373,7 +373,7 @@ namespace shaga {
 		}
 	}
 
-	void ReDataConfig::calc_crypto_dec (std::string_view msg, std::string &out, const std::string_view key)
+	void ReDataConfig::calc_crypto_dec (std::string_view msg, std::string &out, const std::string_view key) const
 	{
 		/* This function is replacing data in out */
 		const size_t key_size = _get_crypto_key_size (_used_crypto);

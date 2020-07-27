@@ -5,6 +5,8 @@ CP ?= cp
 MKDIR ?= @mkdir -p
 STRIP ?= strip --strip-unneeded --preserve-dates
 
+SHAGA_MARCH ?= native
+
 DESTINCLUDE ?= /usr/local/include/
 DESTLIB ?= /usr/local/lib/
 
@@ -23,7 +25,7 @@ ST_CPPFLAGS = \
 	-fsized-deallocation \
 	-O3 \
 	-std=c++17 \
-	-march=native
+	-march=$(SHAGA_MARCH)
 
 MT_LIBS = -pthread $(ST_LIBS) -latomic
 MT_CPPFLAGS = -pthread $(ST_CPPFLAGS)

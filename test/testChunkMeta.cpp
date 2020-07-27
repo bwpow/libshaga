@@ -12,10 +12,10 @@ using namespace shaga;
 TEST (ChunkMeta, modify_value)
 {
 	ChunkMeta meta;
-	meta.add_value ("ABC", std::string_view("abc"));
-	meta.add_value ("XYZ", std::string_view("abc"));
-	meta.add_value ("ABC", std::string_view("def"));
-	meta.add_value ("XYZ", std::string_view("def"));
+	meta.add_value ("ABC", "abc"sv);
+	meta.add_value ("XYZ", "abc"sv);
+	meta.add_value ("ABC", "def"sv);
+	meta.add_value ("XYZ", "def"sv);
 
 	auto func = [](std::string &str) -> void {
 		if (str == "abc") {
@@ -202,7 +202,9 @@ TEST (ChunkMeta, bin)
 	std::string bin1, bin2;
 	EXPECT_NO_THROW (meta1.to_bin (bin1));
 	EXPECT_NO_THROW (meta2.to_bin (bin2));
-	//EXPECT_TRUE (bin1.compare (bin2) == 0);
+
+	EXPECT_TRUE (bin1.size () <= meta1.get_max_bytes ());
+	EXPECT_TRUE (bin2.size () <= meta2.get_max_bytes ());
 
 	meta1.reset ();
 	EXPECT_TRUE (meta1.size () == 0);

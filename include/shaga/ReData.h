@@ -198,15 +198,14 @@ namespace shaga {
 			DIGEST _used_digest {DIGEST::CRC32};
 			CRYPTO _used_crypto {CRYPTO::NONE};
 
-			CryptoCache _cache_crypto;
-			DigestCache _cache_digest;
-
-			uint8_t _temp_iv[MBEDTLS_MAX_IV_LENGTH];
+			mutable CryptoCache _cache_crypto;
+			mutable DigestCache _cache_digest;
+			mutable uint8_t _temp_iv[MBEDTLS_MAX_IV_LENGTH];
 
 			std::string _user_iv;
 			bool _user_iv_enabled {false};
 
-			uint32_t _counter_iv {0};
+			mutable uint32_t _counter_iv {0};
 			bool _counter_iv_enabled {false};
 
 		public:
@@ -244,7 +243,7 @@ namespace shaga {
 			SHAGA_NODISCARD bool is_compatible (const ReDataConfig &other) const;
 
 			/* ReDataConfigDigest.cpp */
-			void calc_digest (const std::string_view plain, std::string &out, const std::string_view key);
+			void calc_digest (const std::string_view plain, std::string &out, const std::string_view key) const;
 
 			SHAGA_NODISCARD size_t get_digest_result_size (void) const;
 			SHAGA_NODISCARD size_t get_digest_hmac_key_size (void) const;
@@ -254,8 +253,8 @@ namespace shaga {
 			SHAGA_NODISCARD bool has_digest_hmac_key_size_at_least_bits (const size_t limit) const;
 
 			/* ReDataConfigCrypto.cpp */
-			void calc_crypto_enc (std::string &plain, std::string &out_append, const std::string_view key);
-			void calc_crypto_dec (std::string_view msg, std::string &out, const std::string_view key);
+			void calc_crypto_enc (std::string &plain, std::string &out_append, const std::string_view key) const;
+			void calc_crypto_dec (std::string_view msg, std::string &out, const std::string_view key) const;
 
 			SHAGA_NODISCARD size_t get_crypto_block_size (void) const;
 			SHAGA_NODISCARD size_t get_crypto_key_size (void) const;
@@ -302,15 +301,16 @@ namespace shaga {
 			bool _use_key_ident {false};
 			size_t _key_id {0};
 			uint_fast16_t _last_key_ident {UINT_FAST16_MAX};
-			std::string _work_msg;
-			std::string _work_msg2;
+
+			mutable std::string _work_msg;
+			mutable std::string _work_msg2;
 
 			std::string _mix_key;
 			bool _mix_key_enabled {false};
 			bool _last_decode_was_mixed {false};
 
-			void decode_message (std::string_view msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed);
-			void encode_message (const std::string_view plain, std::string &msg, const size_t key_id, const bool key_mixed);
+			void decode_message (std::string_view msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed) const;
+			void encode_message (const std::string_view plain, std::string &msg, const size_t key_id, const bool key_mixed) const;
 
 			void mix_keys (const COMMON_VECTOR &keys, COMMON_VECTOR &out) const;
 

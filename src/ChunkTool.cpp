@@ -34,18 +34,23 @@ namespace shaga {
 		_enable_thr = enable_thr;
 	}
 
+	void ChunkTool::set_store_binary (const bool store_binary)
+	{
+		_store_binary = store_binary;
+	}
+
 	/*** From binary string ***/
 	void ChunkTool::from_bin (const std::string_view buf, size_t &offset, CHUNKLIST &out_append) const
 	{
 		while (offset != buf.size ()) {
-			out_append.emplace_back (buf, offset, _special_types);
+			out_append.emplace_back (buf, offset, _special_types, _store_binary);
 		}
 	}
 
 	void ChunkTool::from_bin (const std::string_view buf, size_t &offset, CHUNKSET &out_append) const
 	{
 		while (offset != buf.size ()) {
-			out_append.emplace (buf, offset, _special_types);
+			out_append.emplace (buf, offset, _special_types, _store_binary);
 		}
 	}
 
