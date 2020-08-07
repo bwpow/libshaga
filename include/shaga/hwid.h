@@ -77,6 +77,11 @@ namespace shaga {
 			return ((other_hwid & mask) == (hwid & mask));
 		}
 
+		constexpr bool check_exact (const HWID other_hwid) const
+		{
+			return (true == is_unicast () && (other_hwid == hwid));
+		}
+
 		constexpr bool empty (void) const
 		{
 			return ((0 == hwid) && (0 == mask));
