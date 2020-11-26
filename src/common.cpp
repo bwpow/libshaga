@@ -291,4 +291,16 @@ namespace shaga {
 		::clock_gettime (CLOCK_REALTIME, &monotime);
 		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000);
 	}
+
+	time_t get_realtime_sec_shifted (const time_t shift_start)
+	{
+		struct timespec monotime;
+		::clock_gettime (CLOCK_REALTIME, &monotime);
+		if (shift_start > monotime.tv_sec) {
+			return 0;
+		}
+		else {
+			return (monotime.tv_sec - shift_start);
+		}
+	}
 }

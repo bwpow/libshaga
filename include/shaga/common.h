@@ -387,6 +387,8 @@ namespace shaga
 	uint64_t get_realtime_sec (void);
 	uint64_t get_realtime_msec (void);
 	uint64_t get_realtime_usec (void);
+
+	time_t get_realtime_sec_shifted (const time_t shift_start);
 }
 
 #include "3rdparty/aho_corasick.h"
