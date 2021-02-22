@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2020, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2021, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -377,18 +377,30 @@ namespace shaga
 		shaga::_exit ("Unknown failure"sv, EXIT_FAILURE, "FATAL ERROR: "sv); \
 	}
 
-	int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime);
-	int64_t timespec_diff_msec (const struct timespec &starttime, const struct timespec &finishtime);
+	SHAGA_NODISCARD int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime);
+	SHAGA_NODISCARD int64_t timespec_diff_msec (const struct timespec &starttime, const struct timespec &finishtime);
 
-	uint64_t get_monotime_sec (void);
-	uint64_t get_monotime_msec (void);
-	uint64_t get_monotime_usec (void);
+	SHAGA_NODISCARD uint64_t get_monotime_sec (void);
+	SHAGA_NODISCARD uint64_t get_monotime_msec (void);
+	SHAGA_NODISCARD uint64_t get_monotime_usec (void);
 
-	uint64_t get_realtime_sec (void);
-	uint64_t get_realtime_msec (void);
-	uint64_t get_realtime_usec (void);
+	SHAGA_NODISCARD uint64_t get_realtime_sec (void);
+	SHAGA_NODISCARD uint64_t get_realtime_msec (void);
+	SHAGA_NODISCARD uint64_t get_realtime_usec (void);
 
-	time_t get_realtime_sec_shifted (const time_t shift_start);
+	typedef struct {
+		uint_fast16_t year;
+		uint_fast8_t month;
+		uint_fast8_t day;
+		uint_fast8_t hour;
+		uint_fast8_t minute;
+		uint_fast8_t second;
+	} SHAGA_PARSED_REALTIME;
+
+	SHAGA_NODISCARD SHAGA_PARSED_REALTIME get_realtime_parsed (const time_t theTime, const bool local);
+	SHAGA_NODISCARD SHAGA_PARSED_REALTIME get_realtime_parsed (const bool local);
+
+	SHAGA_NODISCARD time_t get_realtime_sec_shifted (const time_t shift_start);
 }
 
 #include "3rdparty/aho_corasick.h"

@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2020, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2021, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -226,19 +226,19 @@ namespace shaga {
 		#endif // SHAGA_THREADING
 	}
 
-	int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime)
+	SHAGA_NODISCARD int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime)
 	{
 		return ((static_cast<int64_t> (finishtime.tv_sec) - static_cast<int64_t> (starttime.tv_sec)) * 1'000) +
 			(static_cast<int64_t> (finishtime.tv_usec) - static_cast<int64_t> (starttime.tv_usec)) / 1'000;
 	}
 
-	int64_t timespec_diff_msec (const struct timespec &starttime, const struct timespec &finishtime)
+	SHAGA_NODISCARD int64_t timespec_diff_msec (const struct timespec &starttime, const struct timespec &finishtime)
 	{
 		return ((static_cast<int64_t> (finishtime.tv_sec) - static_cast<int64_t> (starttime.tv_sec)) * 1'000) +
 			(static_cast<int64_t> (finishtime.tv_nsec / 1'000'000) - static_cast<int64_t> (starttime.tv_nsec / 1'000'000));
 	}
 
-	uint64_t get_monotime_sec (void)
+	SHAGA_NODISCARD uint64_t get_monotime_sec (void)
 	{
 		struct timespec monotime;
 		#ifdef CLOCK_MONOTONIC_RAW
@@ -249,7 +249,7 @@ namespace shaga {
 		return static_cast<uint64_t> (monotime.tv_sec);
 	}
 
-	uint64_t get_monotime_msec (void)
+	SHAGA_NODISCARD uint64_t get_monotime_msec (void)
 	{
 		struct timespec monotime;
 		#ifdef CLOCK_MONOTONIC_RAW
@@ -260,7 +260,7 @@ namespace shaga {
 		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000'000);
 	}
 
-	uint64_t get_monotime_usec (void)
+	SHAGA_NODISCARD uint64_t get_monotime_usec (void)
 	{
 		struct timespec monotime;
 		#ifdef CLOCK_MONOTONIC_RAW
@@ -271,28 +271,58 @@ namespace shaga {
 		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000);
 	}
 
-	uint64_t get_realtime_sec (void)
+	SHAGA_NODISCARD uint64_t get_realtime_sec (void)
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);
 		return static_cast<uint64_t> (monotime.tv_sec);
 	}
 
-	uint64_t get_realtime_msec (void)
+	SHAGA_NODISCARD uint64_t get_realtime_msec (void)
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);
 		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000'000);
 	}
 
-	uint64_t get_realtime_usec (void)
+	SHAGA_NODISCARD uint64_t get_realtime_usec (void)
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);
 		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000);
 	}
 
-	time_t get_realtime_sec_shifted (const time_t shift_start)
+	SHAGA_NODISCARD SHAGA_PARSED_REALTIME get_realtime_parsed (const time_t theTime, const bool local)
+	{
+		SHAGA_PARSED_REALTIME out;
+		struct tm t;
+		::memset (&t, 0, sizeof (t));
+
+		if (local == true) {
+			::localtime_r (&theTime, &t);
+		}
+		else {
+			::gmtime_r (&theTime, &t);
+		}
+
+		out.year = t.tm_year + 1900;
+		out.month = t.tm_mon + 1;
+		out.day = t.tm_mday;
+		out.hour = t.tm_hour;
+		out.minute = t.tm_min;
+		out.second = t.tm_sec;
+
+		return out;
+	}
+
+	SHAGA_NODISCARD SHAGA_PARSED_REALTIME get_realtime_parsed (const bool local)
+	{
+		time_t theTime;
+		::time (&theTime);
+		return get_realtime_parsed (theTime, local);
+	}
+
+	SHAGA_NODISCARD time_t get_realtime_sec_shifted (const time_t shift_start)
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);

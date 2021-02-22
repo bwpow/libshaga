@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2020, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2021, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -490,44 +490,44 @@ namespace shaga {
 		return get_int<bool> (section, key, defvalue, thr);
 	}
 
-	uint8_t INI::get_uint8 (const std::string_view section, const std::string_view key, const uint8_t defvalue, const bool thr) const
+	uint8_t INI::get_uint8 (const std::string_view section, const std::string_view key, const uint8_t defvalue, const bool thr, const int base) const
 	{
-		return get_int<uint8_t> (section, key, defvalue, thr);
+		return get_int<uint8_t> (section, key, defvalue, thr, base);
 	}
 
-	uint16_t INI::get_uint16 (const std::string_view section, const std::string_view key, const uint16_t defvalue, const bool thr) const
+	uint16_t INI::get_uint16 (const std::string_view section, const std::string_view key, const uint16_t defvalue, const bool thr, const int base) const
 	{
-		return get_int<uint16_t> (section, key, defvalue, thr);
+		return get_int<uint16_t> (section, key, defvalue, thr, base);
 	}
 
-	uint32_t INI::get_uint32 (const std::string_view section, const std::string_view key, const uint32_t defvalue, const bool thr) const
+	uint32_t INI::get_uint32 (const std::string_view section, const std::string_view key, const uint32_t defvalue, const bool thr, const int base) const
 	{
-		return get_int<uint32_t> (section, key, defvalue, thr);
+		return get_int<uint32_t> (section, key, defvalue, thr, base);
 	}
 
-	uint64_t INI::get_uint64 (const std::string_view section, const std::string_view key, const uint64_t defvalue, const bool thr) const
+	uint64_t INI::get_uint64 (const std::string_view section, const std::string_view key, const uint64_t defvalue, const bool thr, const int base) const
 	{
-		return get_int<uint64_t> (section, key, defvalue, thr);
+		return get_int<uint64_t> (section, key, defvalue, thr, base);
 	}
 
-	int8_t INI::get_int8 (const std::string_view section, const std::string_view key, const int8_t defvalue, const bool thr) const
+	int8_t INI::get_int8 (const std::string_view section, const std::string_view key, const int8_t defvalue, const bool thr, const int base) const
 	{
-		return get_int<int8_t> (section, key, defvalue, thr);
+		return get_int<int8_t> (section, key, defvalue, thr, base);
 	}
 
-	int16_t INI::get_int16 (const std::string_view section, const std::string_view key, const int16_t defvalue, const bool thr) const
+	int16_t INI::get_int16 (const std::string_view section, const std::string_view key, const int16_t defvalue, const bool thr, const int base) const
 	{
-		return get_int<int16_t> (section, key, defvalue, thr);
+		return get_int<int16_t> (section, key, defvalue, thr, base);
 	}
 
-	int32_t INI::get_int32 (const std::string_view section, const std::string_view key, const int32_t defvalue, const bool thr) const
+	int32_t INI::get_int32 (const std::string_view section, const std::string_view key, const int32_t defvalue, const bool thr, const int base) const
 	{
-		return get_int<int32_t> (section, key, defvalue, thr);
+		return get_int<int32_t> (section, key, defvalue, thr, base);
 	}
 
-	int64_t INI::get_int64 (const std::string_view section, const std::string_view key, const int64_t defvalue, const bool thr) const
+	int64_t INI::get_int64 (const std::string_view section, const std::string_view key, const int64_t defvalue, const bool thr, const int base) const
 	{
-		return get_int<int64_t> (section, key, defvalue, thr);
+		return get_int<int64_t> (section, key, defvalue, thr, base);
 	}
 
 	void INI::set_string (const std::string_view section, const std::string_view key, const std::string_view val, const bool append)

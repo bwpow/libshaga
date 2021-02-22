@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2020, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2021, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -189,10 +189,11 @@ namespace shaga::STR {
 		return out;
 	}
 
-	void format_time (std::string &out, const time_t theTime, const bool local, const bool for_filename = false);
-	void format_time (std::string &out, const bool local, const bool for_filename = false);
-	std::string format_time (const time_t theTime, const bool local, const bool for_filename = false);
-	std::string format_time (const bool local, const bool for_filename = false);
+	/* Note about WIN32 version of format_time: timezone is never added */
+	void format_time (std::string &out, const time_t theTime, const bool local, const bool for_filename = false, const bool add_tz = true);
+	void format_time (std::string &out, const bool local, const bool for_filename = false, const bool add_tz = true);
+	std::string format_time (const time_t theTime, const bool local, const bool for_filename = false, const bool add_tz = true);
+	std::string format_time (const bool local, const bool for_filename = false, const bool add_tz = true);
 
 	void format_date (std::string &out, const time_t theTime, const bool local, const std::string_view separatorstr = DASH);
 	void format_date (std::string &out, const bool local, const std::string_view separatorstr = DASH);
@@ -245,8 +246,8 @@ namespace shaga::STR {
 
 	bool icompare (const std::string_view a, const std::string_view b);
 
-	std::string multiply (std::string_view what, const uint_fast32_t cnt);
-	std::string multiply (std::string_view what, const uint_fast32_t cnt, const std::string_view postfix);
+	std::string multiply (const std::string_view what, const uint_fast32_t cnt);
+	std::string multiply (const std::string_view what, const uint_fast32_t cnt, const std::string_view suffix);
 
 	char * dirdup (const char *const buf, const bool remove_trailing_slash = true);
 	char * strdup (const char *const buf);

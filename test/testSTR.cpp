@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2020, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2021, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -314,4 +314,33 @@ TEST (STR, split_join)
 	EXPECT_TRUE (v.size () == 13);
 	EXPECT_TRUE (d.size () == 13);
 	EXPECT_TRUE (l.size () == 13);
+}
+
+TEST (STR, format_date_time)
+{
+	// Mon Feb 22 00:05:59 2021 UTC
+	const time_t timestamp = 1613952359;
+	const std::string utc = "2021-02-22 00:05:59"s;
+	const std::string utc_date = "2021x02x22"s;
+	const std::string utc_fname = "2021-02-22_000559"s;
+	std::string str;
+
+	/* Test time */
+	str.clear ();
+	STR::format_time (str, timestamp, false, false, false);
+	EXPECT_TRUE (str == utc);
+
+	str.clear ();
+	STR::format_time (str, timestamp, false, true, false);
+	EXPECT_TRUE (str == utc_fname);
+
+	EXPECT_TRUE (STR::format_time (timestamp, false, false, false) == utc);
+	EXPECT_TRUE (STR::format_time (timestamp, false, true, false) == utc_fname);
+
+	/* Test date */
+	str.clear ();
+	STR::format_date (str, timestamp, false, "x"sv);
+	EXPECT_TRUE (str == utc_date);
+
+	EXPECT_TRUE (STR::format_date (timestamp, false, "x"sv) == utc_date);
 }

@@ -66,7 +66,9 @@ Name of the library comes from my favorite band [Shadow Gallery]( https://en.wik
 I was basically listening to their music exclusively while working on the code.
 
 ## Contact
-You can contact me using email address skupka@sageteam.eu or visit:
-* [Homepage](https://www.bwpow.eu/)
-* [Facebook profile](https://www.facebook.com/bwpow)
-* [Linkedin profile](https://www.linkedin.com/in/kupka)
+You can contact me using email address skupka@sageteam.eu or visit [my homepage](https://www.bwpow.eu/).
+
+If you would like to support my work, send me some cryptocoins:
+BTC: bc1qq3z9w5fnxugcgn9c3q67emtx4zmwj42nwa5dm6
+XMR: 82Uy7LbE411dNrTWSHjf6jKCQG59mveSNDh3ps1KFVj5NZ8Gzj1avNDTG4hJZpyDck5JcPbyowSV3RiUC7cC71zQ7y5a7km
+Doge: DHc4pnanvhTJpnza31DtFD1wSbEMJme7yy

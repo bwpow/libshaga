@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2020, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2021, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -22,11 +22,11 @@ namespace shaga {
 			digit = chr - 'a' + 10;
 		}
 		else {
-			cThrow ("Unrecognized character '{:c}'"sv, static_cast<char> (chr));
+			cThrow ("Unrecognized character '{:c}' (base {})"sv, static_cast<char> (chr), base);
 		}
 
 		if (digit >= base) {
-			cThrow ("Unrecognized character '{:c}'"sv, static_cast<char> (chr));
+			cThrow ("Unrecognized character '{:c}' (base {})"sv, static_cast<char> (chr), base);
 		}
 
 		if (result > (UINT64_MAX / base) || (result * base) > (UINT64_MAX - digit)) {
@@ -218,7 +218,7 @@ namespace shaga {
 		}
 	}
 
-	void STR::format_time (std::string &out, const time_t theTime, const bool local, const bool for_filename)
+	void STR::format_time (std::string &out, const time_t theTime, const bool local, const bool for_filename, [[maybe_unused]] const bool add_tz)
 	{
 		struct tm t;
 		::memset (&t, 0, sizeof (t));
@@ -229,57 +229,67 @@ namespace shaga {
 		else {
 			::gmtime_r (&theTime, &t);
 		}
+
+		auto format_without_tz = [&]() -> void {
+			if (true == for_filename) {
+				STR::sprint (out, "{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}"sv,
+					t.tm_year + 1900,
+					t.tm_mon + 1,
+					t.tm_mday,
+					t.tm_hour,
+					t.tm_min,
+					t.tm_sec);
+			}
+			else {
+				STR::sprint (out, "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}"sv,
+					t.tm_year + 1900,
+					t.tm_mon + 1,
+					t.tm_mday,
+					t.tm_hour,
+					t.tm_min,
+					t.tm_sec);
+			}
+		};
+
 #ifndef OS_WIN
-		if (true == for_filename) {
-			STR::sprint (out, "{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}_{}"sv,
-				t.tm_year + 1900,
-				t.tm_mon + 1,
-				t.tm_mday,
-				t.tm_hour,
-				t.tm_min,
-				t.tm_sec,
-				t.tm_zone);
+		if (false == add_tz) {
+			format_without_tz ();
 		}
 		else {
-			STR::sprint (out, "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d} {}"sv,
-				t.tm_year + 1900,
-				t.tm_mon + 1,
-				t.tm_mday,
-				t.tm_hour,
-				t.tm_min,
-				t.tm_sec,
-				t.tm_zone);
+			if (true == for_filename) {
+				STR::sprint (out, "{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}_{}"sv,
+					t.tm_year + 1900,
+					t.tm_mon + 1,
+					t.tm_mday,
+					t.tm_hour,
+					t.tm_min,
+					t.tm_sec,
+					t.tm_zone);
+			}
+			else {
+				STR::sprint (out, "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d} {}"sv,
+					t.tm_year + 1900,
+					t.tm_mon + 1,
+					t.tm_mday,
+					t.tm_hour,
+					t.tm_min,
+					t.tm_sec,
+					t.tm_zone);
+			}
 		}
 #else
-		if (true == for_filename) {
-			STR::sprint (out, "{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}"sv,
-				t.tm_year + 1900,
-				t.tm_mon + 1,
-				t.tm_mday,
-				t.tm_hour,
-				t.tm_min,
-				t.tm_sec);
-		}
-		else {
-			STR::sprint (out, "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}"sv,
-				t.tm_year + 1900,
-				t.tm_mon + 1,
-				t.tm_mday,
-				t.tm_hour,
-				t.tm_min,
-				t.tm_sec);
-		}
+		format_without_tz ();
 #endif // OS_WIN
 	}
 
-	void STR::format_time (std::string &out, const bool local, const bool for_filename)
+	void STR::format_time (std::string &out, const bool local, const bool for_filename, const bool add_tz)
 	{
 		time_t theTime;
 		::time (&theTime);
-		return format_time (out, theTime, local, for_filename);
+		return format_time (out, theTime, local, for_filename, add_tz);
 	}
 
-	std::string STR::format_time (const time_t theTime, const bool local, const bool for_filename)
+	std::string STR::format_time (const time_t theTime, const bool local, const bool for_filename, [[maybe_unused]] const bool add_tz)
 	{
 		struct tm t;
 		::memset (&t, 0, sizeof (t));
@@ -290,54 +300,64 @@ namespace shaga {
 		else {
 			::gmtime_r (&theTime, &t);
 		}
+
+		auto format_without_tz = [&]() -> std::string {
+			if (true == for_filename) {
+				return fmt::format ("{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}"sv,
+					t.tm_year + 1900,
+					t.tm_mon + 1,
+					t.tm_mday,
+					t.tm_hour,
+					t.tm_min,
+					t.tm_sec);
+			}
+			else {
+				return fmt::format ("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}"sv,
+					t.tm_year + 1900,
+					t.tm_mon + 1,
+					t.tm_mday,
+					t.tm_hour,
+					t.tm_min,
+					t.tm_sec);
+			}
+		};
+
 #ifndef OS_WIN
-		if (true == for_filename) {
-			return fmt::format ("{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}_{}"sv,
-				t.tm_year + 1900,
-				t.tm_mon + 1,
-				t.tm_mday,
-				t.tm_hour,
-				t.tm_min,
-				t.tm_sec,
-				t.tm_zone);
+		if (false == add_tz) {
+			return format_without_tz ();
 		}
 		else {
-			return fmt::format ("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d} {}"sv,
-				t.tm_year + 1900,
-				t.tm_mon + 1,
-				t.tm_mday,
-				t.tm_hour,
-				t.tm_min,
-				t.tm_sec,
-				t.tm_zone);
+			if (true == for_filename) {
+				return fmt::format ("{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}_{}"sv,
+					t.tm_year + 1900,
+					t.tm_mon + 1,
+					t.tm_mday,
+					t.tm_hour,
+					t.tm_min,
+					t.tm_sec,
+					t.tm_zone);
+			}
+			else {
+				return fmt::format ("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d} {}"sv,
+					t.tm_year + 1900,
+					t.tm_mon + 1,
+					t.tm_mday,
+					t.tm_hour,
+					t.tm_min,
+					t.tm_sec,
+					t.tm_zone);
+			}
 		}
 #else
-		if (true == for_filename) {
-			return fmt::format ("{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}"sv,
-				t.tm_year + 1900,
-				t.tm_mon + 1,
-				t.tm_mday,
-				t.tm_hour,
-				t.tm_min,
-				t.tm_sec);
-		}
-		else {
-			return fmt::format ("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}"sv,
-				t.tm_year + 1900,
-				t.tm_mon + 1,
-				t.tm_mday,
-				t.tm_hour,
-				t.tm_min,
-				t.tm_sec);
-		}
+		return format_without_tz ();
 #endif // OS_WIN
 	}
 
-	std::string STR::format_time (const bool local, const bool for_filename)
+	std::string STR::format_time (const bool local, const bool for_filename, const bool add_tz)
 	{
 		time_t theTime;
 		::time (&theTime);
-		return format_time (theTime, local, for_filename);
+		return format_time (theTime, local, for_filename, add_tz);
 	}
 
 	void STR::format_date (std::string &out, const time_t theTime, const bool local, const std::string_view separatorstr)
@@ -511,7 +531,7 @@ namespace shaga {
 		});
 	}
 
-	std::string STR::multiply (std::string_view what, const uint_fast32_t cnt)
+	std::string STR::multiply (const std::string_view what, const uint_fast32_t cnt)
 	{
 		std::string out;
 		out.reserve (what.size () * cnt);
@@ -521,14 +541,14 @@ namespace shaga {
 		return out;
 	}
 
-	std::string STR::multiply (std::string_view what, const uint_fast32_t cnt, const std::string_view postfix)
+	std::string STR::multiply (const std::string_view what, const uint_fast32_t cnt, const std::string_view suffix)
 	{
 		std::string out;
-		out.reserve (postfix.size () + (what.size () * cnt));
+		out.reserve (suffix.size () + (what.size () * cnt));
 		for (uint_fast32_t i = 0; i < cnt; ++i) {
 			out.append (what);
 		}
-		out.append (postfix);
+		out.append (suffix);
 		return out;
 	}
 
