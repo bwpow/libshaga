@@ -129,16 +129,28 @@ namespace shaga {
 					cThrow ("Including files is not allowed"sv);
 				}
 
-				parse_file (m, get_last_nested_realpath () + std::string (line_val), allow_include);
+				if (line_val.substr (0, 1) == "/"sv) {
+					parse_file (m, line_val, allow_include);
+				}
+				else {
+					parse_file (m, get_last_nested_realpath () + std::string (line_val), allow_include);
+				}
 			}
 			else if (STR::icompare (line_key, "@glob"sv) == true) {
 				if (false == allow_include) {
 					cThrow ("Including files is not allowed"sv);
 				}
 
-				FS::glob (get_last_nested_realpath () + std::string (line_val), [&](const std::string_view fname) -> void {
-					parse_file (m, fname, allow_include);
-				});
+				if (line_val.substr (0, 1) == "/"sv) {
+					FS::glob (line_val, [&](const std::string_view fname) -> void {
+						parse_file (m, fname, allow_include);
+					});
+				}
+				else {
+					FS::glob (get_last_nested_realpath () + std::string (line_val), [&](const std::string_view fname) -> void {
+						parse_file (m, fname, allow_include);
+					});
+				}
 			}
 			else {
 				cThrow ("Unknown directive '{}'"sv, line_key);
@@ -331,11 +343,12 @@ namespace shaga {
 		parse_file (fname, allow_include);
 	}
 
-	void INI::save_to_file (const std::string_view fname) const
+	void INI::save_to_file (ShFile &file) const
 	{
-		try {
-			ShFile file (fname, ShFile::mWRITE | ShFile::mTRUNC);
+		file.set_mode (ShFile::mWRITE | ShFile::mTRUNC);
+		file.open ();
 
+		try {
 			std::string active_section = ""s;
 			bool lines_written = false;
 
@@ -357,16 +370,25 @@ namespace shaga {
 
 				const bool append = v.size () > 1;
 				for (COMMON_LIST::const_iterator vter = v.cbegin (); vter != v.cend (); ++vter) {
-					file.print ("{}{} = {}\n", key.line, append ? "[]"sv : ""sv, *vter);
+					file.print ("{}{}={}\n", key.line, append ? "[]"sv : ""sv, (*vter));
 				}
 
 				lines_written = true;
 			}
+
+			file.close ();
 		}
 		catch (...) {
-			FS::unlink (fname);
+			file.unlink ();
 			throw;
 		}
+	}
+
+	void INI::save_to_file (const std::string_view fname) const
+	{
+		ShFile file;
+		file.set_file_name (fname);
+		save_to_file (file);
 	}
 
 	void INI::load_buffer (const std::string_view buf, const bool append, const bool allow_include)
@@ -397,11 +419,7 @@ namespace shaga {
 
 			const bool append = v.size () > 1;
 			for (COMMON_LIST::const_iterator vter = v.cbegin (); vter != v.cend (); ++vter) {
-				out.append (key.line);
-				if (append) {
-					out.append ("[]"s);
-				}
-				out.append ("="s + (*vter) + "\n"s);
+				STR::sprint (out, "{}{}={}\n"sv, key.line, append ? "[]"sv : ""sv, (*vter));
 			}
 
 			lines_written = true;

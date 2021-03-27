@@ -44,7 +44,17 @@ namespace shaga {
 
 	ShFile::~ShFile ()
 	{
-		close ();
+		if (true == _unlink_on_destruct) {
+			unlink ();
+		}
+		else {
+			close ();
+		}
+	}
+
+	void ShFile::set_unlink_on_destruct (const bool enable)
+	{
+		_unlink_on_destruct = enable;
 	}
 
 	void ShFile::set_callback (ShFileCallback callback)
@@ -68,10 +78,14 @@ namespace shaga {
 		}
 
 #ifdef O_BINARY
-		int flags = O_BINARY;
+		int flags {O_BINARY};
 #else
-		int flags = 0;
+		int flags {0};
 #endif // O_BINARY
+
+#ifdef O_NOCTTY
+		flags |= O_NOCTTY;
+#endif // O_NOCTTY
 
 		if ((_mode & mREAD) && (_mode & mWRITE)) {
 			flags |= O_RDWR | O_CREAT;
@@ -148,8 +162,11 @@ namespace shaga {
 		}
 	}
 
-	void ShFile::close (void) noexcept
+	void ShFile::close (const bool ignore_rename_on_close) noexcept
 	{
+		/* Disarm destruct */
+		_unlink_on_destruct = false;
+
 		if (_fd >= 0) {
 			P::debug_print ("ShFile {}: CLOSE"sv, _filename);
 			if (nullptr != _callback) {
@@ -157,6 +174,20 @@ namespace shaga {
 			}
 			::close (_fd);
 			_fd = -1;
+
+			if (false == ignore_rename_on_close && has_rename_on_close () == true) {
+				const int ret = ::rename (_filename.c_str (), _rename_on_close_filename.c_str ());
+				if (ret < 0) {
+					if (nullptr != _callback) {
+						_callback (*this, CallbackAction::RENAME_FAIL);
+					}
+				}
+				else {
+					if (nullptr != _callback) {
+						_callback (*this, CallbackAction::RENAME);
+					}
+				}
+			}
 		}
 	}
 
@@ -357,6 +388,12 @@ namespace shaga {
 		}, per_line, add_len);
 	}
 
+
+	bool ShFile::has_file_name (void) const
+	{
+		return (_filename.empty () == false);
+	}
+
 	void ShFile::set_file_name (const std::string_view filename, const uint8_t mode)
 	{
 		set_file_name (filename);
@@ -369,6 +406,21 @@ namespace shaga {
 			cThrow ("File is already opened"sv);
 		}
 		_filename.assign (filename);
+	}
+
+	bool ShFile::has_rename_on_close (void) const
+	{
+		return (_rename_on_close_filename.empty () == false);
+	}
+
+	void ShFile::set_rename_on_close_file_name (const std::string_view filename)
+	{
+		_rename_on_close_filename.assign (filename);
+	}
+
+	void ShFile::disable_rename_on_close (void)
+	{
+		_rename_on_close_filename.clear ();
 	}
 
 	void ShFile::set_mode (const uint8_t mode)
@@ -440,6 +492,66 @@ namespace shaga {
 	void ShFile::rewind (void)
 	{
 		seek (0, SEEK::SET);
+	}
+
+	void ShFile::unlink (const bool also_rename_on_close_file)
+	{
+		close (true);
+
+		if (has_file_name () == true) {
+			if (nullptr != _callback) {
+				_callback (*this, CallbackAction::UNLINK);
+			}
+
+			const int ret = ::unlink (_filename.c_str ());
+			if (ret != 0) {
+				if (ENOENT != errno) {
+					cThrow ("Unable to unlink '{}': {}"sv, _filename, strerror (errno));
+				}
+			}
+		}
+
+		if (true == also_rename_on_close_file && has_rename_on_close () == true) {
+			if (nullptr != _callback) {
+				_callback (*this, CallbackAction::UNLINK_RENAME);
+			}
+
+			const int ret = ::unlink (_rename_on_close_filename.c_str ());
+			if (ret != 0) {
+				if (ENOENT != errno) {
+					cThrow ("Unable to unlink '{}': {}"sv, _rename_on_close_filename, strerror (errno));
+				}
+			}
+		}
+	}
+
+	void ShFile::touch (void)
+	{
+		if (has_file_name () == false) {
+			cThrow ("Filename is not set"sv);
+		}
+
+		int flags {O_WRONLY | O_CREAT};
+#ifdef O_NONBLOCK
+		flags |= O_NONBLOCK;
+#endif // O_NONBLOCK
+#ifdef O_NOCTTY
+		flags |= O_NOCTTY;
+#endif // O_NOCTTY
+
+		int fd = ::open (_filename.c_str (), flags, _mask);
+		if (fd < 0) {
+			cThrow ("Touch failed: {}"sv, strerror (errno));
+		}
+
+#ifndef OS_WIN
+		const int ret = ::futimens (fd, nullptr);
+		if (ret < 0) {
+			cThrow ("Touch failed: {}"sv, strerror (errno));
+		}
+#endif // OS_WIN
+
+		::close (fd);
 	}
 
 	struct stat ShFile::get_stat (void) const

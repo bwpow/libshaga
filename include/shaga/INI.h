@@ -59,6 +59,7 @@ namespace shaga {
 			void reset (void);
 
 			void load_file (const std::string_view fname, const bool append = false, const bool allow_include = false);
+			void save_to_file (ShFile &file) const;
 			void save_to_file (const std::string_view fname) const;
 
 			void load_buffer (const std::string_view buf, const bool append = false, const bool allow_include = false);

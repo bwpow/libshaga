@@ -14,9 +14,13 @@ namespace shaga {
 	class ShFile {
 		public:
 			enum class CallbackAction {
-				OPEN,		/* Right after file is opened */
-				CLOSE,		/* Right before file is closed */
-				OVERWRITE,	/* */
+				OPEN,			/* Right after file is opened */
+				CLOSE,			/* Right before file is closed */
+				OVERWRITE,		/* */
+				UNLINK,			/* Right before unlink */
+				UNLINK_RENAME,	/* Right before unlink of rename on close filename */
+				RENAME,			/* Right after rename */
+				RENAME_FAIL,	/* Right after rename failed */
 			};
 			/* Reference of calling ShFile and action */
 			typedef std::function<bool (ShFile &file, const ShFile::CallbackAction action)> ShFileCallback;
@@ -47,6 +51,8 @@ namespace shaga {
 			uint8_t _mode {mREAD};
 			int _fd {-1};
 			mode_t _mask {mask644};
+			bool _unlink_on_destruct {false};
+			std::string _rename_on_close_filename;
 
 			ShFileCallback _callback {nullptr};
 
@@ -59,11 +65,14 @@ namespace shaga {
 			ShFile (const ShFile &) = delete;
 			ShFile& operator= (const ShFile &) = delete;
 
+			/* Unlink file on destructor unless proper call to close() is done. */
+			void set_unlink_on_destruct (const bool enable);
+
 			void set_callback (ShFileCallback callback);
 			void unset_callback (void);
 
 			void open (void);
-			void close (void) noexcept;
+			void close (const bool ignore_rename_on_close = false) noexcept;
 			void sync (const bool also_metadata = false);
 
 			/* Write substr of string_view */
@@ -101,6 +110,7 @@ namespace shaga {
 			void dump_in_c_format (const std::string_view varname, const void *const data, const size_t len, const size_t per_line = 16, const bool add_len = true);
 			void dump_in_c_format (const std::string_view varname, const std::string_view data, const size_t per_line = 16, const bool add_len = true);
 
+			bool has_file_name (void) const;
 			void set_file_name (const std::string_view filename, const uint8_t mode);
 			void set_file_name (const std::string_view filename);
 
@@ -108,6 +118,16 @@ namespace shaga {
 			SHAGA_STRV T get_file_name (void) const
 			{
 				return T (_filename);
+			}
+
+			bool has_rename_on_close (void) const;
+			void set_rename_on_close_file_name (const std::string_view filename);
+			void disable_rename_on_close (void);
+
+			template <typename T = std::string_view>
+			SHAGA_STRV T get_rename_on_close_file_name (void) const
+			{
+				return T (_rename_on_close_filename);
 			}
 
 			void set_mode (const uint8_t mode);
@@ -121,6 +141,9 @@ namespace shaga {
 			off64_t seek (const off64_t offset, const SEEK whence = SEEK::SET);
 			off64_t tell (void);
 			void rewind (void);
+
+			void unlink (const bool also_rename_on_close_file = false);
+			void touch (void);
 
 			struct stat get_stat (void) const;
 			off64_t get_file_size (void) const;
