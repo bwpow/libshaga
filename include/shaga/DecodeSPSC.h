@@ -400,7 +400,7 @@ namespace shaga
 
 						if (true == _escape_next_char) {
 							_escape_next_char = false;
-							this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset] & (~0x80);
+							this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset] ^ 0x80;
 						}
 						else {
 							this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset];
@@ -410,12 +410,16 @@ namespace shaga
 			}
 
 		public:
-			Simple8DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const uint8_t stx, const uint8_t etx, const uint8_t ntx) :
+			Simple8DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const std::array<uint8_t, 3> control_bytes) :
 				DecodeSPSC<T> (max_packet_size + 1, num_packets),
-				_stx (stx),
-				_etx (etx),
-				_ntx (ntx)
-			{ }
+				_stx (control_bytes[0]),
+				_etx (control_bytes[1]),
+				_ntx (control_bytes[2])
+			{
+				if ((_stx & 0x7F) == (_etx & 0x7F) || (_stx & 0x7F) == (_ntx & 0x7F) || (_etx & 0x7F) == (_ntx & 0x7F)) {
+					cThrow ("Control bytes must differ in lower 7 bits"sv);
+				}
+			}
 
 			virtual void has_crc8 (const bool enabled) final
 			{
@@ -554,9 +558,9 @@ namespace shaga
 			}
 
 		public:
-			Simple16DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const std::array<uint8_t,2> stx) :
+			Simple16DecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const std::array<uint8_t, 2> start_sequence) :
 				DecodeSPSC<T> (max_packet_size + 2, num_packets),
-				_stx (stx)
+				_stx (start_sequence)
 			{ }
 
 			virtual void has_crc16 (const bool enabled, const bool include_stx = false, const uint_fast16_t startval = UINT16_MAX) final

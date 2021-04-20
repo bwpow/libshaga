@@ -9,19 +9,16 @@ All rights reserved.
 
 using namespace shaga;
 
-static const uint8_t STX {0x45};
-static const uint8_t ETX {0x4A};
-static const uint8_t NTX {0x10};
+static const std::array<uint8_t, 3> ControlBytes_8 {0x45, 0x4A, 0x10};
+static const std::array<uint8_t, 2> StartSequence_16 = {0x45, 0x55};
 
-static const std::array<uint8_t, 2> STX16 = {0x45, 0x55};
-
-template<class T> static void _uart8spsc_sizes_test (void)
+template<class T> static void _simple8spsc_sizes_test (void)
 {
 	const size_t datasize = 1024;
 	const size_t testsize = datasize * 2;
 
-	Simple8EncodeSPSC<T> encodering (datasize, testsize + 1, STX, ETX, NTX);
-	Simple8DecodeSPSC<T> decodering (datasize, testsize + 1, STX, ETX, NTX);
+	Simple8EncodeSPSC<T> encodering (datasize, testsize + 1, ControlBytes_8);
+	Simple8DecodeSPSC<T> decodering (datasize, testsize + 1, ControlBytes_8);
 
 	uint8_t buffer[testsize];
 	for (size_t pos = 0; pos < testsize; ++pos) {
@@ -74,13 +71,13 @@ template<class T> static void _uart8spsc_sizes_test (void)
 	ASSERT_FALSE (decodering.peek_buffer ());
 }
 
-template<class T> static void _uart16spsc_sizes_test (void)
+template<class T> static void _simple16spsc_sizes_test (void)
 {
 	const size_t datasize = 1024;
 	const size_t testsize = datasize * 2;
 
-	Simple16EncodeSPSC<T> encodering (datasize, testsize + 1, STX16);
-	Simple16DecodeSPSC<T> decodering (datasize, testsize + 1, STX16);
+	Simple16EncodeSPSC<T> encodering (datasize, testsize + 1, StartSequence_16);
+	Simple16DecodeSPSC<T> decodering (datasize, testsize + 1, StartSequence_16);
 
 	uint8_t buffer[testsize];
 	for (size_t pos = 0; pos < testsize; ++pos) {
@@ -261,15 +258,15 @@ template<class T> static void _seqpacket_sizes_test (void)
 	ASSERT_FALSE (decodering.pop_buffer (str));
 }
 
-template<class T> static void _uart8spsc_test (void)
+template<class T> static void _simple8spsc_test (void)
 {
 	const size_t datasize = 256;
 	const size_t sze = 256;
 	const size_t loops = 64;
 	const size_t totalsize = datasize * sze;
 
-	Simple8EncodeSPSC<T> encodering (datasize, sze + 1, STX, ETX, NTX);
-	Simple8DecodeSPSC<T> decodering (datasize, sze + 1, STX, ETX, NTX);
+	Simple8EncodeSPSC<T> encodering (datasize, sze + 1, ControlBytes_8);
+	Simple8DecodeSPSC<T> decodering (datasize, sze + 1, ControlBytes_8);
 
 	char tempbuffer[600];
 	size_t pos;
@@ -292,13 +289,13 @@ template<class T> static void _uart8spsc_test (void)
 		ASSERT_THROW (encodering.push_buffer (buffer, 0, 1), CommonException);
 
 		/* Insert bad message, this will generate 3 errors */
-		tempbuffer[0] = STX;
-		tempbuffer[1] = STX; /* Duplicated STX */
-		tempbuffer[2] = NTX;
-		tempbuffer[3] = NTX; /* Duplicated NTX */
-		tempbuffer[4] = STX;
-		tempbuffer[5] = NTX;
-		tempbuffer[6] = ETX; /* ETX right after NTX */
+		tempbuffer[0] = ControlBytes_8[0];
+		tempbuffer[1] = ControlBytes_8[0]; /* Duplicated STX */
+		tempbuffer[2] = ControlBytes_8[2];
+		tempbuffer[3] = ControlBytes_8[2]; /* Duplicated NTX */
+		tempbuffer[4] = ControlBytes_8[0];
+		tempbuffer[5] = ControlBytes_8[2];
+		tempbuffer[6] = ControlBytes_8[1]; /* ETX right after NTX */
 		decodering.push_buffer (tempbuffer, 7);
 
 		ASSERT_TRUE (decodering.get_err_count_reset () == 3);
@@ -342,15 +339,15 @@ template<class T> static void _uart8spsc_test (void)
 	}
 }
 
-template<class T> static void _uart16spsc_test (void)
+template<class T> static void _simple16spsc_test (void)
 {
 	const size_t datasize = 4000;
 	const size_t sze = 128;
 	const size_t loops = 64;
 	const size_t totalsize = datasize * sze;
 
-	Simple16EncodeSPSC<T> encodering (datasize, sze + 1, STX16);
-	Simple16DecodeSPSC<T> decodering (datasize, sze + 1, STX16);
+	Simple16EncodeSPSC<T> encodering (datasize, sze + 1, StartSequence_16);
+	Simple16DecodeSPSC<T> decodering (datasize, sze + 1, StartSequence_16);
 
 	uint8_t tempbuffer[600];
 	size_t pos;
@@ -374,8 +371,8 @@ template<class T> static void _uart16spsc_test (void)
 
 		if ((loop % 2) == 0) {
 			/* Insert bad message, this will generate error if CRC is used */
-			tempbuffer[0] = STX16[0];
-			tempbuffer[1] = STX16[1];
+			tempbuffer[0] = StartSequence_16[0];
+			tempbuffer[1] = StartSequence_16[1];
 			tempbuffer[2] = 0;
 			tempbuffer[3] = 0;
 			tempbuffer[4] = 0;
@@ -384,8 +381,8 @@ template<class T> static void _uart16spsc_test (void)
 		}
 		else {
 			/* Insert message larger than allocated */
-			tempbuffer[0] = STX16[0];
-			tempbuffer[1] = STX16[1];
+			tempbuffer[0] = StartSequence_16[0];
+			tempbuffer[1] = StartSequence_16[1];
 			tempbuffer[2] = UINT8_MAX;
 			tempbuffer[3] = UINT8_MAX;
 			decodering.push_buffer (tempbuffer, 0, 4);
@@ -559,36 +556,36 @@ static void _seqpacketspsc_test (void)
 	}
 }
 
-TEST (EncDecSPSC, uart8_push_pop_prealloc)
+TEST (EncDecSPSC, simple8_push_pop_prealloc)
 {
-	_uart8spsc_test<SPSCDataPreAlloc> ();
+	_simple8spsc_test<SPSCDataPreAlloc> ();
 }
 
-TEST (EncDecSPSC, uart8_push_pop)
+TEST (EncDecSPSC, simple8_push_pop)
 {
-	_uart8spsc_test<SPSCDataDynAlloc> ();
+	_simple8spsc_test<SPSCDataDynAlloc> ();
 }
 
-TEST (EncDecSPSC, uart8_different_sizes)
+TEST (EncDecSPSC, simple8_different_sizes)
 {
-	_uart8spsc_sizes_test<SPSCDataPreAlloc> ();
-	_uart8spsc_sizes_test<SPSCDataDynAlloc> ();
+	_simple8spsc_sizes_test<SPSCDataPreAlloc> ();
+	_simple8spsc_sizes_test<SPSCDataDynAlloc> ();
 }
 
-TEST (EncDecSPSC, uart16_push_pop_prealloc)
+TEST (EncDecSPSC, simple16_push_pop_prealloc)
 {
-	_uart16spsc_test<SPSCDataPreAlloc> ();
+	_simple16spsc_test<SPSCDataPreAlloc> ();
 }
 
-TEST (EncDecSPSC, uart16_push_pop)
+TEST (EncDecSPSC, simple16_push_pop)
 {
-	_uart16spsc_test<SPSCDataDynAlloc> ();
+	_simple16spsc_test<SPSCDataDynAlloc> ();
 }
 
-TEST (EncDecSPSC, uart16_different_sizes)
+TEST (EncDecSPSC, simple16_different_sizes)
 {
-	_uart16spsc_sizes_test<SPSCDataPreAlloc> ();
-	_uart16spsc_sizes_test<SPSCDataDynAlloc> ();
+	_simple16spsc_sizes_test<SPSCDataPreAlloc> ();
+	_simple16spsc_sizes_test<SPSCDataDynAlloc> ();
 }
 
 TEST (EncDecSPSC, packet_push_pop_prealloc)
