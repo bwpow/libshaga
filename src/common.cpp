@@ -100,7 +100,7 @@ namespace shaga {
 		_at_exit_callback_list.push_back (func);
 	}
 
-	[[noreturn]] void _exit (const std::string_view text, const int rcode, const std::string_view prefix) noexcept
+	HEDLEY_NO_RETURN void _exit (const std::string_view text, const int rcode, const std::string_view prefix) noexcept
 	{
 		try {
 			#ifdef SHAGA_THREADING
@@ -159,17 +159,17 @@ namespace shaga {
 		}
 	}
 
-	[[noreturn]] void exit (const int rcode) noexcept
+	HEDLEY_NO_RETURN void exit (const int rcode) noexcept
 	{
 		_exit (""sv, rcode);
 	}
 
-	[[noreturn]] void exit_failure (void) noexcept
+	HEDLEY_NO_RETURN void exit_failure (void) noexcept
 	{
 		_exit (""sv, EXIT_FAILURE);
 	}
 
-	[[noreturn]] void exit (void) noexcept
+	HEDLEY_NO_RETURN void exit (void) noexcept
 	{
 		_exit (""sv, EXIT_SUCCESS);
 	}
@@ -217,7 +217,7 @@ namespace shaga {
 		}
 	}
 
-	SHAGA_NODISCARD bool is_shutting_down (void)
+	HEDLEY_WARN_UNUSED_RESULT bool is_shutting_down (void)
 	{
 		#ifdef SHAGA_THREADING
 		return _is_shutdown.load (std::memory_order_relaxed);
@@ -226,19 +226,19 @@ namespace shaga {
 		#endif // SHAGA_THREADING
 	}
 
-	SHAGA_NODISCARD int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime)
+	HEDLEY_WARN_UNUSED_RESULT int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime)
 	{
 		return ((static_cast<int64_t> (finishtime.tv_sec) - static_cast<int64_t> (starttime.tv_sec)) * 1'000) +
 			(static_cast<int64_t> (finishtime.tv_usec) - static_cast<int64_t> (starttime.tv_usec)) / 1'000;
 	}
 
-	SHAGA_NODISCARD int64_t timespec_diff_msec (const struct timespec &starttime, const struct timespec &finishtime)
+	HEDLEY_WARN_UNUSED_RESULT int64_t timespec_diff_msec (const struct timespec &starttime, const struct timespec &finishtime)
 	{
 		return ((static_cast<int64_t> (finishtime.tv_sec) - static_cast<int64_t> (starttime.tv_sec)) * 1'000) +
 			(static_cast<int64_t> (finishtime.tv_nsec / 1'000'000) - static_cast<int64_t> (starttime.tv_nsec / 1'000'000));
 	}
 
-	SHAGA_NODISCARD uint64_t get_monotime_sec (void)
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_sec (void)
 	{
 		struct timespec monotime;
 		#ifdef CLOCK_MONOTONIC_RAW
@@ -249,7 +249,7 @@ namespace shaga {
 		return static_cast<uint64_t> (monotime.tv_sec);
 	}
 
-	SHAGA_NODISCARD uint64_t get_monotime_msec (void)
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_msec (void)
 	{
 		struct timespec monotime;
 		#ifdef CLOCK_MONOTONIC_RAW
@@ -260,7 +260,7 @@ namespace shaga {
 		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000'000);
 	}
 
-	SHAGA_NODISCARD uint64_t get_monotime_usec (void)
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_usec (void)
 	{
 		struct timespec monotime;
 		#ifdef CLOCK_MONOTONIC_RAW
@@ -271,28 +271,28 @@ namespace shaga {
 		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000);
 	}
 
-	SHAGA_NODISCARD uint64_t get_realtime_sec (void)
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_sec (void)
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);
 		return static_cast<uint64_t> (monotime.tv_sec);
 	}
 
-	SHAGA_NODISCARD uint64_t get_realtime_msec (void)
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_msec (void)
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);
 		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000'000);
 	}
 
-	SHAGA_NODISCARD uint64_t get_realtime_usec (void)
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_usec (void)
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);
 		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000);
 	}
 
-	SHAGA_NODISCARD SHAGA_PARSED_REALTIME get_realtime_parsed (const time_t theTime, const bool local)
+	HEDLEY_WARN_UNUSED_RESULT SHAGA_PARSED_REALTIME get_realtime_parsed (const time_t theTime, const bool local)
 	{
 		SHAGA_PARSED_REALTIME out;
 		struct tm t;
@@ -315,14 +315,14 @@ namespace shaga {
 		return out;
 	}
 
-	SHAGA_NODISCARD SHAGA_PARSED_REALTIME get_realtime_parsed (const bool local)
+	HEDLEY_WARN_UNUSED_RESULT SHAGA_PARSED_REALTIME get_realtime_parsed (const bool local)
 	{
 		time_t theTime;
 		::time (&theTime);
 		return get_realtime_parsed (theTime, local);
 	}
 
-	SHAGA_NODISCARD time_t get_realtime_sec_shifted (const time_t shift_start)
+	HEDLEY_WARN_UNUSED_RESULT time_t get_realtime_sec_shifted (const time_t shift_start)
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);

@@ -36,8 +36,8 @@ namespace shaga::LINUX {
 	void modify_epoll (int sock, const uint32_t ev, int epoll_fd);
 	void remove_from_epoll (int sock, int epoll_fd, const bool ignore_failure = false);
 
-	SHAGA_NODISCARD bool login_to_uid (const std::string_view text, uid_t &uid);
-	SHAGA_NODISCARD bool group_to_gid (const std::string_view text, gid_t &gid);
+	HEDLEY_WARN_UNUSED_RESULT bool login_to_uid (const std::string_view text, uid_t &uid);
+	HEDLEY_WARN_UNUSED_RESULT bool group_to_gid (const std::string_view text, gid_t &gid);
 }
 
 #endif // OS_LINUX

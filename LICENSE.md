@@ -210,3 +210,18 @@ As an exception, if, as a result of your compiling your source code, portions
 of this Software are embedded into a machine-executable object form of such
 source code, you may redistribute such embedded portions in such object form
 without including the above copyright and permission notices.
+
+------------------------------------------------------------------------
+File "include/shaga/3rdparty/hedley.h" contains code under following
+license:
+------------------------------------------------------------------------
+Hedley - https://nemequ.github.io/hedley
+Created by Evan Nemerson <evan@nemerson.com>
+
+To the extent possible under law, the author(s) have dedicated all
+copyright and related and neighboring rights to this software to
+the public domain worldwide. This software is distributed without
+any warranty.
+
+For details, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+SPDX-License-Identifier: CC0-1.0

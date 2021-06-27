@@ -104,7 +104,8 @@ namespace shaga::P {
 	}
 }
 
-namespace shaga {
+namespace shaga
+{
 	bool commonexception_is_muted (void) noexcept;
 	void commonexception_set_muted (const bool state) noexcept;
 

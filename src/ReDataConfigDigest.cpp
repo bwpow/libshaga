@@ -14,7 +14,7 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	/* Result size in bytes */
-	SHAGA_NODISCARD static inline size_t _get_digest_result_size (const ReDataConfig::DIGEST digest)
+	HEDLEY_WARN_UNUSED_RESULT static inline size_t _get_digest_result_size (const ReDataConfig::DIGEST digest)
 	{
 		switch (digest) {
 			case ReDataConfig::DIGEST::NONE: return (0);
@@ -45,7 +45,7 @@ namespace shaga {
 	}
 
 	/* Key size in bytes */
-	SHAGA_NODISCARD static inline size_t _get_digest_hmac_key_size (const ReDataConfig::DIGEST digest)
+	HEDLEY_WARN_UNUSED_RESULT static inline size_t _get_digest_hmac_key_size (const ReDataConfig::DIGEST digest)
 	{
 		switch (digest) {
 			case ReDataConfig::DIGEST::NONE:
@@ -80,7 +80,7 @@ namespace shaga {
 	}
 
 
-	SHAGA_NODISCARD static inline ReDataConfig::DIGEST_HMAC_TYPE _get_digest_hmac_type (const ReDataConfig::DIGEST digest)
+	HEDLEY_WARN_UNUSED_RESULT static inline ReDataConfig::DIGEST_HMAC_TYPE _get_digest_hmac_type (const ReDataConfig::DIGEST digest)
 	{
 		switch (digest) {
 			case ReDataConfig::DIGEST::NONE:
@@ -206,7 +206,7 @@ namespace shaga {
 
 	typedef std::function<void(const std::string_view, ReDataConfig::DigestCache &, std::string &)> HASH_FUNC;
 
-	SHAGA_NODISCARD static inline HASH_FUNC _get_digest_calc_function (const ReDataConfig::DIGEST digest)
+	HEDLEY_WARN_UNUSED_RESULT static inline HASH_FUNC _get_digest_calc_function (const ReDataConfig::DIGEST digest)
 	{
 		switch (digest) {
 			case ReDataConfig::DIGEST::NONE: break;
@@ -374,27 +374,27 @@ namespace shaga {
 		cThrow ("Unsupported HMAC type"sv);
 	}
 
-	SHAGA_NODISCARD size_t ReDataConfig::get_digest_result_size (void) const
+	HEDLEY_WARN_UNUSED_RESULT size_t ReDataConfig::get_digest_result_size (void) const
 	{
 		return _get_digest_result_size (_used_digest);
 	}
 
-	SHAGA_NODISCARD size_t ReDataConfig::get_digest_hmac_key_size (void) const
+	HEDLEY_WARN_UNUSED_RESULT size_t ReDataConfig::get_digest_hmac_key_size (void) const
 	{
 		return _get_digest_hmac_key_size (_used_digest);
 	}
 
-	SHAGA_NODISCARD bool ReDataConfig::has_hmac (void) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::has_hmac (void) const
 	{
 		return _get_digest_hmac_type (_used_digest) != DIGEST_HMAC_TYPE::NONE;
 	}
 
-	SHAGA_NODISCARD bool ReDataConfig::has_digest_result_size_at_least_bits (const size_t limit) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::has_digest_result_size_at_least_bits (const size_t limit) const
 	{
 		return (_get_digest_result_size (_used_digest) * 8) >= limit;
 	}
 
-	SHAGA_NODISCARD bool ReDataConfig::has_digest_hmac_key_size_at_least_bits (const size_t limit) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::has_digest_hmac_key_size_at_least_bits (const size_t limit) const
 	{
 		return (_get_digest_hmac_key_size (_used_digest) * 8) >= limit;
 	}

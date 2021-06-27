@@ -141,7 +141,7 @@ namespace shaga::STR {
 	}
 
 	template <typename T>
-	T split (const std::string_view what, const std::string_view delimiter)
+	auto split (const std::string_view what, const std::string_view delimiter) -> T
 	{
 		T out;
 		split (what, delimiter, [&out](std::string_view tok) -> void { out.emplace_back (tok); });

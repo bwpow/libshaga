@@ -41,13 +41,13 @@ All rights reserved.
 	switch (HALFSIPHASH_DATA_SIZE & 3) {								\
 		case 3:															\
 			val |= static_cast<uint32_t> (in[2]) << 16;					\
-			SHAGA_FALLTHROUGH;                                     		\
+			HEDLEY_FALL_THROUGH;                                     	\
 		case 2:															\
 			val |= static_cast<uint32_t> (in[1]) << 8;					\
-			SHAGA_FALLTHROUGH;                                    		\
+			HEDLEY_FALL_THROUGH;                                    	\
 		case 1:															\
 			val |= static_cast<uint32_t> (in[0]);						\
-			SHAGA_FALLTHROUGH;                                      	\
+			HEDLEY_FALL_THROUGH;										\
 		case 0:															\
 			break;														\
 	}

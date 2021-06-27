@@ -116,7 +116,7 @@ namespace shaga {
 
 	void ReDataConfig::decode (const std::string_view msg)
 	{
-		size_t offset = 0;
+		size_t offset {0};
 		decode (msg, offset);
 	}
 
@@ -130,7 +130,7 @@ namespace shaga {
 		msg.push_back (opts);
 	}
 
-	SHAGA_NODISCARD std::string ReDataConfig::encode (void) const
+	HEDLEY_WARN_UNUSED_RESULT std::string ReDataConfig::encode (void) const
 	{
 		std::string out;
 		encode (out);
@@ -199,12 +199,12 @@ namespace shaga {
 		return *this;
 	}
 
-	SHAGA_NODISCARD ReDataConfig::DIGEST ReDataConfig::get_digest (void) const
+	HEDLEY_WARN_UNUSED_RESULT ReDataConfig::DIGEST ReDataConfig::get_digest (void) const
 	{
 		return _used_digest;
 	}
 
-	SHAGA_NODISCARD ReDataConfig::CRYPTO ReDataConfig::get_crypto (void) const
+	HEDLEY_WARN_UNUSED_RESULT ReDataConfig::CRYPTO ReDataConfig::get_crypto (void) const
 	{
 		return _used_crypto;
 	}
@@ -265,17 +265,17 @@ namespace shaga {
 		return out;
 	}
 
-	SHAGA_NODISCARD bool ReDataConfig::is_compatible_digest (const ReDataConfig &other) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::is_compatible_digest (const ReDataConfig &other) const
 	{
 		return (get_digest () == other.get_digest ());
 	}
 
-	SHAGA_NODISCARD bool ReDataConfig::is_compatible_crypto (const ReDataConfig &other) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::is_compatible_crypto (const ReDataConfig &other) const
 	{
 		return (get_crypto () == other.get_crypto ());
 	}
 
-	SHAGA_NODISCARD bool ReDataConfig::is_compatible (const ReDataConfig &other) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::is_compatible (const ReDataConfig &other) const
 	{
 		return (is_compatible_digest (other) && is_compatible_crypto (other));
 	}

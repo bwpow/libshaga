@@ -64,7 +64,7 @@ namespace shaga {
 
 			virtual uint_fast32_t inc_size (void) override
 			{
-				if (_size >= _bufsize) {
+				if (HEDLEY_UNLIKELY (_size >= _bufsize)) {
 					cThrow ("Unable to increase size"sv);
 				}
 				return _size++;
@@ -83,7 +83,7 @@ namespace shaga {
 				if (0 == _size) {
 					cThrow ("Unable to decrease size"sv);
 				}
-				_size--;
+				--_size;
 			}
 
 			virtual void dec2_size (void) override
@@ -137,7 +137,7 @@ namespace shaga {
 
 			virtual uint_fast32_t inc_size (void) override
 			{
-				if (_size >= _real_bufsize) {
+				if (HEDLEY_UNLIKELY (_size >= _real_bufsize)) {
 					cThrow ("Unable to increase size"sv);
 				}
 				return _size++;
@@ -184,7 +184,7 @@ namespace shaga {
 
 					if (alloc_size > 0) {
 						buffer = reinterpret_cast<uint8_t *> (::operator new (alloc_size, std::nothrow));
-						if (nullptr == buffer) {
+						if (HEDLEY_UNLIKELY (nullptr == buffer)) {
 							cThrow ("Unable to allocate buffer"sv);
 						}
 					}

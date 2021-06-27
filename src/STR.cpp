@@ -200,8 +200,8 @@ namespace shaga {
 
 	void STR::split (const std::string_view what, const std::string_view delimiter, std::function<void (std::string_view)> callback)
 	{
-		size_t p_start = 0;
-		size_t p_end = 0;
+		size_t p_start {0};
+		size_t p_end {0};
 
 		while (p_end != std::string_view::npos) {
 			p_end = what.find_first_of (delimiter, p_start);

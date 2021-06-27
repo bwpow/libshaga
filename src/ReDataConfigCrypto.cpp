@@ -15,7 +15,7 @@ namespace shaga {
 
 	[[maybe_unused]] static const constexpr std::string_view _ad {"ShaGaAD"sv};
 
-	SHAGA_NODISCARD static inline size_t _get_crypto_block_size (const ReDataConfig::CRYPTO crypto)
+	HEDLEY_WARN_UNUSED_RESULT static inline size_t _get_crypto_block_size (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
 			case ReDataConfig::CRYPTO::NONE:
@@ -35,7 +35,7 @@ namespace shaga {
 		cThrow ("Unsupported crypto"sv);
 	}
 
-	SHAGA_NODISCARD static inline size_t _get_crypto_iv_size (const ReDataConfig::CRYPTO crypto)
+	HEDLEY_WARN_UNUSED_RESULT static inline size_t _get_crypto_iv_size (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
 			case ReDataConfig::CRYPTO::NONE:
@@ -55,7 +55,7 @@ namespace shaga {
 		cThrow ("Unsupported crypto"sv);
 	}
 
-	SHAGA_NODISCARD static inline size_t _get_crypto_key_size (const ReDataConfig::CRYPTO crypto)
+	HEDLEY_WARN_UNUSED_RESULT static inline size_t _get_crypto_key_size (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
 			case ReDataConfig::CRYPTO::NONE:
@@ -77,7 +77,7 @@ namespace shaga {
 		cThrow ("Unsupported crypto"sv);
 	}
 
-	SHAGA_NODISCARD static inline size_t _get_crypto_mac_size (const ReDataConfig::CRYPTO crypto)
+	HEDLEY_WARN_UNUSED_RESULT static inline size_t _get_crypto_mac_size (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
 			case ReDataConfig::CRYPTO::NONE:
@@ -232,7 +232,7 @@ namespace shaga {
 		const bool enc,
 		ReDataConfig::CryptoCache &cache)> CRYPTO_FUNC;
 
-	SHAGA_NODISCARD static inline CRYPTO_FUNC _get_crypto_calc_function (const ReDataConfig::CRYPTO crypto)
+	HEDLEY_WARN_UNUSED_RESULT static inline CRYPTO_FUNC _get_crypto_calc_function (const ReDataConfig::CRYPTO crypto)
 	{
 		switch (crypto) {
 			case ReDataConfig::CRYPTO::NONE:
@@ -263,7 +263,7 @@ namespace shaga {
 #endif // SHAGA_FULL
 	}
 
-	SHAGA_NODISCARD static inline size_t _round_up_pow2 (const size_t numToRound, const size_t multiple)
+	HEDLEY_WARN_UNUSED_RESULT static inline size_t _round_up_pow2 (const size_t numToRound, const size_t multiple)
 	{
 		return (numToRound + multiple - 1) & ~(multiple - 1);
 	}
@@ -464,42 +464,42 @@ namespace shaga {
 		}
 	}
 
-	SHAGA_NODISCARD size_t ReDataConfig::get_crypto_block_size (void) const
+	HEDLEY_WARN_UNUSED_RESULT size_t ReDataConfig::get_crypto_block_size (void) const
 	{
 		return _get_crypto_block_size (_used_crypto);
 	}
 
-	SHAGA_NODISCARD size_t ReDataConfig::get_crypto_key_size (void) const
+	HEDLEY_WARN_UNUSED_RESULT size_t ReDataConfig::get_crypto_key_size (void) const
 	{
 		return _get_crypto_key_size (_used_crypto);
 	}
 
-	SHAGA_NODISCARD size_t ReDataConfig::get_crypto_iv_size (void) const
+	HEDLEY_WARN_UNUSED_RESULT size_t ReDataConfig::get_crypto_iv_size (void) const
 	{
 		return _get_crypto_iv_size (_used_crypto);
 	}
 
-	SHAGA_NODISCARD size_t ReDataConfig::get_crypto_mac_size (void) const
+	HEDLEY_WARN_UNUSED_RESULT size_t ReDataConfig::get_crypto_mac_size (void) const
 	{
 		return _get_crypto_mac_size (_used_crypto);
 	}
 
-	SHAGA_NODISCARD bool ReDataConfig::has_crypto (void) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::has_crypto (void) const
 	{
 		return _get_crypto_key_size (_used_crypto) > 0;
 	}
 
-	SHAGA_NODISCARD bool ReDataConfig::has_mac (void) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::has_mac (void) const
 	{
 		return _get_crypto_mac_size (_used_crypto) > 0;
 	}
 
-	SHAGA_NODISCARD bool ReDataConfig::has_crypto_key_size_at_least_bits (const size_t limit) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::has_crypto_key_size_at_least_bits (const size_t limit) const
 	{
 		return (_get_crypto_key_size (_used_crypto) * 8) >= limit;
 	}
 
-	SHAGA_NODISCARD bool ReDataConfig::has_crypto_mac_size_at_least_bits (const size_t limit) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::has_crypto_mac_size_at_least_bits (const size_t limit) const
 	{
 		return (_get_crypto_mac_size (_used_crypto) * 8) >= limit;
 	}

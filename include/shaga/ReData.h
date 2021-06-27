@@ -222,7 +222,7 @@ namespace shaga {
 			void decode (const std::string_view msg);
 
 			void encode (std::string &msg) const;
-			SHAGA_NODISCARD std::string encode (void) const;
+			HEDLEY_WARN_UNUSED_RESULT std::string encode (void) const;
 
 			ReDataConfig& set_digest (const ReDataConfig::DIGEST v);
 			ReDataConfig& set_digest (const std::string_view str);
@@ -230,41 +230,41 @@ namespace shaga {
 			ReDataConfig& set_crypto (const ReDataConfig::CRYPTO v);
 			ReDataConfig& set_crypto (const std::string_view str);
 
-			SHAGA_NODISCARD ReDataConfig::DIGEST get_digest (void) const;
-			SHAGA_NODISCARD ReDataConfig::CRYPTO get_crypto (void) const;
+			HEDLEY_WARN_UNUSED_RESULT ReDataConfig::DIGEST get_digest (void) const;
+			HEDLEY_WARN_UNUSED_RESULT ReDataConfig::CRYPTO get_crypto (void) const;
 
 			SHAGA_STRV std::string_view get_digest_text (void) const;
 			SHAGA_STRV std::string_view get_crypto_text (void) const;
 
 			std::string describe (void) const;
 
-			SHAGA_NODISCARD bool is_compatible_digest (const ReDataConfig &other) const;
-			SHAGA_NODISCARD bool is_compatible_crypto (const ReDataConfig &other) const;
-			SHAGA_NODISCARD bool is_compatible (const ReDataConfig &other) const;
+			HEDLEY_WARN_UNUSED_RESULT bool is_compatible_digest (const ReDataConfig &other) const;
+			HEDLEY_WARN_UNUSED_RESULT bool is_compatible_crypto (const ReDataConfig &other) const;
+			HEDLEY_WARN_UNUSED_RESULT bool is_compatible (const ReDataConfig &other) const;
 
 			/* ReDataConfigDigest.cpp */
 			void calc_digest (const std::string_view plain, std::string &out, const std::string_view key) const;
 
-			SHAGA_NODISCARD size_t get_digest_result_size (void) const;
-			SHAGA_NODISCARD size_t get_digest_hmac_key_size (void) const;
+			HEDLEY_WARN_UNUSED_RESULT size_t get_digest_result_size (void) const;
+			HEDLEY_WARN_UNUSED_RESULT size_t get_digest_hmac_key_size (void) const;
 
-			SHAGA_NODISCARD bool has_hmac (void) const;
-			SHAGA_NODISCARD bool has_digest_result_size_at_least_bits (const size_t limit) const;
-			SHAGA_NODISCARD bool has_digest_hmac_key_size_at_least_bits (const size_t limit) const;
+			HEDLEY_WARN_UNUSED_RESULT bool has_hmac (void) const;
+			HEDLEY_WARN_UNUSED_RESULT bool has_digest_result_size_at_least_bits (const size_t limit) const;
+			HEDLEY_WARN_UNUSED_RESULT bool has_digest_hmac_key_size_at_least_bits (const size_t limit) const;
 
 			/* ReDataConfigCrypto.cpp */
 			void calc_crypto_enc (std::string &plain, std::string &out_append, const std::string_view key) const;
 			void calc_crypto_dec (std::string_view msg, std::string &out, const std::string_view key) const;
 
-			SHAGA_NODISCARD size_t get_crypto_block_size (void) const;
-			SHAGA_NODISCARD size_t get_crypto_key_size (void) const;
-			SHAGA_NODISCARD size_t get_crypto_iv_size (void) const;
-			SHAGA_NODISCARD size_t get_crypto_mac_size (void) const;
+			HEDLEY_WARN_UNUSED_RESULT size_t get_crypto_block_size (void) const;
+			HEDLEY_WARN_UNUSED_RESULT size_t get_crypto_key_size (void) const;
+			HEDLEY_WARN_UNUSED_RESULT size_t get_crypto_iv_size (void) const;
+			HEDLEY_WARN_UNUSED_RESULT size_t get_crypto_mac_size (void) const;
 
-			SHAGA_NODISCARD bool has_crypto (void) const;
-			SHAGA_NODISCARD bool has_mac (void) const;
-			SHAGA_NODISCARD bool has_crypto_key_size_at_least_bits (const size_t limit) const;
-			SHAGA_NODISCARD bool has_crypto_mac_size_at_least_bits (const size_t limit) const;
+			HEDLEY_WARN_UNUSED_RESULT bool has_crypto (void) const;
+			HEDLEY_WARN_UNUSED_RESULT bool has_mac (void) const;
+			HEDLEY_WARN_UNUSED_RESULT bool has_crypto_key_size_at_least_bits (const size_t limit) const;
+			HEDLEY_WARN_UNUSED_RESULT bool has_crypto_mac_size_at_least_bits (const size_t limit) const;
 
 			void set_user_iv (const std::string_view iv);
 			void unset_user_iv (void);

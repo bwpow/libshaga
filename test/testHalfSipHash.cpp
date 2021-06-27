@@ -85,10 +85,10 @@ static void _halfsiphash_ref_impl (const uint8_t *in, const size_t inlen, const 
 	switch (left) {
 	case 3:
 		b |= ((uint32_t)in[2]) << 16;
-		SHAGA_FALLTHROUGH;
+		HEDLEY_FALL_THROUGH;
 	case 2:
 		b |= ((uint32_t)in[1]) << 8;
-		SHAGA_FALLTHROUGH;
+		HEDLEY_FALL_THROUGH;
 	case 1:
 		b |= ((uint32_t)in[0]);
 		break;
@@ -209,7 +209,7 @@ static void _halfsiphash_digest_keylen_test (void)
 {
 	for (int i = 0; i < 100; ++i) {
 		if (i != 8) {
-			EXPECT_THROW (Digest::halfsiphash_extract_key (_halfsiphash_make_string (i)), std::exception);
+			EXPECT_THROW ([[maybe_unused]] auto res = Digest::halfsiphash_extract_key (_halfsiphash_make_string (i)), std::exception);
 		}
 	}
 }

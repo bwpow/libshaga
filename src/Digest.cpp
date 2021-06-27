@@ -12,10 +12,10 @@ namespace shaga {
 	//  SHA-256  ////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	std::string Digest::sha256 ([[maybe_unused]] const void *const buf, [[maybe_unused]] const size_t len)
+	HEDLEY_WARN_UNUSED_RESULT std::string Digest::sha256 ([[maybe_unused]] const void *const buf, [[maybe_unused]] const size_t len)
 	{
 #ifdef SHAGA_FULL
-		const size_t sze = 32;
+		const size_t sze {32};
 		std::string output (sze, '\0');
 		const int ret = ::mbedtls_sha256_ret (
 			reinterpret_cast<const uint8_t *> (buf),
@@ -23,7 +23,7 @@ namespace shaga {
 			reinterpret_cast<uint8_t *> (output.data ()),
 			0);
 
-		if (0 != ret) {
+		if (HEDLEY_UNLIKELY (0 != ret)) {
 			cThrow ("SHA-256 failed"sv);
 		}
 
@@ -37,10 +37,10 @@ namespace shaga {
 	//  SHA-512  ////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	std::string Digest::sha512 ([[maybe_unused]] const void *const buf, [[maybe_unused]] const size_t len)
+	HEDLEY_WARN_UNUSED_RESULT std::string Digest::sha512 ([[maybe_unused]] const void *const buf, [[maybe_unused]] const size_t len)
 	{
 #ifdef SHAGA_FULL
-		const size_t sze = 64;
+		const size_t sze {64};
 		std::string output (sze, '\0');
 		const int ret = ::mbedtls_sha512_ret (
 			reinterpret_cast<const uint8_t *> (buf),
@@ -48,7 +48,7 @@ namespace shaga {
 			reinterpret_cast<uint8_t *> (output.data ()),
 			0);
 
-		if (0 != ret) {
+		if (HEDLEY_UNLIKELY (0 != ret)) {
 			cThrow ("SHA-512 failed"sv);
 		}
 
@@ -81,7 +81,7 @@ namespace shaga {
 		#undef SIPHASH_DATA
 	}
 
-	Digest::SipHash128_t Digest::siphash_extract_key (const std::string_view key)
+	HEDLEY_WARN_UNUSED_RESULT Digest::SipHash128_t Digest::siphash_extract_key (const std::string_view key)
 	{
 		if (key.size () != 16) {
 			cThrow ("SipHash key must be exactly 16 bytes (128 bit) long"sv);
@@ -95,36 +95,35 @@ namespace shaga {
 		return out;
 	}
 
-	uint64_t Digest::siphash24_64t (const void *const buf, const size_t len, const Digest::SipHash128_t &key)
+	HEDLEY_WARN_UNUSED_RESULT uint64_t Digest::siphash24_64t (const void *const buf, const size_t len, const Digest::SipHash128_t &key)
 	{
 		return _calc_siphash24_64t (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	uint64_t Digest::siphash48_64t (const void *const buf, const size_t len, const Digest::SipHash128_t &key)
+	HEDLEY_WARN_UNUSED_RESULT uint64_t Digest::siphash48_64t (const void *const buf, const size_t len, const Digest::SipHash128_t &key)
 	{
 		return _calc_siphash48_64t (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	Digest::SipHash128_t Digest::siphash24_128t (const void *const buf, const size_t len, const Digest::SipHash128_t &key)
+	HEDLEY_WARN_UNUSED_RESULT Digest::SipHash128_t Digest::siphash24_128t (const void *const buf, const size_t len, const Digest::SipHash128_t &key)
 	{
 		return _calc_siphash24_128t (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	Digest::SipHash128_t Digest::siphash48_128t (const void *const buf, const size_t len, const Digest::SipHash128_t &key)
+	HEDLEY_WARN_UNUSED_RESULT Digest::SipHash128_t Digest::siphash48_128t (const void *const buf, const size_t len, const Digest::SipHash128_t &key)
 	{
 		return _calc_siphash48_128t (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	std::string Digest::siphash24_128s (const void *const buf, const size_t len, const Digest::SipHash128_t &key)
+	HEDLEY_WARN_UNUSED_RESULT std::string Digest::siphash24_128s (const void *const buf, const size_t len, const Digest::SipHash128_t &key)
 	{
 		return _calc_siphash24_128s (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	std::string Digest::siphash48_128s (const void *const buf, const size_t len, const Digest::SipHash128_t &key)
+	HEDLEY_WARN_UNUSED_RESULT std::string Digest::siphash48_128s (const void *const buf, const size_t len, const Digest::SipHash128_t &key)
 	{
 		return _calc_siphash48_128s (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
-
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  HalfSipHash  ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -149,7 +148,7 @@ namespace shaga {
 		#undef HALFSIPHASH_DATA
 	}
 
-	Digest::SipHash64_t Digest::halfsiphash_extract_key (const std::string_view key)
+	HEDLEY_WARN_UNUSED_RESULT Digest::SipHash64_t Digest::halfsiphash_extract_key (const std::string_view key)
 	{
 		if (key.size () != 8) {
 			cThrow ("HalfSipHash key must be exactly 8 bytes (64 bit) long"sv);
@@ -163,32 +162,32 @@ namespace shaga {
 		return out;
 	}
 
-	uint32_t Digest::halfsiphash24_32t (const void *const buf, const size_t len, const Digest::SipHash64_t &key)
+	HEDLEY_WARN_UNUSED_RESULT uint32_t Digest::halfsiphash24_32t (const void *const buf, const size_t len, const Digest::SipHash64_t &key)
 	{
 		return _calc_halfsiphash24_32t (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	uint32_t Digest::halfsiphash48_32t (const void *const buf, const size_t len, const Digest::SipHash64_t &key)
+	HEDLEY_WARN_UNUSED_RESULT uint32_t Digest::halfsiphash48_32t (const void *const buf, const size_t len, const Digest::SipHash64_t &key)
 	{
 		return _calc_halfsiphash48_32t (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	Digest::SipHash64_t Digest::halfsiphash24_64t (const void *const buf, const size_t len, const Digest::SipHash64_t &key)
+	HEDLEY_WARN_UNUSED_RESULT Digest::SipHash64_t Digest::halfsiphash24_64t (const void *const buf, const size_t len, const Digest::SipHash64_t &key)
 	{
 		return _calc_halfsiphash24_64t (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	Digest::SipHash64_t Digest::halfsiphash48_64t (const void *const buf, const size_t len, const Digest::SipHash64_t &key)
+	HEDLEY_WARN_UNUSED_RESULT Digest::SipHash64_t Digest::halfsiphash48_64t (const void *const buf, const size_t len, const Digest::SipHash64_t &key)
 	{
 		return _calc_halfsiphash48_64t (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	std::string Digest::halfsiphash24_64s (const void *const buf, const size_t len, const Digest::SipHash64_t &key)
+	HEDLEY_WARN_UNUSED_RESULT std::string Digest::halfsiphash24_64s (const void *const buf, const size_t len, const Digest::SipHash64_t &key)
 	{
 		return _calc_halfsiphash24_64s (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}
 
-	std::string Digest::halfsiphash48_64s (const void *const buf, const size_t len, const Digest::SipHash64_t &key)
+	HEDLEY_WARN_UNUSED_RESULT std::string Digest::halfsiphash48_64s (const void *const buf, const size_t len, const Digest::SipHash64_t &key)
 	{
 		return _calc_halfsiphash48_64s (reinterpret_cast<const uint8_t *> (buf), len, key);
 	}

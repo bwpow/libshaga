@@ -93,6 +93,8 @@ All rights reserved.
 #include <cinttypes>
 #include <climits>
 
+#include "3rdparty/hedley.h"
+
 #include <new>
 #include <vector>
 #include <string>
@@ -211,30 +213,6 @@ using namespace std::literals;
 #define ENDIAN_BSWAP32(val) (val) = __builtin_bswap32 (val)
 #define ENDIAN_BSWAP64(val) (val) = __builtin_bswap64 (val)
 
-#if __has_cpp_attribute(fallthrough)
-	#define SHAGA_FALLTHROUGH [[fallthrough]]
-#elif __has_cpp_attribute(gcc::fallthrough)
-	#define SHAGA_FALLTHROUGH [[gcc::fallthrough]]
-#elif __has_cpp_attribute(clang::fallthrough)
-	#define SHAGA_FALLTHROUGH [[clang::fallthrough]]
-#else
-	#define SHAGA_FALLTHROUGH
-#endif
-
-#if __has_cpp_attribute(nodiscard)
-	#define SHAGA_NODISCARD [[nodiscard]]
-#elif __has_cpp_attribute(gnu::warn_unused_result)
-	#define SHAGA_NODISCARD [[gnu::warn_unused_result]]
-#else
-	#define SHAGA_NODISCARD
-#endif
-
-#if __has_cpp_attribute(always_inline)
-	#define SHAGA_INLINE __attribute__((always_inline))
-#else
-	#define SHAGA_INLINE inline
-#endif
-
 #define _SHAGA_SPSC_RING(x,y) const uint_fast32_t x = ((y) + 1) % _size
 #define _SHAGA_SPSC_D_RING(x,y) const uint_fast32_t x = ((y) + 1) % this->_num_packets
 #define _SHAGA_SPSC_I_RING(x) x = (x + 1) % this->_num_packets
@@ -271,13 +249,13 @@ namespace shaga
 {
 	/* Shutdown and exit handling */
 	void add_at_exit_callback (std::function<void (void)> func);
-	[[noreturn]] void _exit (const std::string_view text = ""sv, const int rcode = EXIT_FAILURE, const std::string_view prefix = ""sv) noexcept;
-	[[noreturn]] void exit (const int rcode) noexcept;
-	[[noreturn]] void exit_failure (void) noexcept;
-	[[noreturn]] void exit (void) noexcept;
+	HEDLEY_NO_RETURN void _exit (const std::string_view text = ""sv, const int rcode = EXIT_FAILURE, const std::string_view prefix = ""sv) noexcept;
+	HEDLEY_NO_RETURN void exit (const int rcode) noexcept;
+	HEDLEY_NO_RETURN void exit_failure (void) noexcept;
+	HEDLEY_NO_RETURN void exit (void) noexcept;
 
 	template <typename... Args>
-	[[noreturn]] void exit (const int rcode, const std::string_view format, const Args & ... args) noexcept
+	HEDLEY_NO_RETURN void exit (const int rcode, const std::string_view format, const Args & ... args) noexcept
 	{
 		if (sizeof...(Args) == 0) {
 			shaga::_exit (format, rcode);
@@ -291,7 +269,7 @@ namespace shaga
 	}
 
 	template <typename... Args>
-	[[noreturn]] void exit (const std::string_view format, const Args & ... args) noexcept
+	HEDLEY_NO_RETURN void exit (const std::string_view format, const Args & ... args) noexcept
 	{
 		if (sizeof...(Args) == 0) {
 			shaga::_exit (format, EXIT_FAILURE);
@@ -310,7 +288,7 @@ namespace shaga
 	#define TRY_TO_SHUTDOWN() _try_to_shutdown(__FILE__, __PRETTY_FUNCTION__, __LINE__)
 	void add_at_shutdown_callback (std::function<void (void)> func);
 	void _try_to_shutdown (const char *file, const char *funct, const int line);
-	SHAGA_NODISCARD bool is_shutting_down (void);
+	HEDLEY_WARN_UNUSED_RESULT bool is_shutting_down (void);
 
 	/* Set in common.cpp to constant value depending on compile-time settings */
 	extern const bool _shaga_compiled_little_endian;
@@ -377,16 +355,16 @@ namespace shaga
 		shaga::_exit ("Unknown failure"sv, EXIT_FAILURE, "FATAL ERROR: "sv); \
 	}
 
-	SHAGA_NODISCARD int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime);
-	SHAGA_NODISCARD int64_t timespec_diff_msec (const struct timespec &starttime, const struct timespec &finishtime);
+	HEDLEY_WARN_UNUSED_RESULT int64_t timeval_diff_msec (const struct timeval &starttime, const struct timeval &finishtime);
+	HEDLEY_WARN_UNUSED_RESULT int64_t timespec_diff_msec (const struct timespec &starttime, const struct timespec &finishtime);
 
-	SHAGA_NODISCARD uint64_t get_monotime_sec (void);
-	SHAGA_NODISCARD uint64_t get_monotime_msec (void);
-	SHAGA_NODISCARD uint64_t get_monotime_usec (void);
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_sec (void);
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_msec (void);
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_usec (void);
 
-	SHAGA_NODISCARD uint64_t get_realtime_sec (void);
-	SHAGA_NODISCARD uint64_t get_realtime_msec (void);
-	SHAGA_NODISCARD uint64_t get_realtime_usec (void);
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_sec (void);
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_msec (void);
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_usec (void);
 
 	typedef struct {
 		uint_fast16_t year;
@@ -397,10 +375,10 @@ namespace shaga
 		uint_fast8_t second;
 	} SHAGA_PARSED_REALTIME;
 
-	SHAGA_NODISCARD SHAGA_PARSED_REALTIME get_realtime_parsed (const time_t theTime, const bool local);
-	SHAGA_NODISCARD SHAGA_PARSED_REALTIME get_realtime_parsed (const bool local);
+	HEDLEY_WARN_UNUSED_RESULT SHAGA_PARSED_REALTIME get_realtime_parsed (const time_t theTime, const bool local);
+	HEDLEY_WARN_UNUSED_RESULT SHAGA_PARSED_REALTIME get_realtime_parsed (const bool local);
 
-	SHAGA_NODISCARD time_t get_realtime_sec_shifted (const time_t shift_start);
+	HEDLEY_WARN_UNUSED_RESULT time_t get_realtime_sec_shifted (const time_t shift_start);
 }
 
 #include "3rdparty/aho_corasick.h"

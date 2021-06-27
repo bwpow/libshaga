@@ -12,19 +12,19 @@ All rights reserved.
 
 namespace shaga::Digest {
 	/*** SHA-256 ***/
-	std::string sha256 (const void *const buf, const size_t len);
+	HEDLEY_WARN_UNUSED_RESULT std::string sha256 (const void *const buf, const size_t len);
 
 	template<class T>
-	std::string sha256 (const T &plain)
+	HEDLEY_WARN_UNUSED_RESULT std::string sha256 (const T &plain)
 	{
 		return sha256 (plain.data (), plain.size ());
 	}
 
 	/*** SHA-512 ***/
-	std::string sha512 (const void *const buf, const size_t len);
+	HEDLEY_WARN_UNUSED_RESULT std::string sha512 (const void *const buf, const size_t len);
 
 	template<class T>
-	std::string sha512 (const T &plain)
+	HEDLEY_WARN_UNUSED_RESULT std::string sha512 (const T &plain)
 	{
 		return sha512 (plain.data (), plain.size ());
 	}
@@ -32,41 +32,47 @@ namespace shaga::Digest {
 	/*** SipHash ***/
 	typedef std::pair<uint64_t, uint64_t> SipHash128_t;
 
-	SipHash128_t siphash_extract_key (const std::string_view key);
+	HEDLEY_WARN_UNUSED_RESULT SipHash128_t siphash_extract_key (const std::string_view key);
 
-	uint64_t siphash24_64t (const void *const buf, const size_t len, const SipHash128_t &key);
-	uint64_t siphash48_64t (const void *const buf, const size_t len, const SipHash128_t &key);
-	SipHash128_t siphash24_128t (const void *const buf, const size_t len, const SipHash128_t &key);
-	SipHash128_t siphash48_128t (const void *const buf, const size_t len, const SipHash128_t &key);
-	std::string siphash24_128s (const void *const buf, const size_t len, const SipHash128_t &key);
-	std::string siphash48_128s (const void *const buf, const size_t len, const SipHash128_t &key);
+	HEDLEY_WARN_UNUSED_RESULT uint64_t siphash24_64t (const void *const buf, const size_t len, const SipHash128_t &key);
+	HEDLEY_WARN_UNUSED_RESULT uint64_t siphash48_64t (const void *const buf, const size_t len, const SipHash128_t &key);
+	HEDLEY_WARN_UNUSED_RESULT SipHash128_t siphash24_128t (const void *const buf, const size_t len, const SipHash128_t &key);
+	HEDLEY_WARN_UNUSED_RESULT SipHash128_t siphash48_128t (const void *const buf, const size_t len, const SipHash128_t &key);
+	HEDLEY_WARN_UNUSED_RESULT std::string siphash24_128s (const void *const buf, const size_t len, const SipHash128_t &key);
+	HEDLEY_WARN_UNUSED_RESULT std::string siphash48_128s (const void *const buf, const size_t len, const SipHash128_t &key);
 
-	template<typename T> uint64_t siphash24_64t (const T &plain, const SipHash128_t &key)
+	template<typename T>
+	HEDLEY_WARN_UNUSED_RESULT uint64_t siphash24_64t (const T &plain, const SipHash128_t &key)
 	{
 		return siphash24_64t (plain.data (), plain.size (), key);
 	}
 
-	template<typename T> uint64_t siphash48_64t (const T &plain, const SipHash128_t &key)
+	template<typename T>
+	HEDLEY_WARN_UNUSED_RESULT uint64_t siphash48_64t (const T &plain, const SipHash128_t &key)
 	{
 		return siphash48_64t (plain.data (), plain.size (), key);
 	}
 
-	template<typename T> SipHash128_t siphash24_128t (const T &plain, const SipHash128_t &key)
+	template<typename T>
+	HEDLEY_WARN_UNUSED_RESULT SipHash128_t siphash24_128t (const T &plain, const SipHash128_t &key)
 	{
 		return siphash24_128t (plain.data (), plain.size (), key);
 	}
 
-	template<typename T> SipHash128_t siphash48_128t (const T &plain, const SipHash128_t &key)
+	template<typename T>
+	HEDLEY_WARN_UNUSED_RESULT SipHash128_t siphash48_128t (const T &plain, const SipHash128_t &key)
 	{
 		return siphash48_128t (plain.data (), plain.size (), key);
 	}
 
-	template<typename T> std::string siphash24_128s (const T &plain, const SipHash128_t &key)
+	template<typename T>
+	HEDLEY_WARN_UNUSED_RESULT std::string siphash24_128s (const T &plain, const SipHash128_t &key)
 	{
 		return siphash24_128s (plain.data (), plain.size (), key);
 	}
 
-	template<typename T> std::string siphash48_128s (const T &plain, const SipHash128_t &key)
+	template<typename T>
+	HEDLEY_WARN_UNUSED_RESULT std::string siphash48_128s (const T &plain, const SipHash128_t &key)
 	{
 		return siphash48_128s (plain.data (), plain.size (), key);
 	}
@@ -74,41 +80,47 @@ namespace shaga::Digest {
 	/*** HalfSipHash ***/
 	typedef std::pair<uint32_t, uint32_t> SipHash64_t;
 
-	SipHash64_t halfsiphash_extract_key (const std::string_view key);
+	HEDLEY_WARN_UNUSED_RESULT SipHash64_t halfsiphash_extract_key (const std::string_view key);
 
-	uint32_t halfsiphash24_32t (const void *const buf, const size_t len, const SipHash64_t &key);
-	uint32_t halfsiphash48_32t (const void *const buf, const size_t len, const SipHash64_t &key);
-	SipHash64_t halfsiphash24_64t (const void *const buf, const size_t len, const SipHash64_t &key);
-	SipHash64_t halfsiphash48_64t (const void *const buf, const size_t len, const SipHash64_t &key);
-	std::string halfsiphash24_64s (const void *const buf, const size_t len, const SipHash64_t &key);
-	std::string halfsiphash48_64s (const void *const buf, const size_t len, const SipHash64_t &key);
+	HEDLEY_WARN_UNUSED_RESULT uint32_t halfsiphash24_32t (const void *const buf, const size_t len, const SipHash64_t &key);
+	HEDLEY_WARN_UNUSED_RESULT uint32_t halfsiphash48_32t (const void *const buf, const size_t len, const SipHash64_t &key);
+	HEDLEY_WARN_UNUSED_RESULT SipHash64_t halfsiphash24_64t (const void *const buf, const size_t len, const SipHash64_t &key);
+	HEDLEY_WARN_UNUSED_RESULT SipHash64_t halfsiphash48_64t (const void *const buf, const size_t len, const SipHash64_t &key);
+	HEDLEY_WARN_UNUSED_RESULT std::string halfsiphash24_64s (const void *const buf, const size_t len, const SipHash64_t &key);
+	HEDLEY_WARN_UNUSED_RESULT std::string halfsiphash48_64s (const void *const buf, const size_t len, const SipHash64_t &key);
 
-	template<typename T> uint32_t halfsiphash24_32t (const T &plain, const SipHash64_t &key)
+	template<typename T>
+	HEDLEY_WARN_UNUSED_RESULT uint32_t halfsiphash24_32t (const T &plain, const SipHash64_t &key)
 	{
 		return halfsiphash24_32t (plain.data (), plain.size (), key);
 	}
 
-	template<typename T> uint32_t halfsiphash48_32t (const T &plain, const SipHash64_t &key)
+	template<typename T>
+	HEDLEY_WARN_UNUSED_RESULT uint32_t halfsiphash48_32t (const T &plain, const SipHash64_t &key)
 	{
 		return halfsiphash48_32t (plain.data (), plain.size (), key);
 	}
 
-	template<typename T> SipHash64_t halfsiphash24_64t (const T &plain, const SipHash64_t &key)
+	template<typename T>
+	HEDLEY_WARN_UNUSED_RESULT SipHash64_t halfsiphash24_64t (const T &plain, const SipHash64_t &key)
 	{
 		return halfsiphash24_64t (plain.data (), plain.size (), key);
 	}
 
-	template<typename T> SipHash64_t halfsiphash48_64t (const T &plain, const SipHash64_t &key)
+	template<typename T>
+	HEDLEY_WARN_UNUSED_RESULT SipHash64_t halfsiphash48_64t (const T &plain, const SipHash64_t &key)
 	{
 		return halfsiphash48_64t (plain.data (), plain.size (), key);
 	}
 
-	template<typename T> std::string halfsiphash24_64s (const T &plain, const SipHash64_t &key)
+	template<typename T>
+	HEDLEY_WARN_UNUSED_RESULT std::string halfsiphash24_64s (const T &plain, const SipHash64_t &key)
 	{
 		return halfsiphash24_64s (plain.data (), plain.size (), key);
 	}
 
-	template<typename T> std::string halfsiphash48_64s (const T &plain, const SipHash64_t &key)
+	template<typename T>
+	HEDLEY_WARN_UNUSED_RESULT std::string halfsiphash48_64s (const T &plain, const SipHash64_t &key)
 	{
 		return halfsiphash48_64s (plain.data (), plain.size (), key);
 	}

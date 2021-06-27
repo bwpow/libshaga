@@ -251,13 +251,13 @@ namespace shaga {
 
 	bool ShFile::read (std::string &data, const size_t len, const bool thr_eof)
 	{
-		if (len > SSIZE_MAX) {
+		if (HEDLEY_UNLIKELY (len > SSIZE_MAX)) {
 			cThrow ("Error reading from file '{}': Too many bytes requested"sv, _filename);
 		}
 
 		data.resize (0);
 		data.resize (len);
-		if (data.capacity () < len) {
+		if (HEDLEY_UNLIKELY (data.capacity () < len)) {
 			cThrow ("Error reading from file '{}': Unable to allocate buffer"sv, _filename);
 		}
 
@@ -295,7 +295,7 @@ namespace shaga {
 
 	bool ShFile::read (void *const buf, const size_t len, const bool thr_eof)
 	{
-		if (len > SSIZE_MAX) {
+		if (HEDLEY_UNLIKELY (len > SSIZE_MAX)) {
 			cThrow ("Error reading from file '{}': Too many bytes requested"sv, _filename);
 		}
 
@@ -329,7 +329,6 @@ namespace shaga {
 		}
 		return buf[0];
 	}
-
 
 	void ShFile::read_whole_file (std::string &data, const size_t max_len)
 	{
@@ -387,7 +386,6 @@ namespace shaga {
 			return fmt::format ("{:#04x}"sv, static_cast<uint8_t> (data.at (pos)));
 		}, per_line, add_len);
 	}
-
 
 	bool ShFile::has_file_name (void) const
 	{
@@ -475,7 +473,6 @@ namespace shaga {
 				ret = ::lseek64 (_fd, offset, SEEK_END);
 				break;
 		}
-
 
 		if (ret == static_cast<off64_t>(-1)) {
 			cThrow ("Seek error in file '{}': {}"sv, _filename, strerror (errno));
