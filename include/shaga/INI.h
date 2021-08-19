@@ -132,6 +132,18 @@ namespace shaga {
 			void set_string (const std::string_view section, const std::string_view key, const std::string_view val, const bool append = false);
 			void set_vector (const std::string_view section, const std::string_view key, const COMMON_VECTOR &val, const bool append);
 			void set_list (const std::string_view section, const std::string_view key, const COMMON_LIST &val, const bool append);
+
+			template <typename... Args>
+			void set_format (const std::string_view section, const std::string_view key, const std::string_view format, const Args & ... args)
+			{
+				set_string (section, key, fmt::format (format, args...), false);
+			}
+
+			template <typename... Args>
+			void set_format_append (const std::string_view section, const std::string_view key, const std::string_view format, const Args & ... args)
+			{
+				set_string (section, key, fmt::format (format, args...), true);
+			}
 	};
 }
 

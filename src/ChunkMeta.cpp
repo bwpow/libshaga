@@ -197,6 +197,66 @@ namespace shaga {
 		_data.insert (std::make_pair (key_to_bin (key), std::move (value)));
 	}
 
+	void ChunkMeta::add_uint8 (const uint16_t key, const uint8_t value)
+	{
+		auto str = BIN::from_uint8 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_uint8 (const std::string_view key, const uint8_t value)
+	{
+		auto str = BIN::from_uint8 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_uint16 (const uint16_t key, const uint16_t value)
+	{
+		auto str = BIN::from_uint16 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_uint16 (const std::string_view key, const uint16_t value)
+	{
+		auto str = BIN::from_uint16 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_uint24 (const uint16_t key, const uint32_t value)
+	{
+		auto str = BIN::from_uint24 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_uint24 (const std::string_view key, const uint32_t value)
+	{
+		auto str = BIN::from_uint24 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_uint32 (const uint16_t key, const uint32_t value)
+	{
+		auto str = BIN::from_uint32 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_uint32 (const std::string_view key, const uint32_t value)
+	{
+		auto str = BIN::from_uint32 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_uint64 (const uint16_t key, const uint64_t value)
+	{
+		auto str = BIN::from_uint64 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_uint64 (const std::string_view key, const uint64_t value)
+	{
+		auto str = BIN::from_uint64 (value);
+		add_value (key, std::move (str));
+	}
+
 	size_t ChunkMeta::get_max_bytes (void) const
 	{
 		size_t len {0};
@@ -303,6 +363,67 @@ namespace shaga {
 			}
 		}
 	}
+
+#define get_uint_helper(type,sze) \
+	const auto val = get_value (key); \
+	if (val.size () < sze) { \
+		return default_value; \
+	} \
+	else { \
+		return BIN::type (val); \
+	}
+
+	uint8_t ChunkMeta::get_uint8 (const std::string_view key, const uint8_t default_value) const
+	{
+		get_uint_helper (to_uint8, 1)
+	}
+
+	uint8_t ChunkMeta::get_uint8 (const uint16_t key, const uint8_t default_value) const
+	{
+		get_uint_helper (to_uint8, 1)
+	}
+
+	uint16_t ChunkMeta::get_uint16 (const std::string_view key, const uint16_t default_value) const
+	{
+		get_uint_helper (to_uint16, 2)
+	}
+
+	uint16_t ChunkMeta::get_uint16 (const uint16_t key, const uint16_t default_value) const
+	{
+		get_uint_helper (to_uint16, 2)
+	}
+
+	uint32_t ChunkMeta::get_uint24 (const std::string_view key, const uint32_t default_value) const
+	{
+		get_uint_helper (to_uint24, 3)
+	}
+
+	uint32_t ChunkMeta::get_uint24 (const uint16_t key, const uint32_t default_value) const
+	{
+		get_uint_helper (to_uint24, 3)
+	}
+
+	uint32_t ChunkMeta::get_uint32 (const std::string_view key, const uint32_t default_value) const
+	{
+		get_uint_helper (to_uint32, 4)
+	}
+
+	uint32_t ChunkMeta::get_uint32 (const uint16_t key, const uint32_t default_value) const
+	{
+		get_uint_helper (to_uint32, 4)
+	}
+
+	uint64_t ChunkMeta::get_uint64 (const std::string_view key, const uint64_t default_value) const
+	{
+		get_uint_helper (to_uint64, 8)
+	}
+
+	uint64_t ChunkMeta::get_uint64 (const uint16_t key, const uint64_t default_value) const
+	{
+		get_uint_helper (to_uint64, 8)
+	}
+
+#undef get_uint_helper
 
 	void ChunkMeta::modify_value (const std::string_view key, ValueCallback callback)
 	{

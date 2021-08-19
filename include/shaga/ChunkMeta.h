@@ -89,6 +89,21 @@ namespace shaga {
 			void add_value (const uint16_t key, std::string &&value);
 			void add_value (const std::string_view key, std::string &&value);
 
+			void add_uint8 (const uint16_t key, const uint8_t value);
+			void add_uint8 (const std::string_view key, const uint8_t value);
+
+			void add_uint16 (const uint16_t key, const uint16_t value);
+			void add_uint16 (const std::string_view key, const uint16_t value);
+
+			void add_uint24 (const uint16_t key, const uint32_t value);
+			void add_uint24 (const std::string_view key, const uint32_t value);
+
+			void add_uint32 (const uint16_t key, const uint32_t value);
+			void add_uint32 (const std::string_view key, const uint32_t value);
+
+			void add_uint64 (const uint16_t key, const uint64_t value);
+			void add_uint64 (const std::string_view key, const uint64_t value);
+
 			size_t get_max_bytes (void) const;
 
 			size_t size (void) const;
@@ -117,8 +132,8 @@ namespace shaga {
 			T get_values (const uint16_t key) const
 			{
 				T vout;
-				auto [i_begin, i_end] = _data.equal_range (key);
 
+				auto [i_begin, i_end] = _data.equal_range (key);
 				for (auto iter = i_begin; iter != i_end; ++iter) {
 					vout.push_back (iter->second);
 				}
@@ -146,6 +161,21 @@ namespace shaga {
 
 				return T(""sv);
 			}
+
+			uint8_t get_uint8 (const std::string_view key, const uint8_t default_value) const;
+			uint8_t get_uint8 (const uint16_t key, const uint8_t default_value) const;
+
+			uint16_t get_uint16 (const std::string_view key, const uint16_t default_value) const;
+			uint16_t get_uint16 (const uint16_t key, const uint16_t default_value) const;
+
+			uint32_t get_uint24 (const std::string_view key, const uint32_t default_value) const;
+			uint32_t get_uint24 (const uint16_t key, const uint32_t default_value) const;
+
+			uint32_t get_uint32 (const std::string_view key, const uint32_t default_value) const;
+			uint32_t get_uint32 (const uint16_t key, const uint32_t default_value) const;
+
+			uint64_t get_uint64 (const std::string_view key, const uint64_t default_value) const;
+			uint64_t get_uint64 (const uint16_t key, const uint64_t default_value) const;
 
 			void modify_value (const std::string_view key, ValueCallback callback);
 			void modify_value (const uint16_t key, ValueCallback callback);

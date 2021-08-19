@@ -301,6 +301,22 @@ namespace shaga {
 	//  Public class methods  ///////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#ifdef SHAGA_FULL
+	ReDataConfig::CryptoCache::CryptoCache ()
+	{
+		::mbedtls_aes_init (&_aes_ctx);
+		::mbedtls_chacha20_init (&_chacha20_ctx);
+		::mbedtls_chachapoly_init (&_chachapoly_ctx);
+	}
+
+	ReDataConfig::CryptoCache::~CryptoCache ()
+	{
+		::mbedtls_chachapoly_free (&_chachapoly_ctx);
+		::mbedtls_chacha20_free (&_chacha20_ctx);
+		::mbedtls_aes_free (&_aes_ctx);
+	}
+#endif // SHAGA_FULL
+
 	void ReDataConfig::calc_crypto_enc (std::string &plain, std::string &out_append, const std::string_view key) const
 	{
 		/* This function is appending data to out, because header might already be present */

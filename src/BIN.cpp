@@ -57,6 +57,11 @@ namespace shaga {
 		}
 	}
 
+	std::string BIN::machine_type_to_string (void)
+	{
+		return fmt::format ("{}bit {} machine with {}bit time"sv, sizeof (void*) * 8, endian_to_string (), sizeof (time_t) * 8);
+	}
+
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Bitwise operations  /////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -467,7 +472,7 @@ namespace shaga {
 			offset += 3;
 
 			#define SAT(x) static_cast<uint8_t> (_be_le_data[x])
-			uint32_t v = (SAT(0) << 16) | (SAT(1) << 8) | SAT(2);
+			const uint32_t v = (SAT(0) << 16) | (SAT(1) << 8) | SAT(2);
 			#undef SAT
 
 			return v;
@@ -483,7 +488,7 @@ namespace shaga {
 			offset += 3;
 
 			#define SAT(x) static_cast<uint8_t> (_be_le_data[x])
-			uint32_t v = SAT(0) | (SAT(1) << 8) | (SAT(2) << 16);
+			const uint32_t v = SAT(0) | (SAT(1) << 8) | (SAT(2) << 16);
 			#undef SAT
 
 			return v;
@@ -527,6 +532,7 @@ namespace shaga {
 	std::string BIN::be_from_uint8 (const uint8_t v)
 	{
 		std::string s;
+		s.reserve (1);
 		be_from_uint8 (v, s);
 		return s;
 	}
@@ -534,6 +540,7 @@ namespace shaga {
 	std::string BIN::be_from_uint16 (const uint16_t v)
 	{
 		std::string s;
+		s.reserve (2);
 		be_from_uint16 (v, s);
 		return s;
 	}
@@ -541,6 +548,7 @@ namespace shaga {
 	std::string BIN::be_from_uint24 (const uint32_t v)
 	{
 		std::string s;
+		s.reserve (3);
 		be_from_uint24 (v, s);
 		return s;
 	}
@@ -548,6 +556,7 @@ namespace shaga {
 	std::string BIN::be_from_uint32 (const uint32_t v)
 	{
 		std::string s;
+		s.reserve (4);
 		be_from_uint32 (v, s);
 		return s;
 	}
@@ -555,6 +564,7 @@ namespace shaga {
 	std::string BIN::be_from_uint64 (const uint64_t v)
 	{
 		std::string s;
+		s.reserve (8);
 		be_from_uint64 (v, s);
 		return s;
 	}
@@ -581,30 +591,22 @@ namespace shaga {
 
 	std::string BIN::be_from_int8 (const int8_t v)
 	{
-		std::string s;
-		be_from_int8 (v, s);
-		return s;
+		return be_from_uint8 (static_cast<uint8_t> (v));
 	}
 
 	std::string BIN::be_from_int16 (const int16_t v)
 	{
-		std::string s;
-		be_from_int16 (v, s);
-		return s;
+		return be_from_uint16 (static_cast<uint16_t> (v));
 	}
 
 	std::string BIN::be_from_int32 (const int32_t v)
 	{
-		std::string s;
-		be_from_int32 (v, s);
-		return s;
+		return be_from_uint32 (static_cast<uint32_t> (v));
 	}
 
 	std::string BIN::be_from_int64 (const int64_t v)
 	{
-		std::string s;
-		be_from_int64 (v, s);
-		return s;
+		return be_from_uint64 (static_cast<uint64_t> (v));
 	}
 
 	uint8_t BIN::be_to_uint8 (const std::string_view s, size_t &offset)
@@ -747,6 +749,7 @@ namespace shaga {
 	std::string BIN::from_uint8 (const uint8_t v)
 	{
 		std::string s;
+		s.reserve (1);
 		from_uint8 (v, s);
 		return s;
 	}
@@ -754,6 +757,7 @@ namespace shaga {
 	std::string BIN::from_uint16 (const uint16_t v)
 	{
 		std::string s;
+		s.reserve (2);
 		from_uint16 (v, s);
 		return s;
 	}
@@ -761,6 +765,7 @@ namespace shaga {
 	std::string BIN::from_uint24 (const uint32_t v)
 	{
 		std::string s;
+		s.reserve (3);
 		from_uint24 (v, s);
 		return s;
 	}
@@ -768,6 +773,7 @@ namespace shaga {
 	std::string BIN::from_uint32 (const uint32_t v)
 	{
 		std::string s;
+		s.reserve (4);
 		from_uint32 (v, s);
 		return s;
 	}
@@ -775,6 +781,7 @@ namespace shaga {
 	std::string BIN::from_uint64 (const uint64_t v)
 	{
 		std::string s;
+		s.reserve (8);
 		from_uint64 (v, s);
 		return s;
 	}
@@ -801,30 +808,22 @@ namespace shaga {
 
 	std::string BIN::from_int8 (const int8_t v)
 	{
-		std::string s;
-		from_int8 (v, s);
-		return s;
+		return from_uint8 (static_cast<uint8_t> (v));
 	}
 
 	std::string BIN::from_int16 (const int16_t v)
 	{
-		std::string s;
-		from_int16 (v, s);
-		return s;
+		return from_uint16 (static_cast<uint16_t> (v));
 	}
 
 	std::string BIN::from_int32 (const int32_t v)
 	{
-		std::string s;
-		from_int32 (v, s);
-		return s;
+		return from_uint32 (static_cast<uint32_t> (v));
 	}
 
 	std::string BIN::from_int64 (const int64_t v)
 	{
-		std::string s;
-		from_int64 (v, s);
-		return s;
+		return from_uint64 (static_cast<uint64_t> (v));
 	}
 
 	uint8_t BIN::to_uint8 (const std::string_view s, size_t &offset)
@@ -931,7 +930,7 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	size_t BIN::to_size (const std::string_view s, size_t &offset)
 	{
-		size_t v = 0;
+		size_t v {0};
 
 		#define SAT static_cast<uint8_t> (s.at (offset)); ++offset
 		const size_t d1 = SAT;

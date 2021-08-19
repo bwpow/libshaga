@@ -149,19 +149,8 @@ namespace shaga {
 				mbedtls_chacha20_context _chacha20_ctx;
 				mbedtls_chachapoly_context _chachapoly_ctx;
 
-				CryptoCache ()
-				{
-					::mbedtls_aes_init (&_aes_ctx);
-					::mbedtls_chacha20_init (&_chacha20_ctx);
-					::mbedtls_chachapoly_init (&_chachapoly_ctx);
-				}
-
-				~CryptoCache ()
-				{
-					::mbedtls_chachapoly_free (&_chachapoly_ctx);
-					::mbedtls_chacha20_free (&_chacha20_ctx);
-					::mbedtls_aes_free (&_aes_ctx);
-				}
+				explicit CryptoCache ();
+				~CryptoCache ();
 
 				CryptoCache (const CryptoCache &) = delete;
 				CryptoCache (CryptoCache &&) = delete;
@@ -184,7 +173,7 @@ namespace shaga {
 				uint32_t halfsiphash_k0;
 				uint32_t halfsiphash_k1;
 
-				DigestCache ();
+				explicit DigestCache ();
 
 				void reset (void);
 

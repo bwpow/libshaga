@@ -64,6 +64,7 @@ namespace shaga::BIN {
 	bool is_little_endian (void);
 	bool is_big_endian (void);
 	SHAGA_STRV std::string_view endian_to_string (void);
+	std::string machine_type_to_string (void);
 
 	void OR (std::string &lhs, const std::string_view rhs);
 	void XOR (std::string &lhs, const std::string_view rhs);
