@@ -439,7 +439,7 @@ class auto_seeded : public SeedSeq, public auto_seeded_helper
 		default_seeds local_entropy (void)
 		{
 			// This is a constant that changes every time we compile the code
-			static const constexpr uint32_t _compile_stamp = _fnv (2166136261U, __DATE__ __TIME__ __FILE__);
+			[[maybe_unused]] static const constexpr uint32_t _compile_stamp = _fnv (2166136261U, __DATE__ __TIME__ __FILE__);
 
 			// Some people think you shouldn't use the random device much because
 			// on some platforms it could be expensive to call or "use up" vital
@@ -476,7 +476,7 @@ class auto_seeded : public SeedSeq, public auto_seeded_helper
 			// The address of the time function.  It should hopefully be in
 			// a system library that hopefully isn't always in the same place
 			// (might not change until system is rebooted though)
-			const uint32_t time_func = _hash (&std::chrono::high_resolution_clock::now);
+			[[maybe_unused]] const uint32_t time_func = _hash (&std::chrono::high_resolution_clock::now);
 
 			// The address of the exit function.  It should hopefully be in
 			// a system library that hopefully isn't always in the same place

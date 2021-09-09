@@ -30,18 +30,18 @@ namespace shaga {
 			std::string get_last_nested_realpath (void) const;
 
 			INI_KEY get_key (const std::string_view section, const std::string_view line) const;
-			COMMON_LIST & get_list_ref (INI_MAP &m, const INI_KEY &key, const bool create) const;
-			const COMMON_LIST & get_list_ref (const INI_MAP &m, const INI_KEY &key) const;
-			COMMON_LIST get_list_copy (const INI_MAP &m, const INI_KEY &key) const;
-			INI_MAP::iterator begin_of_section (INI_MAP &m, const std::string_view section) const;
+			COMMON_LIST & get_list_ref (INI_MAP &ini_map, const INI_KEY &key, const bool create) const;
+			const COMMON_LIST & get_list_ref (const INI_MAP &ini_map, const INI_KEY &key) const;
+			COMMON_LIST get_list_copy (const INI_MAP &ini_map, const INI_KEY &key) const;
+			INI_MAP::iterator begin_of_section (INI_MAP &ini_map, const std::string_view section) const;
 			bool is_same_section (const INI_KEY &key, const std::string_view section) const;
 
-			void parse_line (INI_MAP &m, const std::string_view line, std::string &active_section, const bool allow_include);
+			void parse_line (INI_MAP &ini_map, const std::string_view line, std::string &active_section, const bool allow_include);
 
-			void parse_file (INI_MAP &m, const std::string_view fname, const bool allow_include);
-			void parse_file (const std::string_view fname, const bool allow_include);
+			void parse_file (INI_MAP &ini_map, const std::string_view fname, const bool allow_include, const bool allow_missing);
+			void parse_file (const std::string_view fname, const bool allow_include, const bool allow_missing);
 
-			void parse_buffer (INI_MAP &m, const std::string_view buf, const bool allow_include);
+			void parse_buffer (INI_MAP &ini_map, const std::string_view buf, const bool allow_include);
 			void parse_buffer (const std::string_view buf, const bool allow_include);
 
 			SHAGA_STRV std::optional<std::string_view> get_last_value (const INI_MAP &m, const INI_KEY &key) const;

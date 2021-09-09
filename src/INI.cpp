@@ -47,15 +47,15 @@ namespace shaga {
 		return k;
 	}
 
-	COMMON_LIST & INI::get_list_ref (INI_MAP &m, const INI_KEY &key, const bool create) const
+	COMMON_LIST & INI::get_list_ref (INI_MAP &ini_map, const INI_KEY &key, const bool create) const
 	{
-		INI_MAP::iterator iter = m.find (key);
-		if (iter != m.end ()) {
+		INI_MAP::iterator iter = ini_map.find (key);
+		if (iter != ini_map.end ()) {
 			return iter->second;
 		}
 
 		if (true == create) {
-			std::pair <INI_MAP::iterator, bool> res = m.insert (std::make_pair (key, COMMON_LIST ()));
+			std::pair <INI_MAP::iterator, bool> res = ini_map.insert (std::make_pair (key, COMMON_LIST ()));
 			if (false == res.second) {
 				cThrow ("Unable to add key {}/{}"sv, key.section, key.line);
 			}
@@ -66,29 +66,29 @@ namespace shaga {
 		cThrow ("Nonexistent entry {}/{} requested"sv, key.section, key.line);
 	}
 
-	const COMMON_LIST & INI::get_list_ref (const INI_MAP &m, const INI_KEY &key) const
+	const COMMON_LIST & INI::get_list_ref (const INI_MAP &ini_map, const INI_KEY &key) const
 	{
-		INI_MAP::const_iterator iter = m.find (key);
-		if (iter != m.end ()) {
+		INI_MAP::const_iterator iter = ini_map.find (key);
+		if (iter != ini_map.end ()) {
 			return iter->second;
 		}
 
 		cThrow ("Nonexistent entry {}/{} requested"sv, key.section, key.line);
 	}
 
-	COMMON_LIST INI::get_list_copy (const INI_MAP &m, const INI_KEY &key) const
+	COMMON_LIST INI::get_list_copy (const INI_MAP &ini_map, const INI_KEY &key) const
 	{
-		INI_MAP::const_iterator iter = m.find (key);
-		if (iter != m.end ()) {
+		INI_MAP::const_iterator iter = ini_map.find (key);
+		if (iter != ini_map.end ()) {
 			return iter->second;
 		}
 
 		cThrow ("Nonexistent entry {}/{} requested"sv, key.section, key.line);
 	}
 
-	INI::INI_MAP::iterator INI::begin_of_section (INI_MAP &m, const std::string_view section) const
+	INI::INI_MAP::iterator INI::begin_of_section (INI_MAP &ini_map, const std::string_view section) const
 	{
-		return m.lower_bound (get_key (section, ""sv));
+		return ini_map.lower_bound (get_key (section, ""sv));
 	}
 
 	bool INI::is_same_section (const INI_KEY &key, const std::string_view section) const
@@ -96,7 +96,7 @@ namespace shaga {
 		return (key.section == section);
 	}
 
-	void INI::parse_line (INI_MAP &m, std::string_view line, std::string &active_section, const bool allow_include)
+	void INI::parse_line (INI_MAP &ini_map, std::string_view line, std::string &active_section, const bool allow_include)
 	{
 		STR::trim (line);
 
@@ -130,10 +130,22 @@ namespace shaga {
 				}
 
 				if (line_val.substr (0, 1) == "/"sv) {
-					parse_file (m, line_val, allow_include);
+					parse_file (ini_map, line_val, allow_include, true);
 				}
 				else {
-					parse_file (m, get_last_nested_realpath () + std::string (line_val), allow_include);
+					parse_file (ini_map, get_last_nested_realpath () + std::string (line_val), allow_include, true);
+				}
+			}
+			else if (STR::icompare (line_key, "@require"sv) == true) {
+				if (false == allow_include) {
+					cThrow ("Including files is not allowed"sv);
+				}
+
+				if (line_val.substr (0, 1) == "/"sv) {
+					parse_file (ini_map, line_val, allow_include, false);
+				}
+				else {
+					parse_file (ini_map, get_last_nested_realpath () + std::string (line_val), allow_include, false);
 				}
 			}
 			else if (STR::icompare (line_key, "@glob"sv) == true) {
@@ -143,12 +155,12 @@ namespace shaga {
 
 				if (line_val.substr (0, 1) == "/"sv) {
 					FS::glob (line_val, [&](const std::string_view fname) -> void {
-						parse_file (m, fname, allow_include);
+						parse_file (ini_map, fname, allow_include, false);
 					});
 				}
 				else {
 					FS::glob (get_last_nested_realpath () + std::string (line_val), [&](const std::string_view fname) -> void {
-						parse_file (m, fname, allow_include);
+						parse_file (ini_map, fname, allow_include, false);
 					});
 				}
 			}
@@ -192,19 +204,19 @@ namespace shaga {
 			refer = true;
 		}
 
-		if (line_key.size () > 2 && line_key.substr (line_key.size () - 2) == "[]") {
+		if (line_key.size () > 2 && line_key.substr (line_key.size () - 2) == "[]"sv) {
 			line_key.remove_suffix (2);
 			append = true;
 		}
 
-		COMMON_LIST &v = get_list_ref (m, get_key (active_section, line_key), true);
+		COMMON_LIST &vec = get_list_ref (ini_map, get_key (active_section, line_key), true);
 
 		if (append == false) {
-			v.clear ();
+			vec.clear ();
 		}
 
 		if (true == refer) {
-			COMMON_VECTOR refval = STR::split<COMMON_VECTOR> (line_val, "/");
+			COMMON_VECTOR refval = STR::split<COMMON_VECTOR> (line_val, "/"sv);
 
 			INI_KEY key;
 			if (refval.size () == 1) {
@@ -217,15 +229,15 @@ namespace shaga {
 				cThrow ("Malformed reference. Reference has to contain either key from current section or section/key."sv);
 			}
 
-			COMMON_LIST referenced_list = get_list_copy (m, key);
-			v.splice (v.end (), std::move (referenced_list));
+			COMMON_LIST referenced_list = get_list_copy (ini_map, key);
+			vec.splice (vec.end (), std::move (referenced_list));
 		}
 		else {
-			v.emplace_back (line_val);
+			vec.emplace_back (line_val);
 		}
 	}
 
-	void INI::parse_file (INI_MAP &m, const std::string_view fname, const bool allow_include)
+	void INI::parse_file (INI_MAP &ini_map, const std::string_view fname, const bool allow_include, const bool allow_missing)
 	{
 		if (_nested_parse_file.size () > _max_nested_files) {
 			cThrow ("Maximum nesting of include directive reached"sv);
@@ -243,37 +255,47 @@ namespace shaga {
 		std::string active_section;
 		active_section.clear ();
 
-		FS::read_file (fname, [&](const std::string_view line) -> void {
-			parse_line (m, line, active_section, allow_include);
-		});
+		if (FS::is_file (fname) == false) {
+			if (true == allow_missing) {
+				P::debug_print ("INI: File '{}' missing, ignoring..."sv, fname);
+			}
+			else {
+				cThrow ("File '{}' does not exist!"sv, fname);
+			}
+		}
+		else {
+			FS::read_file (fname, [&](const std::string_view line) -> void {
+				parse_line (ini_map, line, active_section, allow_include);
+			});
+		}
 
 		_nested_parse_file.pop_back ();
 	}
 
-	void INI::parse_file (const std::string_view fname, const bool allow_include)
+	void INI::parse_file (const std::string_view fname, const bool allow_include, const bool allow_missing)
 	{
 		_nested_parse_file.clear ();
-		INI_MAP m = _map;
-		parse_file (m, fname, allow_include);
-		_map = m;
+		INI_MAP ini_map = _map;
+		parse_file (ini_map, fname, allow_include, allow_missing);
+		_map = ini_map;
 	}
 
-	void INI::parse_buffer (INI_MAP &m, const std::string_view buf, const bool allow_include)
+	void INI::parse_buffer (INI_MAP &ini_map, const std::string_view buf, const bool allow_include)
 	{
 		std::string active_section;
 		active_section.clear ();
 
 		STR::split (buf, "\n\r"sv, [&](const std::string_view line) -> void {
-			parse_line (m, line, active_section, allow_include);
+			parse_line (ini_map, line, active_section, allow_include);
 		});
 	}
 
 	void INI::parse_buffer (const std::string_view buf, const bool allow_include)
 	{
 		_nested_parse_file.clear ();
-		INI_MAP m = _map;
-		parse_buffer (m, buf, allow_include);
-		_map = m;
+		INI_MAP ini_map = _map;
+		parse_buffer (ini_map, buf, allow_include);
+		_map = ini_map;
 	}
 
 	std::optional<std::string_view> INI::get_last_value (const INI_MAP &m, const INI_KEY &key) const
@@ -327,7 +349,7 @@ namespace shaga {
 	INI::INI (const std::string_view fname, const bool allow_include)
 	{
 		reset ();
-		parse_file (fname, allow_include);
+		parse_file (fname, allow_include, false);
 	}
 
 	void INI::reset (void)
@@ -340,7 +362,7 @@ namespace shaga {
 		if (append == false) {
 			reset ();
 		}
-		parse_file (fname, allow_include);
+		parse_file (fname, allow_include, false);
 	}
 
 	void INI::save_to_file (ShFile &file) const

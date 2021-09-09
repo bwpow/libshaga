@@ -21,6 +21,13 @@ ST_CPPFLAGS = \
 	-Wall \
 	-Wextra \
 	-Wshadow \
+	-Wduplicated-cond \
+	-Wduplicated-branches \
+	-Wlogical-op \
+	-Wrestrict \
+	-Wnull-dereference \
+	-Wdouble-promotion \
+	-Wno-unknown-warning-option \
 	-fstack-protector-strong \
 	-fsized-deallocation \
 	-O3 \

@@ -49,7 +49,9 @@ TEST (SPSC, full)
 		if (i < sze - 1) {
 			EXPECT_FALSE (ring.empty ());
 			ASSERT_TRUE (ring.front () != nullptr);
-			EXPECT_TRUE (*(ring.front ()) == i);
+			const auto frnt = ring.front ();
+			ASSERT_TRUE (frnt != nullptr);
+			EXPECT_TRUE (*frnt == i);
 			EXPECT_TRUE (ring.pop_front ());
 		}
 		else {
