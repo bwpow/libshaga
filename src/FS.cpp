@@ -175,7 +175,7 @@ namespace shaga {
 				}
 				cThrow ("glob error for pattern '{}': Unknown error"sv, pattern);
 			}
-			for(size_t i = 0 ; i < glob_result.gl_pathc; i++) {
+			for (size_t i = 0; i < glob_result.gl_pathc; ++i) {
 				callback (glob_result.gl_pathv[i]);
 			}
 			::globfree (&glob_result);
