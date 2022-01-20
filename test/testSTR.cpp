@@ -225,6 +225,27 @@ TEST (STR, int64)
 	EXPECT_THROW (STR::to_int64 ("9223372036854775808"), CommonException);
 }
 
+TEST (STR, float)
+{
+	std::setlocale (LC_NUMERIC, "C");
+
+	EXPECT_TRUE (STR::to_float ("0.22"sv) == 0.22f);
+	EXPECT_TRUE (STR::to_double ("0.22"sv) == 0.22);
+	EXPECT_TRUE (STR::to_long_double ("0.22"sv) == 0.22L);
+
+	EXPECT_TRUE (STR::to_float ("-75809"sv) == (-75809.0f));
+	EXPECT_TRUE (STR::to_double ("-75809"sv) == (-75809.0));
+	EXPECT_TRUE (STR::to_long_double ("-75809"sv) == (-75809.0L));
+
+	EXPECT_THROW (STR::to_float ("-75809text"sv), CommonException);
+	EXPECT_THROW (STR::to_double ("-75809text"sv), CommonException);
+	EXPECT_THROW (STR::to_long_double ("-75809text"sv), CommonException);
+
+	EXPECT_THROW (STR::to_float (""sv), CommonException);
+	EXPECT_THROW (STR::to_double (""sv), CommonException);
+	EXPECT_THROW (STR::to_long_double (""sv), CommonException);
+}
+
 TEST (STR, trim)
 {
 	const std::string_view chars ("\n\r\t\0 ", 5);

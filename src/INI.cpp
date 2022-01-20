@@ -525,6 +525,54 @@ namespace shaga {
 		return 0;
 	}
 
+	float INI::get_float (const std::string_view section, const std::string_view key, const float defvalue, const bool thr) const
+	{
+		try {
+			const std::string_view src = get_string<std::string_view> (section, key, ""sv, true);
+			return STR::to_float (src);
+		}
+		catch (const std::exception &e) {
+			if (true == thr) {
+				cThrow ("{}", e.what ());
+			}
+			else {
+				return defvalue;
+			}
+		}
+	}
+
+	double INI::get_double (const std::string_view section, const std::string_view key, const double defvalue, const bool thr) const
+	{
+		try {
+			const std::string_view src = get_string<std::string_view> (section, key, ""sv, true);
+			return STR::to_double (src);
+		}
+		catch (const std::exception &e) {
+			if (true == thr) {
+				cThrow ("{}", e.what ());
+			}
+			else {
+				return defvalue;
+			}
+		}
+	}
+
+	long double INI::get_long_double (const std::string_view section, const std::string_view key, const long double defvalue, const bool thr) const
+	{
+		try {
+			const std::string_view src = get_string<std::string_view> (section, key, ""sv, true);
+			return STR::to_long_double (src);
+		}
+		catch (const std::exception &e) {
+			if (true == thr) {
+				cThrow ("{}", e.what ());
+			}
+			else {
+				return defvalue;
+			}
+		}
+	}
+
 	bool INI::get_bool (const std::string_view section, const std::string_view key, const bool defvalue, const bool thr) const
 	{
 		return get_int<bool> (section, key, defvalue, thr);

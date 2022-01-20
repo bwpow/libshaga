@@ -113,6 +113,10 @@ namespace shaga {
 				return T(""sv);
 			}
 
+			float get_float (const std::string_view section, const std::string_view key, const float defvalue, const bool thr = false) const;
+			double get_double (const std::string_view section, const std::string_view key, const double defvalue, const bool thr = false) const;
+			long double get_long_double (const std::string_view section, const std::string_view key, const long double defvalue, const bool thr = false) const;
+
 			bool get_bool (const std::string_view section, const std::string_view key, const bool defvalue, const bool thr = false) const;
 			uint8_t get_uint8 (const std::string_view section, const std::string_view key, const uint8_t defvalue, const bool thr = false, const int base = 10) const;
 			uint16_t get_uint16 (const std::string_view section, const std::string_view key, const uint16_t defvalue, const bool thr = false, const int base = 10) const;

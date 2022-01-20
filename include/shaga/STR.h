@@ -78,6 +78,10 @@ namespace shaga::STR {
 	int32_t to_int32 (const std::string_view s, const int base = 10);
 	int64_t to_int64 (const std::string_view s, const int base = 10);
 
+	float to_float (const std::string_view s);
+	double to_double (const std::string_view s);
+	long double to_long_double (const std::string_view s);
+
 	template <typename T>
 	auto to_int (const std::string_view s, const int base = 10) -> T
 	{

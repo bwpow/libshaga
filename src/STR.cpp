@@ -198,6 +198,76 @@ namespace shaga {
 		return out;
 	}
 
+	template <typename T>
+	static void _to_float_process (T &result, std::string_view src, const std::string_view type)
+	{
+		try {
+			shaga::STR::trim (src);
+			size_t pos {0};
+
+			if (std::is_same<T, float>::value) {
+				result = std::stof (std::string (src), &pos);
+			}
+			else if (std::is_same<T, double>::value) {
+				result = std::stod (std::string (src), &pos);
+			}
+			else if (std::is_same<T, long double>::value) {
+				result = std::stold (std::string (src), &pos);
+			}
+			else {
+				cThrow ("Unrecognized type"sv);
+			}
+
+			if (pos != src.size ()) {
+				cThrow ("Unrecognized character"sv);
+			}
+
+//			Note: This should work in C++17, but many compilers are not ready. Leaving it here for future.
+//			auto [ptr, ec] = std::from_chars (reinterpret_cast<const char *> (src.data ()), reinterpret_cast<const char *> (src.data () + src.size ()), result);
+//			if (ec == std::errc())
+//			{
+//				if ((ec - src.data ()) != src.size ()) {
+//					cThrow ("Unrecognized character"sv);
+//				}
+//			}
+//			else if (ec == std::errc::invalid_argument)
+//			{
+//				cThrow ("Not a number"sv);
+//			}
+//			else if (ec == std::errc::result_out_of_range)
+//			{
+//				cThrow ("Out of range"sv);
+//			}
+//			else {
+//				cThrow ("Undefined error"sv);
+//			}
+		}
+		catch (const std::exception &e) {
+			cThrow ("Could not convert '{}' to {}: {}"sv, src, type, e.what ());
+		}
+	}
+
+	float STR::to_float (const std::string_view s)
+	{
+		float out;
+		_to_float_process<float> (out, s, "float"sv);
+		return out;
+	}
+
+	double STR::to_double (const std::string_view s)
+	{
+		double out;
+		_to_float_process<double> (out, s, "double"sv);
+		return out;
+	}
+
+	long double STR::to_long_double (const std::string_view s)
+	{
+		long double out;
+		_to_float_process<long double> (out, s, "long double"sv);
+		return out;
+	}
+
 	void STR::split (const std::string_view what, const std::string_view delimiter, std::function<void (std::string_view)> callback)
 	{
 		size_t p_start {0};
