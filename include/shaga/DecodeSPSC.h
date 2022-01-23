@@ -327,7 +327,46 @@ namespace shaga
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  Simple8DecodeSPSC  ////////////////////////////////////////////////////////////////////////////////////////////
+	//  SimpleNewLineDecodeSPSC  ////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	template<class T> class SimpleNewLineDecodeSPSC : public DecodeSPSC<T>
+	{
+		private:
+			const bool _skip_empty_lines {true};
+
+			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) override final
+			{
+				for (;offset < len; ++offset) {
+					if ('\r' == buffer[offset]) {
+						continue;
+					}
+					else if ('\n' == buffer[offset]) {
+						if (false == _skip_empty_lines || false == this->_curdata->empty ()) {
+							this->push ();
+
+							this->_curdata->zero_size ();
+							this->_curdata->alloc ();
+						}
+					}
+					else {
+						this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset];
+					}
+				}
+			}
+
+		public:
+			SimpleNewLineDecodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets, const bool skip_empty_lines = true) :
+				DecodeSPSC<T> (max_packet_size + 1, num_packets),
+				_skip_empty_lines (skip_empty_lines)
+			{
+				this->_curdata->zero_size ();
+				this->_curdata->alloc ();
+			}
+	};
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Simple8DecodeSPSC  //////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	template<class T> class Simple8DecodeSPSC : public DecodeSPSC<T>

@@ -22,6 +22,7 @@ namespace shaga {
 			SPSCDataInterface& operator= (const SPSCDataInterface &) = delete;
 
 			virtual uint_fast32_t size (void) const = 0;
+			virtual bool empty (void) const = 0;
 			virtual uint_fast32_t inc_size (void) = 0;
 			virtual uint_fast32_t set_size (const uint_fast32_t new_size) = 0;
 			virtual void dec_size (void) = 0;
@@ -62,6 +63,11 @@ namespace shaga {
 				return _size;
 			}
 
+			virtual bool empty (void) const override
+			{
+				return (0 == _size);
+			}
+
 			virtual uint_fast32_t inc_size (void) override
 			{
 				if (HEDLEY_UNLIKELY (_size >= _bufsize)) {
@@ -80,7 +86,7 @@ namespace shaga {
 
 			virtual void dec_size (void) override
 			{
-				if (0 == _size) {
+				if (HEDLEY_UNLIKELY (0 == _size)) {
 					cThrow ("Unable to decrease size"sv);
 				}
 				--_size;
@@ -88,7 +94,7 @@ namespace shaga {
 
 			virtual void dec2_size (void) override
 			{
-				if (_size < 2) {
+				if (HEDLEY_UNLIKELY (_size < 2)) {
 					cThrow ("Unable to decrease size"sv);
 				}
 				_size -= 2;
@@ -135,6 +141,11 @@ namespace shaga {
 				return _size;
 			}
 
+			virtual bool empty (void) const override
+			{
+				return (0 == _size);
+			}
+
 			virtual uint_fast32_t inc_size (void) override
 			{
 				if (HEDLEY_UNLIKELY (_size >= _real_bufsize)) {
@@ -153,7 +164,7 @@ namespace shaga {
 
 			virtual void dec_size (void) override
 			{
-				if (0 == _size) {
+				if (HEDLEY_UNLIKELY (0 == _size)) {
 					cThrow ("Unable to decrease size"sv);
 				}
 				--_size;
@@ -161,7 +172,7 @@ namespace shaga {
 
 			virtual void dec2_size (void) override
 			{
-				if (_size < 2) {
+				if (HEDLEY_UNLIKELY (_size < 2)) {
 					cThrow ("Unable to decrease size"sv);
 				}
 				_size -= 2;

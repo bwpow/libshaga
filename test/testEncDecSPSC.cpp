@@ -258,6 +258,54 @@ template<class T> static void _seqpacket_sizes_test (void)
 	ASSERT_FALSE (decodering.pop_buffer (str));
 }
 
+template<class T> static void _simplenewlinespsc_test (void)
+{
+	const size_t datasize {256};
+	const size_t sze {6};
+	const size_t loops {64};
+
+	SimpleNewLineDecodeSPSC<T> decodering1 (datasize, sze, true);
+	SimpleNewLineDecodeSPSC<T> decodering2 (datasize, sze, false);
+
+	std::string str;
+
+	for (size_t loop = 0; loop < loops; ++loop) {
+		decodering1.push_buffer ("\n\ntest1\r\n\ntest2\ntest3"sv);
+		decodering2.push_buffer ("\n\ntest1\r\n\ntest2\ntest3"sv);
+
+		ASSERT_TRUE (decodering1.get_err_count_reset () == 0);
+		ASSERT_TRUE (decodering2.get_err_count_reset () == 0);
+
+		if (loop > 0) {
+			ASSERT_TRUE (decodering1.pop_buffer (str));
+			EXPECT_TRUE (str == "test3"s);
+
+			ASSERT_TRUE (decodering2.pop_buffer (str));
+			EXPECT_TRUE (str == "test3"s);
+		}
+		else {
+			ASSERT_TRUE (decodering2.pop_buffer (str));
+			EXPECT_TRUE (str == ""s);
+		}
+
+		ASSERT_TRUE (decodering1.pop_buffer (str));
+		EXPECT_TRUE (str == "test1"s);
+		ASSERT_TRUE (decodering1.pop_buffer (str));
+		EXPECT_TRUE (str == "test2"s);
+		ASSERT_FALSE (decodering1.pop_buffer ());
+
+		ASSERT_TRUE (decodering2.pop_buffer (str));
+		EXPECT_TRUE (str == ""s);
+		ASSERT_TRUE (decodering2.pop_buffer (str));
+		EXPECT_TRUE (str == "test1"s);
+		ASSERT_TRUE (decodering2.pop_buffer (str));
+		EXPECT_TRUE (str == ""s);
+		ASSERT_TRUE (decodering2.pop_buffer (str));
+		EXPECT_TRUE (str == "test2"s);
+		ASSERT_FALSE (decodering1.pop_buffer ());
+	}
+}
+
 template<class T> static void _simple8spsc_test (void)
 {
 	const size_t datasize = 256;
@@ -554,6 +602,16 @@ static void _seqpacketspsc_test (void)
 		ASSERT_TRUE (pos == totalsize);
 		ASSERT_FALSE (decodering.pop_buffer ());
 	}
+}
+
+TEST (EncDecSPSC, simplenewline_push_pop_prealloc)
+{
+	_simplenewlinespsc_test<SPSCDataPreAlloc> ();
+}
+
+TEST (EncDecSPSC, simplenewline_push_pop)
+{
+	_simplenewlinespsc_test<SPSCDataDynAlloc> ();
 }
 
 TEST (EncDecSPSC, simple8_push_pop_prealloc)
