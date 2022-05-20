@@ -38,7 +38,7 @@ MT_LIBS = -pthread $(ST_LIBS) -latomic
 MT_CPPFLAGS = -pthread $(ST_CPPFLAGS)
 
 ifdef SHAGA_SANITY
-	SANITY = -fsanitize=address -fsanitize=undefined -fsanitize=leak -fno-omit-frame-pointer
+	SANITY = -fsanitize=address -fsanitize=undefined -fsanitize=leak -fsanitize-address-use-after-scope -fno-omit-frame-pointer
 	ST_LIBS += $(SANITY)
 	ST_CPPFLAGS += $(SANITY)
 	MT_LIBS += $(SANITY)

@@ -121,7 +121,7 @@ namespace shaga {
 			ret = ::mbedtls_ecp_group_load (&ec->grp, curve_info->grp_id);
 			check_error (ret);
 
-			size_t pos = 0;
+			size_t pos {0};
 			const size_t len = ::mbedtls_mpi_size (&ec->grp.P);
 
 			auto func = [&](mbedtls_mpi *P) -> void {

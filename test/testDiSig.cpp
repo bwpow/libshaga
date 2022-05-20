@@ -172,28 +172,42 @@ TEST (DiSig, genkey)
 	DiSigVerify pub;
 	COMMON_VECTOR vec;
 
+	bool ok_pem {false};
+	bool ok_der {false};
+
 	const mbedtls_ecp_curve_info *curve_info;
-	for (curve_info = mbedtls_ecp_curve_list(); curve_info->grp_id != MBEDTLS_ECP_DP_NONE; curve_info++) {
-		{
+	for (curve_info = mbedtls_ecp_curve_list (); curve_info->grp_id != MBEDTLS_ECP_DP_NONE; curve_info++) {
+		/* Some curves don't support pubkeys, so expect throwing exceptions */
+		try {
 			priv.generate_new_keypair (curve_info->name);
-			pub.add_public_key_pem (priv.get_public_key_pem ());
+			auto pubkey = priv.get_public_key_pem ();
+			pub.add_public_key_pem (pubkey);
 
 			std::string test = priv.sign (MBEDTLS_MD_SHA256, hsh_ok);
 			EXPECT_THROW (priv.sign (MBEDTLS_MD_SHA256, hsh_bad), CommonException);
 
 			vec.push_back (test);
+			ok_pem = true;
 		}
+		catch (...) { }
 
-		{
+		try {
 			priv.generate_new_keypair (curve_info->name);
-			pub.add_public_key_der (priv.get_public_key_der ());
+			auto pubkey = priv.get_public_key_der ();
+			pub.add_public_key_der (pubkey);
 
 			std::string test = priv.sign (MBEDTLS_MD_SHA256, hsh_ok);
 			EXPECT_THROW (priv.sign (MBEDTLS_MD_SHA256, hsh_bad), CommonException);
 
 			vec.push_back (test);
+			ok_der = true;
 		}
+		catch (...) { }
 	}
+
+	/* At least one DER and one PEM signing worked */
+	EXPECT_TRUE (ok_pem);
+	EXPECT_TRUE (ok_der);
 
 	for (const std::string &test: vec) {
 		EXPECT_THROW (pub.verify (MBEDTLS_MD_SHA256, hsh_bad, test), CommonException);

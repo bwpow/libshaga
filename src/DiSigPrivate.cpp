@@ -20,7 +20,7 @@ namespace shaga {
 		if (nullptr == p_rng) {
 			cThrow ("DiSig error: Null pointer in random"sv);
 		}
-		randutils::mt19937_r_rng *_rng = reinterpret_cast<randutils::mt19937_r_rng *> (p_rng);
+		randutils::mt19937_r_rng *const _rng = reinterpret_cast<randutils::mt19937_r_rng *> (p_rng);
 		_rng->generate_n<uint8_t> (output, output_len);
 		return 0;
 	}
@@ -50,16 +50,23 @@ namespace shaga {
 		::mbedtls_pk_free (&_enc_ctx);
 		::mbedtls_pk_init (&_enc_ctx);
 
-		const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (s_c_str (curve_type));
-		if (nullptr == curve_info) {
-			cThrow ("Unknown curve '{}'"sv, curve_type);
+		try {
+			const mbedtls_ecp_curve_info *curve_info = ::mbedtls_ecp_curve_info_from_name (s_c_str (curve_type));
+			if (nullptr == curve_info) {
+				cThrow ("Unknown curve '{}'"sv, curve_type);
+			}
+
+			ret = ::mbedtls_pk_setup (&_enc_ctx, ::mbedtls_pk_info_from_type (MBEDTLS_PK_ECKEY));
+			check_error (ret);
+
+			ret = ::mbedtls_ecp_gen_key (curve_info->grp_id, ::mbedtls_pk_ec (_enc_ctx), _random_for_mbedtls, &_rng);
+			check_error (ret);
 		}
-
-		ret = ::mbedtls_pk_setup (&_enc_ctx, ::mbedtls_pk_info_from_type (MBEDTLS_PK_ECKEY));
-		check_error (ret);
-
-		ret = ::mbedtls_ecp_gen_key (curve_info->grp_id, ::mbedtls_pk_ec (_enc_ctx), _random_for_mbedtls, &_rng);
-		check_error (ret);
+		catch (...) {
+			::mbedtls_pk_free (&_enc_ctx);
+			::mbedtls_pk_init (&_enc_ctx);
+			throw;
+		}
 	}
 
 	SHAGA_STRV std::string_view DiSigPrivate::get_curve_type (void) const
@@ -199,7 +206,7 @@ namespace shaga {
 		if (mbedtls_pk_get_type (&_enc_ctx) != MBEDTLS_PK_ECKEY) {
 			cThrow ("DiSig error: Raw export is only supported for EC keys"sv);
 		}
-		const mbedtls_ecp_keypair *ec = ::mbedtls_pk_ec (_enc_ctx);
+		const mbedtls_ecp_keypair *const ec = ::mbedtls_pk_ec (_enc_ctx);
 
 		const size_t expected_len = ::mbedtls_mpi_size (&ec->grp.P);
 		const size_t len = ::mbedtls_mpi_size (&ec->d);
@@ -236,12 +243,12 @@ namespace shaga {
 		if (::mbedtls_pk_get_type (&_enc_ctx) != MBEDTLS_PK_ECKEY) {
 			cThrow ("DiSig error: Raw export is only supported for EC keys"sv);
 		}
-		const mbedtls_ecp_keypair *ec = ::mbedtls_pk_ec (_enc_ctx);
+		const mbedtls_ecp_keypair *const ec = ::mbedtls_pk_ec (_enc_ctx);
 
-		const size_t expected_len = ::mbedtls_mpi_size (&ec->grp.P) * 2;
+		const size_t expected_len = ::mbedtls_mpi_size (&ec->grp.P);
 
 		std::string output;
-		output.reserve (expected_len);
+		output.reserve (expected_len * 2);
 
 		auto func = [&](const mbedtls_mpi *P) -> void {
 			const size_t len = ::mbedtls_mpi_size (P);
@@ -253,7 +260,7 @@ namespace shaga {
 		func (&ec->Q.X);
 		func (&ec->Q.Y);
 
-		if (output.size () != expected_len) {
+		if (output.size () != (expected_len * 2)) {
 			cThrow ("DiSig error: Output size does not match expected length"sv);
 		}
 
@@ -265,7 +272,7 @@ namespace shaga {
 		check_hash (md_alg, hsh);
 
 		unsigned char sgn[MBEDTLS_MPI_MAX_SIZE];
-		size_t sgn_len = 0;
+		size_t sgn_len {0};
 		const int ret =  ::mbedtls_pk_sign (&_enc_ctx, md_alg, reinterpret_cast<const unsigned char *> (hsh.data ()), hsh.size (), sgn, &sgn_len, _random_for_mbedtls, &_rng);
 		check_error (ret);
 
@@ -274,10 +281,10 @@ namespace shaga {
 
 	std::string DiSigPrivate::sign_raw (const mbedtls_md_type_t md_alg, const std::string_view hsh)
 	{
-		if (mbedtls_pk_get_type (&_enc_ctx) != MBEDTLS_PK_ECKEY) {
+		if (::mbedtls_pk_get_type (&_enc_ctx) != MBEDTLS_PK_ECKEY) {
 			cThrow ("DiSig error: Raw export is only supported for EC keys"sv);
 		}
-		mbedtls_ecp_keypair *ec = ::mbedtls_pk_ec (_enc_ctx);
+		::mbedtls_ecp_keypair *const ec = ::mbedtls_pk_ec (_enc_ctx);
 
 		mbedtls_mpi r;
 		mbedtls_mpi s;
@@ -291,10 +298,10 @@ namespace shaga {
 				check_error (ret);
 			}
 
-			const size_t expected_len = ::mbedtls_mpi_size (&ec->grp.P) * 2;
+			const size_t expected_len = ::mbedtls_mpi_size (&ec->grp.P);
 
 			std::string output;
-			output.reserve (expected_len);
+			output.reserve (expected_len * 2);
 
 			auto func = [&](const mbedtls_mpi *P) -> void {
 				const size_t len = ::mbedtls_mpi_size (P);
@@ -306,10 +313,9 @@ namespace shaga {
 			func (&r);
 			func (&s);
 
-			if (output.size () != expected_len) {
+			if (output.size () != (expected_len * 2)) {
 				cThrow ("DiSig error: Output size does not match expected length"sv);
 			}
-
 
 			::mbedtls_mpi_free (&r);
 			::mbedtls_mpi_free (&s);
