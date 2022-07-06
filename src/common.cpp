@@ -92,6 +92,24 @@ namespace shaga {
 		bool _is_in_exit {false};
 	#endif // SHAGA_THREADING
 
+	#ifdef SHAGA_THREADING
+		static std::atomic<uint64_t> _get_monotime_sec_stored {0};
+		static std::atomic<uint64_t> _get_monotime_msec_stored {0};
+		static std::atomic<uint64_t> _get_monotime_usec_stored {0};
+
+		static std::atomic<uint64_t> _get_realtime_sec_stored {0};
+		static std::atomic<uint64_t> _get_realtime_msec_stored {0};
+		static std::atomic<uint64_t> _get_realtime_usec_stored {0};
+	#else
+		static volatile uint64_t _get_monotime_sec_stored {0};
+		static volatile uint64_t _get_monotime_msec_stored {0};
+		static volatile uint64_t _get_monotime_usec_stored {0};
+
+		static volatile uint64_t _get_realtime_sec_stored {0};
+		static volatile uint64_t _get_realtime_msec_stored {0};
+		static volatile uint64_t _get_realtime_usec_stored {0};
+	#endif // SHAGA_THREADING
+
 	void add_at_exit_callback (std::function<void (void)> func)
 	{
 		#ifdef SHAGA_THREADING
@@ -246,7 +264,14 @@ namespace shaga {
 		#else
 		::clock_gettime(CLOCK_MONOTONIC, &monotime);
 		#endif // CLOCK_MONOTONIC_RAW
-		return static_cast<uint64_t> (monotime.tv_sec);
+
+		const uint64_t val = static_cast<uint64_t> (monotime.tv_sec);
+		#ifdef SHAGA_THREADING
+			_get_monotime_sec_stored.store (val, std::memory_order_release);
+		#else
+			_get_monotime_sec_stored = val;
+		#endif // SHAGA_THREADING
+		return val;
 	}
 
 	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_msec (void)
@@ -257,7 +282,14 @@ namespace shaga {
 		#else
 		::clock_gettime(CLOCK_MONOTONIC, &monotime);
 		#endif // CLOCK_MONOTONIC_RAW
-		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000'000);
+
+		const uint64_t val = (static_cast<uint64_t> (monotime.tv_sec) * 1'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000'000);
+		#ifdef SHAGA_THREADING
+			_get_monotime_msec_stored.store (val, std::memory_order_release);
+		#else
+			_get_monotime_msec_stored = val;
+		#endif // SHAGA_THREADING
+		return val;
 	}
 
 	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_usec (void)
@@ -268,28 +300,110 @@ namespace shaga {
 		#else
 		::clock_gettime(CLOCK_MONOTONIC, &monotime);
 		#endif // CLOCK_MONOTONIC_RAW
-		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000);
+
+		const uint64_t val = (static_cast<uint64_t> (monotime.tv_sec) * 1'000'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000);
+		#ifdef SHAGA_THREADING
+			_get_monotime_usec_stored.store (val, std::memory_order_release);
+		#else
+			_get_monotime_usec_stored = val;
+		#endif // SHAGA_THREADING
+		return val;
+	}
+
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_sec_stored (void)
+	{
+		#ifdef SHAGA_THREADING
+			return _get_monotime_sec_stored.load (std::memory_order_relaxed);
+		#else
+			return _get_monotime_sec_stored;
+		#endif // SHAGA_THREADING
+	}
+
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_msec_stored (void)
+	{
+		#ifdef SHAGA_THREADING
+			return _get_monotime_msec_stored.load (std::memory_order_relaxed);
+		#else
+			return _get_monotime_msec_stored;
+		#endif // SHAGA_THREADING
+	}
+
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_usec_stored (void)
+	{
+		#ifdef SHAGA_THREADING
+			return _get_monotime_usec_stored.load (std::memory_order_relaxed);
+		#else
+			return _get_monotime_usec_stored;
+		#endif // SHAGA_THREADING
 	}
 
 	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_sec (void)
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);
-		return static_cast<uint64_t> (monotime.tv_sec);
-	}
+
+		const uint64_t val = static_cast<uint64_t> (monotime.tv_sec);
+			#ifdef SHAGA_THREADING
+			_get_realtime_sec_stored.store (val, std::memory_order_release);
+		#else
+			_get_realtime_sec_stored = val;
+		#endif // SHAGA_THREADING
+		return val;
+}
 
 	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_msec (void)
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);
-		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000'000);
+
+		const uint64_t val = (static_cast<uint64_t> (monotime.tv_sec) * 1'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000'000);
+		#ifdef SHAGA_THREADING
+			_get_realtime_msec_stored.store (val, std::memory_order_release);
+		#else
+			_get_realtime_msec_stored = val;
+		#endif // SHAGA_THREADING
+		return val;
 	}
 
 	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_usec (void)
 	{
 		struct timespec monotime;
 		::clock_gettime (CLOCK_REALTIME, &monotime);
-		return (static_cast<uint64_t> (monotime.tv_sec) * 1'000'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000);
+
+		const uint64_t val = (static_cast<uint64_t> (monotime.tv_sec) * 1'000'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000);
+		#ifdef SHAGA_THREADING
+			_get_realtime_usec_stored.store (val, std::memory_order_release);
+		#else
+			_get_realtime_usec_stored = val;
+		#endif // SHAGA_THREADING
+		return val;
+	}
+
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_sec_stored (void)
+	{
+		#ifdef SHAGA_THREADING
+			return _get_realtime_sec_stored.load (std::memory_order_relaxed);
+		#else
+			return _get_realtime_sec_stored;
+		#endif // SHAGA_THREADING
+	}
+
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_msec_stored (void)
+	{
+		#ifdef SHAGA_THREADING
+			return _get_realtime_msec_stored.load (std::memory_order_relaxed);
+		#else
+			return _get_realtime_msec_stored;
+		#endif // SHAGA_THREADING
+	}
+
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_usec_stored (void)
+	{
+		#ifdef SHAGA_THREADING
+			return _get_realtime_usec_stored.load (std::memory_order_relaxed);
+		#else
+			return _get_realtime_usec_stored;
+		#endif // SHAGA_THREADING
 	}
 
 	HEDLEY_WARN_UNUSED_RESULT SHAGA_PARSED_REALTIME get_realtime_parsed (const time_t theTime, const bool local)

@@ -12,6 +12,76 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	static const std::map <std::string, ReDataConfig::DIGEST> DIGEST_MAP {
+		{"none"s, ReDataConfig::DIGEST::NONE},
+
+		{"crc8"s, ReDataConfig::DIGEST::CRC8},
+		{"crc-8"s, ReDataConfig::DIGEST::CRC8},
+
+		{"crc32"s, ReDataConfig::DIGEST::CRC32},
+		{"crc-32"s, ReDataConfig::DIGEST::CRC32},
+		{"crc32c"s, ReDataConfig::DIGEST::CRC32},
+		{"crc-32c"s, ReDataConfig::DIGEST::CRC32},
+
+		{"crc64"s, ReDataConfig::DIGEST::CRC64},
+		{"crc-64"s, ReDataConfig::DIGEST::CRC64},
+
+		{"sha256"s, ReDataConfig::DIGEST::SHA256},
+		{"sha-256"s, ReDataConfig::DIGEST::SHA256},
+
+		{"sha512"s, ReDataConfig::DIGEST::SHA512},
+		{"sha-512"s, ReDataConfig::DIGEST::SHA512},
+
+		{"hmac-sha256"s, ReDataConfig::DIGEST::HMAC_SHA256},
+		{"hmac-sha-256"s, ReDataConfig::DIGEST::HMAC_SHA256},
+
+		{"hmac-sha512"s, ReDataConfig::DIGEST::HMAC_SHA512},
+		{"hmac-sha-512"s, ReDataConfig::DIGEST::HMAC_SHA512},
+
+		{"halfsiphash24-32"s, ReDataConfig::DIGEST::HALFSIPHASH24_32},
+		{"halfsiphash-2-4-32"s, ReDataConfig::DIGEST::HALFSIPHASH24_32},
+
+		{"halfsiphash24-64"s, ReDataConfig::DIGEST::HALFSIPHASH24_64},
+		{"halfsiphash-2-4-64"s, ReDataConfig::DIGEST::HALFSIPHASH24_64},
+
+		{"halfsiphash48-32"s, ReDataConfig::DIGEST::HALFSIPHASH48_32},
+		{"halfsiphash-4-8-32"s, ReDataConfig::DIGEST::HALFSIPHASH48_32},
+
+		{"halfsiphash48-64"s, ReDataConfig::DIGEST::HALFSIPHASH48_64},
+		{"halfsiphash-4-8-64"s, ReDataConfig::DIGEST::HALFSIPHASH48_64},
+
+		{"siphash24-64"s, ReDataConfig::DIGEST::SIPHASH24_64},
+		{"siphash-2-4-64"s, ReDataConfig::DIGEST::SIPHASH24_64},
+
+		{"siphash24-128"s, ReDataConfig::DIGEST::SIPHASH24_128},
+		{"siphash-2-4-128"s, ReDataConfig::DIGEST::SIPHASH24_128},
+
+		{"siphash48-64"s, ReDataConfig::DIGEST::SIPHASH48_64},
+		{"siphash-4-8-64"s, ReDataConfig::DIGEST::SIPHASH48_64},
+
+		{"siphash48-128"s, ReDataConfig::DIGEST::SIPHASH48_128},
+		{"siphash-4-8-128"s, ReDataConfig::DIGEST::SIPHASH48_128},
+	};
+
+	static const std::map <std::string, ReDataConfig::CRYPTO> CRYPTO_MAP {
+		{"none"s, ReDataConfig::CRYPTO::NONE},
+
+		{"aes"s, ReDataConfig::CRYPTO::AES_128_CBC},
+		{"aes128"s, ReDataConfig::CRYPTO::AES_128_CBC},
+		{"aes-128"s, ReDataConfig::CRYPTO::AES_128_CBC},
+		{"aes-128-cbc"s, ReDataConfig::CRYPTO::AES_128_CBC},
+
+		{"aes256"s, ReDataConfig::CRYPTO::AES_256_CBC},
+		{"aes-256"s, ReDataConfig::CRYPTO::AES_256_CBC},
+		{"aes-256-cbc"s, ReDataConfig::CRYPTO::AES_256_CBC},
+
+		{"chacha20"s, ReDataConfig::CRYPTO::CHACHA20},
+		{"chacha"s, ReDataConfig::CRYPTO::CHACHA20},
+
+		{"chacha20-poly1305"s, ReDataConfig::CRYPTO::CHACHA20_POLY1305},
+		{"chacha-poly"s, ReDataConfig::CRYPTO::CHACHA20_POLY1305},
+		{"chachapoly"s, ReDataConfig::CRYPTO::CHACHA20_POLY1305},
+	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////

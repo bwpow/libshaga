@@ -10,6 +10,12 @@ All rights reserved.
 
 #include "common.h"
 
+/* Important notice: Event file discriptor in DecodeSPSC and EncodeSPSC behaves differently!
+DecodeSPSC uses event fd like semaphore. EPOLLIN is triggered while any message in present in queue.
+EncodeSPSC uses event fd that triggers when new message is encoded, but is reset after any read. Once
+you start reading, you need to finish everything pending or re-arm event fd manually.
+*/
+
 namespace shaga
 {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -146,7 +152,7 @@ namespace shaga
 
 				#ifdef OS_LINUX
 				/* This eventfd will work as a SEMAPHORE, so every push will increase counter by one and every read will decrease it. */
-				this->_eventfd = eventfd (0, EFD_NONBLOCK | EFD_SEMAPHORE);
+				this->_eventfd = ::eventfd (0, EFD_NONBLOCK | EFD_SEMAPHORE);
 				if (this->_eventfd < 0) {
 					cThrow ("{}: Unable to init eventfd: {}"sv, _name, strerror (errno));
 				}

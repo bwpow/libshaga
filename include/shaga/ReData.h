@@ -17,9 +17,9 @@ All rights reserved.
 namespace shaga {
 	class ReDataConfig {
 		public:
-			static const uint8_t key_digest_mask   {0b0000'1111};
-			static const uint8_t key_crypto_mask   {0b0111'0000};
-			static const uint8_t key_highbit_mask  {0b1000'0000};
+			static const constexpr uint8_t key_digest_mask   {0b0000'1111};
+			static const constexpr uint8_t key_crypto_mask   {0b0111'0000};
+			static const constexpr uint8_t key_highbit_mask  {0b1000'0000};
 
 			static const constexpr uint32_t key_digest_shift = BIN::count_trailing_zeros (key_digest_mask);
 			static const constexpr uint32_t key_crypto_shift = BIN::count_trailing_zeros (key_crypto_mask);
@@ -59,57 +59,6 @@ namespace shaga {
 				_MAX
 			};
 
-			const std::map <std::string, DIGEST> DIGEST_MAP = {
-				{"none"s, DIGEST::NONE},
-
-				{"crc8"s, DIGEST::CRC8},
-				{"crc-8"s, DIGEST::CRC8},
-
-				{"crc32"s, DIGEST::CRC32},
-				{"crc-32"s, DIGEST::CRC32},
-				{"crc32c"s, DIGEST::CRC32},
-				{"crc-32c"s, DIGEST::CRC32},
-
-				{"crc64"s, DIGEST::CRC64},
-				{"crc-64"s, DIGEST::CRC64},
-
-				{"sha256"s, DIGEST::SHA256},
-				{"sha-256"s, DIGEST::SHA256},
-
-				{"sha512"s, DIGEST::SHA512},
-				{"sha-512"s, DIGEST::SHA512},
-
-				{"hmac-sha256"s, DIGEST::HMAC_SHA256},
-				{"hmac-sha-256"s, DIGEST::HMAC_SHA256},
-
-				{"hmac-sha512"s, DIGEST::HMAC_SHA512},
-				{"hmac-sha-512"s, DIGEST::HMAC_SHA512},
-
-				{"halfsiphash24-32"s, DIGEST::HALFSIPHASH24_32},
-				{"halfsiphash-2-4-32"s, DIGEST::HALFSIPHASH24_32},
-
-				{"halfsiphash24-64"s, DIGEST::HALFSIPHASH24_64},
-				{"halfsiphash-2-4-64"s, DIGEST::HALFSIPHASH24_64},
-
-				{"halfsiphash48-32"s, DIGEST::HALFSIPHASH48_32},
-				{"halfsiphash-4-8-32"s, DIGEST::HALFSIPHASH48_32},
-
-				{"halfsiphash48-64"s, DIGEST::HALFSIPHASH48_64},
-				{"halfsiphash-4-8-64"s, DIGEST::HALFSIPHASH48_64},
-
-				{"siphash24-64"s, DIGEST::SIPHASH24_64},
-				{"siphash-2-4-64"s, DIGEST::SIPHASH24_64},
-
-				{"siphash24-128"s, DIGEST::SIPHASH24_128},
-				{"siphash-2-4-128"s, DIGEST::SIPHASH24_128},
-
-				{"siphash48-64"s, DIGEST::SIPHASH48_64},
-				{"siphash-4-8-64"s, DIGEST::SIPHASH48_64},
-
-				{"siphash48-128"s, DIGEST::SIPHASH48_128},
-				{"siphash-4-8-128"s, DIGEST::SIPHASH48_128},
-			};
-
 			enum class CRYPTO {
 				NONE,
 
@@ -120,26 +69,6 @@ namespace shaga {
 				CHACHA20_POLY1305,
 
 				_MAX
-			};
-
-			const std::map <std::string, CRYPTO> CRYPTO_MAP = {
-				{"none"s, CRYPTO::NONE},
-
-				{"aes"s, CRYPTO::AES_128_CBC},
-				{"aes128"s, CRYPTO::AES_128_CBC},
-				{"aes-128"s, CRYPTO::AES_128_CBC},
-				{"aes-128-cbc"s, CRYPTO::AES_128_CBC},
-
-				{"aes256"s, CRYPTO::AES_256_CBC},
-				{"aes-256"s, CRYPTO::AES_256_CBC},
-				{"aes-256-cbc"s, CRYPTO::AES_256_CBC},
-
-				{"chacha20"s, CRYPTO::CHACHA20},
-				{"chacha"s, CRYPTO::CHACHA20},
-
-				{"chacha20-poly1305"s, CRYPTO::CHACHA20_POLY1305},
-				{"chacha-poly"s, CRYPTO::CHACHA20_POLY1305},
-				{"chachapoly"s, CRYPTO::CHACHA20_POLY1305},
 			};
 
 #ifdef SHAGA_FULL

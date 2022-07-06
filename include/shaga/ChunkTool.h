@@ -37,26 +37,26 @@ namespace shaga
 			void from_bin (const std::string_view buf, size_t &offset, CHUNKLIST &out_append) const;
 			void from_bin (const std::string_view buf, size_t &offset, CHUNKSET &out_append) const;
 
-			template <class T>
+			template <class T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 			void from_bin (const std::string_view buf, T &out_append) const
 			{
-				size_t offset = 0;
+				size_t offset {0};
 				from_bin (buf, offset, out_append);
 			}
 
-			template <class T>
-			T from_bin (const std::string_view buf, size_t &offset) const
+			template <class T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+			auto from_bin (const std::string_view buf, size_t &offset) const -> T
 			{
 				T out;
 				from_bin (buf, offset, out);
 				return out;
 			}
 
-			template <class T>
-			T from_bin (const std::string_view buf) const
+			template <class T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+			auto from_bin (const std::string_view buf) const -> T
 			{
 				T out;
-				size_t offset = 0;
+				size_t offset {0};
 				from_bin (buf, offset, out);
 				return out;
 			}
@@ -74,7 +74,7 @@ namespace shaga
 			static void trim (CHUNKSET &cset, const size_t treshold_size, const Chunk::Priority treshold_prio);
 
 			/* Purge entry if callback returns false */
-			template <class T>
+			template <class T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 			static void purge (T &lst, std::function<bool(const Chunk &)> callback)
 			{
 				if (nullptr == callback) {

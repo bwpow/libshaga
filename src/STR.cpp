@@ -36,17 +36,18 @@ namespace shaga {
 		result = {(result * base) + digit};
 	}
 
-	template <typename T>
-	static void _to_uint_process (T &result, const std::string_view src, const int base, const std::string_view type)
+	template <typename T, std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+	static auto _to_uint_process (const std::string_view src, const int base, const std::string_view type) -> T
 	{
 		if (base < 2) {
 			cThrow ("Base must be at least 2"sv);
 		}
 
-		uint64_t out {0};
-		bool is_negative {false};
-
 		try {
+			T result;
+			uint64_t out {0};
+			bool is_negative {false};
+
 			enum class Stage {
 				START_SPACES,
 				DIGITS,
@@ -125,6 +126,8 @@ namespace shaga {
 
 				result = static_cast<T> (nout);
 			}
+
+			return result;
 		}
 		catch (const std::exception &e) {
 			cThrow ("Could not convert '{}' to {}: {}"sv, src, type, e.what ());
@@ -144,74 +147,59 @@ namespace shaga {
 
 	uint8_t STR::to_uint8 (const std::string_view s, const int base)
 	{
-		uint8_t out;
-		_to_uint_process (out, s, base, "uint8"sv);
-		return out;
+		return _to_uint_process<uint8_t> (s, base, "uint8"sv);
 	}
 
 	uint16_t STR::to_uint16 (const std::string_view s, const int base)
 	{
-		uint16_t out;
-		_to_uint_process (out, s, base, "uint16"sv);
-		return out;
+		return _to_uint_process<uint16_t> (s, base, "uint16"sv);
 	}
 
 	uint32_t STR::to_uint32 (const std::string_view s, const int base)
 	{
-		uint32_t out;
-		_to_uint_process (out, s, base, "uint32"sv);
-		return out;
+		return _to_uint_process<uint32_t> (s, base, "uint32"sv);
 	}
 
 	uint64_t STR::to_uint64 (const std::string_view s, const int base)
 	{
-		uint64_t out;
-		_to_uint_process (out, s, base, "uint64"sv);
-		return out;
+		return _to_uint_process<uint64_t> (s, base, "uint64"sv);
 	}
 
 	int8_t STR::to_int8 (const std::string_view s, const int base)
 	{
-		int8_t out;
-		_to_uint_process (out, s, base, "int8"sv);
-		return out;
+		return _to_uint_process<int8_t> (s, base, "int8"sv);
 	}
 
 	int16_t STR::to_int16 (const std::string_view s, const int base)
 	{
-		int16_t out;
-		_to_uint_process (out, s, base, "int16"sv);
-		return out;
+		return _to_uint_process<int16_t> (s, base, "int16"sv);
 	}
 
 	int32_t STR::to_int32 (const std::string_view s, const int base)
 	{
-		int32_t out;
-		_to_uint_process (out, s, base, "int32"sv);
-		return out;
+		return _to_uint_process<int32_t> (s, base, "int32"sv);
 	}
 
 	int64_t STR::to_int64 (const std::string_view s, const int base)
 	{
-		int64_t out;
-		_to_uint_process (out, s, base, "int64"sv);
-		return out;
+		return _to_uint_process<int64_t> (s, base, "int64"sv);
 	}
 
-	template <typename T>
-	static void _to_float_process (T &result, std::string_view src, const std::string_view type)
+	template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+	static auto _to_float_process (std::string_view src, const std::string_view type) -> T
 	{
 		try {
+			T result;
 			shaga::STR::trim (src);
 			size_t pos {0};
 
-			if (std::is_same<T, float>::value) {
+			if (std::is_same<typename std::remove_cv<T>::type, float>::value) {
 				result = std::stof (std::string (src), &pos);
 			}
-			else if (std::is_same<T, double>::value) {
+			else if (std::is_same<typename std::remove_cv<T>::type, double>::value) {
 				result = std::stod (std::string (src), &pos);
 			}
-			else if (std::is_same<T, long double>::value) {
+			else if (std::is_same<typename std::remove_cv<T>::type, long double>::value) {
 				result = std::stold (std::string (src), &pos);
 			}
 			else {
@@ -241,6 +229,8 @@ namespace shaga {
 //			else {
 //				cThrow ("Undefined error"sv);
 //			}
+
+			return result;
 		}
 		catch (const std::exception &e) {
 			cThrow ("Could not convert '{}' to {}: {}"sv, src, type, e.what ());
@@ -249,23 +239,17 @@ namespace shaga {
 
 	float STR::to_float (const std::string_view s)
 	{
-		float out;
-		_to_float_process<float> (out, s, "float"sv);
-		return out;
+		return _to_float_process<float> (s, "float"sv);
 	}
 
 	double STR::to_double (const std::string_view s)
 	{
-		double out;
-		_to_float_process<double> (out, s, "double"sv);
-		return out;
+		return _to_float_process<double> (s, "double"sv);
 	}
 
 	long double STR::to_long_double (const std::string_view s)
 	{
-		long double out;
-		_to_float_process<long double> (out, s, "long double"sv);
-		return out;
+		return _to_float_process<long double> (s, "long double"sv);
 	}
 
 	void STR::split (const std::string_view what, const std::string_view delimiter, std::function<void (std::string_view)> callback)

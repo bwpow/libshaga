@@ -505,7 +505,7 @@ namespace shaga {
 
 	void Chunk::set_ttl (const Chunk::TTL ttl)
 	{
-		set_ttl (ttl_to_uint8 (ttl));
+		set_ttl (+ttl);
 	}
 
 	uint8_t Chunk::get_ttl (void) const

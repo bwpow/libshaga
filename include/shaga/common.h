@@ -223,8 +223,48 @@ using namespace std::literals;
 	#define SHAGA_STRV
 #endif // SHAGA_STRV
 
+/* This is useful for conversion of enums to underlying types without too much typin */
+template <typename T, std::enable_if_t<std::is_enum<T>::value, bool> = true>
+constexpr auto operator+ (const T e) noexcept -> std::underlying_type_t<T>
+{
+	return static_cast<std::underlying_type_t<T>>(e);
+}
+
 namespace shaga
 {
+	template <typename, typename = void>
+	struct is_iterable : std::false_type {};
+
+	template <typename T>
+	struct is_iterable<T, std::void_t<decltype(std::begin(std::declval<T>())), decltype(std::end(std::declval<T>()))>> : std::true_type {};
+
+	template <typename T>
+	constexpr bool is_iterable_v = is_iterable<T>::value;
+
+	template <typename T, typename F, std::enable_if_t<(std::is_enum<T>::value && std::is_convertible_v<std::underlying_type_t<T>,F>), bool> = true>
+	constexpr auto convert (const T e) noexcept -> F
+	{
+		return static_cast<F>(e);
+	}
+
+	template <typename T, typename F, std::enable_if_t<(std::is_enum<T>::value && std::is_convertible_v<F,std::underlying_type_t<T>>), bool> = true>
+	constexpr auto convert (const F e) noexcept -> T
+	{
+		return static_cast<T>(e);
+	}
+
+	template <typename T, typename F, std::enable_if_t<std::is_convertible_v<T,F>, bool> = true>
+	constexpr auto convert (const T e) noexcept -> F
+	{
+		return static_cast<F>(e);
+	}
+
+	template <typename T>
+	HEDLEY_WARN_UNUSED_RESULT constexpr T get_distance (const T a, const T b)
+	{
+		return std::max (a,b) - std::min (a,b);
+	}
+
 	typedef std::map <std::string, std::string> COMMON_MAP;
 	typedef std::multimap <std::string, std::string> COMMON_MULTIMAP;
 
@@ -362,9 +402,17 @@ namespace shaga
 	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_msec (void);
 	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_usec (void);
 
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_sec_stored (void);
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_msec_stored (void);
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_monotime_usec_stored (void);
+
 	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_sec (void);
 	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_msec (void);
 	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_usec (void);
+
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_sec_stored (void);
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_msec_stored (void);
+	HEDLEY_WARN_UNUSED_RESULT uint64_t get_realtime_usec_stored (void);
 
 	typedef struct {
 		uint_fast16_t year;
@@ -418,7 +466,7 @@ namespace shaga
 
 namespace shaga
 {
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	void container_from_bin (T &out, const std::string_view buf, size_t &offset)
 	{
 		out.clear ();
@@ -436,7 +484,7 @@ namespace shaga
 		}
 	}
 
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	void container_from_bin (T &out, const std::string_view buf)
 	{
 		size_t offset = 0;
@@ -447,7 +495,7 @@ namespace shaga
 		}
 	}
 
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	void container_from_ini (T &out, const shaga::INI &ini, const std::string_view section, const std::string_view key)
 	{
 		out.clear ();
@@ -456,7 +504,7 @@ namespace shaga
 		container_from_bin (out, buf);
 	}
 
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	void container_to_bin (const T &input, std::string &out)
 	{
 		shaga::BIN::from_size (input.size (), out);
@@ -465,7 +513,7 @@ namespace shaga
 		}
 	}
 
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	std::string container_to_bin (const T &input)
 	{
 		std::string out;
@@ -473,7 +521,7 @@ namespace shaga
 		return out;
 	}
 
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	void container_to_ini (const T &input, shaga::INI &ini, const std::string_view section, const std::string_view key)
 	{
 		if (input.empty () == true) {
@@ -550,10 +598,10 @@ namespace shaga
 		ReDataConfig::key_highbit_mask),
 		"ReDataConfig key don't add up or overlap");
 
-	static_assert (std::underlying_type<ReDataConfig::DIGEST>::type (ReDataConfig::DIGEST::_MAX) <= (1 + (ReDataConfig::key_digest_mask >> ReDataConfig::key_digest_shift)),
+	static_assert (+ReDataConfig::DIGEST::_MAX <= (1 + (ReDataConfig::key_digest_mask >> ReDataConfig::key_digest_shift)),
 		"ReDataConfig::DIGEST contains more entries than allowed");
 
-	static_assert (std::underlying_type<ReDataConfig::CRYPTO>::type (ReDataConfig::CRYPTO::_MAX) <= (1 + (ReDataConfig::key_crypto_mask >> ReDataConfig::key_crypto_shift)),
+	static_assert (+ReDataConfig::CRYPTO::_MAX <= (1 + (ReDataConfig::key_crypto_mask >> ReDataConfig::key_crypto_shift)),
 		"ReDataConfig::CRYPTO contains more entries than allowed");
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////

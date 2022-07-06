@@ -110,6 +110,9 @@ namespace shaga {
 			void dump_in_c_format (const std::string_view varname, const void *const data, const size_t len, const size_t per_line = 16, const bool add_len = true);
 			void dump_in_c_format (const std::string_view varname, const std::string_view data, const size_t per_line = 16, const bool add_len = true);
 
+			/* Write json as string */
+			void dump_json (const nlohmann::json &data, const bool pretty = false);
+
 			bool has_file_name (void) const;
 			void set_file_name (const std::string_view filename, const uint8_t mode);
 			void set_file_name (const std::string_view filename);

@@ -387,6 +387,16 @@ namespace shaga {
 		}, per_line, add_len);
 	}
 
+	void ShFile::dump_json (const nlohmann::json &data, const bool pretty)
+	{
+		if (true == pretty) {
+			write (data.dump (1, '\t'));
+		}
+		else {
+			write (data.dump ());
+		}
+	}
+
 	bool ShFile::has_file_name (void) const
 	{
 		return (_filename.empty () == false);

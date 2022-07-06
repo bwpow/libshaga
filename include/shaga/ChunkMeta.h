@@ -122,14 +122,14 @@ namespace shaga {
 			ChunkMetaDataRange equal_range (const std::string_view key) const;
 			ChunkMetaDataRange equal_range (const uint16_t key) const;
 
-			template<typename T = COMMON_LIST>
-			T get_values (const std::string_view key) const
+			template<typename T = COMMON_LIST, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+			auto get_values (const std::string_view key) const -> T
 			{
 				return get_values<T> (key_to_bin (key));
 			}
 
-			template<typename T = COMMON_LIST>
-			T get_values (const uint16_t key) const
+			template<typename T = COMMON_LIST, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+			auto get_values (const uint16_t key) const -> T
 			{
 				T vout;
 
@@ -180,7 +180,7 @@ namespace shaga {
 			void modify_value (const std::string_view key, ValueCallback callback);
 			void modify_value (const uint16_t key, ValueCallback callback);
 
-			template<typename T = COMMON_LIST>
+			template<typename T = COMMON_LIST, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 			T get_keys (void) const
 			{
 				T vout;

@@ -50,8 +50,8 @@ namespace shaga
 				UNTRUSTED,
 			};
 
-			static const TrustLevel _TrustLevel_first {TrustLevel::INTERNAL};
-			static const TrustLevel _TrustLevel_last {TrustLevel::UNTRUSTED};
+			static const constexpr TrustLevel _TrustLevel_first {TrustLevel::INTERNAL};
+			static const constexpr TrustLevel _TrustLevel_last {TrustLevel::UNTRUSTED};
 
 			enum class Priority : uint32_t {
 				pCRITICAL = 0,
@@ -60,8 +60,8 @@ namespace shaga
 				pDEBUG,
 			};
 
-			static const Priority _Priority_first {Priority::pCRITICAL};
-			static const Priority _Priority_last {Priority::pDEBUG};
+			static const constexpr Priority _Priority_first {Priority::pCRITICAL};
+			static const constexpr Priority _Priority_last {Priority::pDEBUG};
 
 			enum class TTL : uint8_t {
 				TTL0 = 0,
@@ -74,8 +74,8 @@ namespace shaga
 				TTL7 = 7,
 			};
 
-			static const TTL _TTL_first {TTL::TTL0};
-			static const TTL _TTL_last {TTL::TTL7};
+			static const constexpr TTL _TTL_first {TTL::TTL0};
+			static const constexpr TTL _TTL_last {TTL::TTL7};
 
 			enum class Channel : bool {
 				PRIMARY = true,
@@ -182,7 +182,8 @@ namespace shaga
 			template<typename ... Types>
 			void _construct (const TTL ttl, Types&& ... rest)
 			{
-				_ttl = std::underlying_type<Chunk::TTL>::type (ttl);
+				_ttl = +ttl;
+				//_ttl = std::underlying_type<Chunk::TTL>::type (ttl);
 				_construct (rest...);
 			}
 

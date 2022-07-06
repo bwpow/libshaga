@@ -184,7 +184,7 @@ namespace shaga {
 	/*** TTL ***/
 	Chunk::TTL uint8_to_ttl (const uint8_t v)
 	{
-		const Chunk::TTL t = static_cast<Chunk::TTL> (v);
+		const Chunk::TTL t = convert<Chunk::TTL>(v);
 		if (Chunk::_TTL_first <= t && t <= Chunk::_TTL_last) {
 			return t;
 		}
@@ -193,18 +193,18 @@ namespace shaga {
 
 	uint8_t ttl_to_uint8 (const Chunk::TTL v)
 	{
-		return std::underlying_type<Chunk::TTL>::type (v);
+		return +v;
 	}
 
 	/*** TrustLevel ***/
 	Chunk::TrustLevel operator++ (Chunk::TrustLevel &x)
 	{
-		return x = static_cast<Chunk::TrustLevel>(std::underlying_type<Chunk::TrustLevel>::type (x) + 1);
+		return x = convert<Chunk::TrustLevel>(+x + 1);
 	}
 
 	Chunk::TrustLevel operator++ (Chunk::TrustLevel &x, int r)
 	{
-		return x = static_cast<Chunk::TrustLevel>(std::underlying_type<Chunk::TrustLevel>::type (x) + r);
+		return x = convert<Chunk::TrustLevel>(+x + r);
 	}
 
 	Chunk::TrustLevel operator* (Chunk::TrustLevel c)
@@ -225,7 +225,7 @@ namespace shaga {
 
 	Chunk::TrustLevel uint8_to_trustlevel (const uint8_t v)
 	{
-		const Chunk::TrustLevel t = static_cast<Chunk::TrustLevel> (v);
+		const Chunk::TrustLevel t = convert<Chunk::TrustLevel> (v);
 		if (Chunk::_TrustLevel_first <= t && t <= Chunk::_TrustLevel_last) {
 			return t;
 		}
@@ -234,7 +234,7 @@ namespace shaga {
 
 	uint8_t trustlevel_to_uint8 (const Chunk::TrustLevel v)
 	{
-		return std::underlying_type<Chunk::TrustLevel>::type (v);
+		return +v;
 	}
 
 	SHAGA_STRV std::string_view trustlevel_to_string (const Chunk::TrustLevel level)
@@ -265,7 +265,7 @@ namespace shaga {
 	/*** Priority ***/
 	Chunk::Priority uint8_to_priority (const uint8_t v)
 	{
-		const Chunk::Priority t = static_cast<Chunk::Priority> (v);
+		const Chunk::Priority t = convert<Chunk::Priority> (v);
 		if (Chunk::_Priority_first <= t && t <= Chunk::_Priority_last) {
 			return t;
 		}
@@ -274,7 +274,7 @@ namespace shaga {
 
 	uint8_t priority_to_uint8 (const Chunk::Priority v)
 	{
-		return std::underlying_type<Chunk::Priority>::type (v);
+		return +v;
 	}
 
 	SHAGA_STRV std::string_view priority_to_string (const Chunk::Priority prio)

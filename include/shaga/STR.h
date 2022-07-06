@@ -82,7 +82,7 @@ namespace shaga::STR {
 	double to_double (const std::string_view s);
 	long double to_long_double (const std::string_view s);
 
-	template <typename T>
+	template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
 	auto to_int (const std::string_view s, const int base = 10) -> T
 	{
 		if (std::is_same<T, bool>::value) {
@@ -114,7 +114,7 @@ namespace shaga::STR {
 		}
 	}
 
-	template <typename T>
+	template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
 	std::string from_int (const T t, const int base = 10)
 	{
 		std::ostringstream ss;
@@ -152,7 +152,7 @@ namespace shaga::STR {
 		return out;
 	}
 
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	void join (std::string &out, const T &input, const std::string_view delimiter)
 	{
 		bool first = true;
@@ -167,7 +167,7 @@ namespace shaga::STR {
 		}
 	}
 
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	std::string join (const T &input, const std::string_view delimiter)
 	{
 		std::string out;
@@ -175,7 +175,7 @@ namespace shaga::STR {
 		return out;
 	}
 
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	void join (std::string &out, const T &input, const std::string_view prefix, const std::string_view suffix)
 	{
 		for (const auto &entry : input) {
@@ -185,7 +185,7 @@ namespace shaga::STR {
 		}
 	}
 
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	std::string join (const T &input, const std::string_view prefix, const std::string_view suffix)
 	{
 		std::string out;
@@ -218,7 +218,7 @@ namespace shaga::STR {
 	void rtrim (std::string &str, const std::string_view chars = SPACESZERO);
 	void rtrim (std::string_view &str, const std::string_view chars = SPACESZERO);
 
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	void rtrim (T &input, const std::string_view chars = SPACESZERO)
 	{
 		for (auto &instance : input) {
@@ -229,7 +229,7 @@ namespace shaga::STR {
 	void ltrim (std::string &str, const std::string_view chars = SPACESZERO);
 	void ltrim (std::string_view &str, const std::string_view chars = SPACESZERO);
 
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	void ltrim (T &input, const std::string_view chars = SPACESZERO)
 	{
 		for (auto &instance : input) {
@@ -240,7 +240,7 @@ namespace shaga::STR {
 	void trim (std::string &str, const std::string_view chars = SPACESZERO);
 	void trim (std::string_view &str, const std::string_view chars = SPACESZERO);
 
-	template <typename T>
+	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
 	void trim (T &input, const std::string_view chars = SPACESZERO)
 	{
 		for (auto &instance : input) {
