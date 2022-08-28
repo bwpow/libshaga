@@ -194,13 +194,13 @@ namespace shaga {
 			size_t pos {0};
 
 			if (std::is_same<typename std::remove_cv<T>::type, float>::value) {
-				result = std::stof (std::string (src), &pos);
+				result = static_cast<T> (std::stof (std::string (src), &pos));
 			}
 			else if (std::is_same<typename std::remove_cv<T>::type, double>::value) {
-				result = std::stod (std::string (src), &pos);
+				result = static_cast<T> (std::stod (std::string (src), &pos));
 			}
 			else if (std::is_same<typename std::remove_cv<T>::type, long double>::value) {
-				result = std::stold (std::string (src), &pos);
+				result = static_cast<T> (std::stold (std::string (src), &pos));
 			}
 			else {
 				cThrow ("Unrecognized type"sv);

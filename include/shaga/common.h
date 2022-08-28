@@ -171,8 +171,11 @@ All rights reserved.
 #define FMT_HEADER_ONLY
 #include "3rdparty/fmt/format.h"
 
-/* Use literals for ""s and ""sv */
+#include "3rdparty/json.hpp"
+
+/* Use literals for ""s, ""sv and ""_json */
 using namespace std::literals;
+using namespace nlohmann::literals;
 
 #ifndef INT64_C
 	#define INT64_C(c) (c ## LL)
@@ -431,7 +434,6 @@ namespace shaga
 
 #include "3rdparty/aho_corasick.h"
 #include "3rdparty/randutils.h"
-#include "3rdparty/json.hpp"
 
 #include "BINstatic.h"
 #include "BIN.h"
