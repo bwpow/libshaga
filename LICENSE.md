@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 All files except those explicitly listed below are distributed under license:
 -----------------------------------------------------------------------------
-Copyright (c) 2012-2018, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

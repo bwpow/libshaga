@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2022, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -179,7 +179,7 @@ namespace shaga
 			}
 
 			virtual void clear (void) = 0;
-			virtual uint_fast32_t fill_front_buffer (char *outbuffer, uint_fast32_t len) = 0;
+			virtual uint_fast32_t fill_front_buffer (char *const outbuffer, uint_fast32_t len) = 0;
 
 			#ifdef OS_LINUX
 			virtual int fill_front_buffer (struct iovec *iov, const uint_fast32_t max_iovcnt) = 0;
@@ -243,7 +243,7 @@ namespace shaga
 			}
 
 			/* Fills data into continuous buffer and returns number of bytes */
-			virtual uint_fast32_t fill_front_buffer (char *outbuffer, uint_fast32_t len) override final
+			virtual uint_fast32_t fill_front_buffer (char *const outbuffer, uint_fast32_t len) override final
 			{
 				#ifdef OS_LINUX
 					this->clear_eventfd ();
@@ -443,7 +443,7 @@ namespace shaga
 				#endif // SHAGA_THREADING
 			}
 
-			virtual uint_fast32_t fill_front_buffer (char *outbuffer, uint_fast32_t len) override final
+			virtual uint_fast32_t fill_front_buffer (char *const outbuffer, uint_fast32_t len) override final
 			{
 				#ifdef OS_LINUX
 					this->clear_eventfd ();

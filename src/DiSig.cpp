@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2022, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -35,9 +35,21 @@ namespace shaga {
 	{
 		/* mbedtls_ecp_curve_info points to static memory, it is safe to return string_view */
 		can_do (ctx);
-		mbedtls_ecp_keypair *ec = ::mbedtls_pk_ec (ctx);
-		const mbedtls_ecp_group *grp = &(ec->grp);
-		const mbedtls_ecp_curve_info *info = ::mbedtls_ecp_curve_info_from_grp_id (grp->id);
+		mbedtls_ecp_keypair *const ec = ::mbedtls_pk_ec (ctx);
+		if (nullptr == ec) {
+			cThrow ("DiSig error: null error"sv);
+		}
+
+		const mbedtls_ecp_group *const grp = &(ec->grp);
+		if (nullptr == grp) {
+			cThrow ("DiSig error: null error"sv);
+		}
+
+		const mbedtls_ecp_curve_info *const info = ::mbedtls_ecp_curve_info_from_grp_id (grp->id);
+		if (nullptr == info) {
+			cThrow ("DiSig error: null error"sv);
+		}
+
 		return std::string_view (info->name);
 	}
 

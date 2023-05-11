@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2022, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -201,12 +201,12 @@ using namespace nlohmann::literals;
 #endif
 
 #if BYTE_ORDER == LITTLE_ENDIAN
-	#define ENDIAN_IS_BIG if (false) {
-	#define ENDIAN_IS_LITTLE if (true) {
+	#define ENDIAN_IS_BIG if constexpr (false) {
+	#define ENDIAN_IS_LITTLE if constexpr (true) {
 	#define ENDIAN_END }
 #elif BYTE_ORDER == BIG_ENDIAN
-	#define ENDIAN_IS_BIG if (true) {
-	#define ENDIAN_IS_LITTLE if (false) {
+	#define ENDIAN_IS_BIG if constexpr (true) {
+	#define ENDIAN_IS_LITTLE if constexpr (false) {
 	#define ENDIAN_END }
 #else
 	#error Unable to detect endian
@@ -219,6 +219,12 @@ using namespace nlohmann::literals;
 #define _SHAGA_SPSC_RING(x,y) const uint_fast32_t x = ((y) + 1) % _size
 #define _SHAGA_SPSC_D_RING(x,y) const uint_fast32_t x = ((y) + 1) % this->_num_packets
 #define _SHAGA_SPSC_I_RING(x) x = (x + 1) % this->_num_packets
+
+#define SHAGA_TYPE_IS_ITERABLE(T) std::enable_if_t<shaga::is_iterable_v<T>, bool> = true
+#define SHAGA_TYPE_IS_INTEGER(T) std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true
+#define SHAGA_TYPE_IS_INTEGRAL(T) std::enable_if_t<std::is_integral<T>::value, bool> = true
+#define SHAGA_TYPE_IS_FLOATING(T) std::enable_if_t<std::is_floating_point<T>::value, bool> = true
+#define SHAGA_TYPE_IS_CLASS(T) typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr
 
 /* This macro is used to identify methods and functions that return std::string view */
 /* Useful for static analysis to point out potentially dangerous methods. */
@@ -444,6 +450,7 @@ namespace shaga
 #include "ShSocket.h"
 #include "ShFile.h"
 #include "FS.h"
+#include "json.h"
 #include "ChunkMeta.h"
 #include "Chunk.h"
 #include "ChunkTool.h"
@@ -468,7 +475,7 @@ namespace shaga
 
 namespace shaga
 {
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void container_from_bin (T &out, const std::string_view buf, size_t &offset)
 	{
 		out.clear ();
@@ -486,7 +493,7 @@ namespace shaga
 		}
 	}
 
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void container_from_bin (T &out, const std::string_view buf)
 	{
 		size_t offset = 0;
@@ -497,7 +504,7 @@ namespace shaga
 		}
 	}
 
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void container_from_ini (T &out, const shaga::INI &ini, const std::string_view section, const std::string_view key)
 	{
 		out.clear ();
@@ -506,7 +513,7 @@ namespace shaga
 		container_from_bin (out, buf);
 	}
 
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void container_to_bin (const T &input, std::string &out)
 	{
 		shaga::BIN::from_size (input.size (), out);
@@ -515,7 +522,7 @@ namespace shaga
 		}
 	}
 
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	std::string container_to_bin (const T &input)
 	{
 		std::string out;
@@ -523,14 +530,14 @@ namespace shaga
 		return out;
 	}
 
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void container_to_ini (const T &input, shaga::INI &ini, const std::string_view section, const std::string_view key)
 	{
 		if (input.empty () == true) {
 			return;
 		}
 
-		std::string buf = container_to_bin (input);
+		const std::string buf = container_to_bin (input);
 		ini.set_string (section, key, shaga::BIN::to_hex (buf), false);
 	}
 

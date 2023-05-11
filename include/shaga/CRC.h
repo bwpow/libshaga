@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2022, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -26,7 +26,7 @@ namespace shaga::CRC {
 
 	uint64_t crc64 (const void *const buf, const size_t len, const uint64_t startval = crc64_startval);
 
-	template<class T, typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr>
+	template<class T, SHAGA_TYPE_IS_CLASS(T)>
 	uint64_t crc64 (const T &plain, const uint64_t startval = crc64_startval)
 	{
 		return crc64 (plain.data (), plain.size (), startval);
@@ -42,7 +42,7 @@ namespace shaga::CRC {
 
 	uint32_t crc32_zlib (const void *const buf, const size_t len, const uint32_t startval = crc32_zlib_startval);
 
-	template<class T, typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr>
+	template<class T, SHAGA_TYPE_IS_CLASS(T)>
 	uint32_t crc32_zlib (const T &plain, const uint32_t startval = crc32_zlib_startval)
 	{
 		return crc32_zlib (plain.data (), plain.size (), startval);
@@ -57,7 +57,7 @@ namespace shaga::CRC {
 
 	uint32_t crc32_atmel (const void *const buf, const size_t len, const uint32_t startval = crc32_atmel_startval);
 
-	template<class T, typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr>
+	template<class T, SHAGA_TYPE_IS_CLASS(T)>
 	uint32_t crc32_atmel (const T &plain, const uint32_t startval = crc32_atmel_startval)
 	{
 		return crc32_atmel (plain.data (), plain.size (), startval);
@@ -73,7 +73,7 @@ namespace shaga::CRC {
 
 	uint32_t crc32c (const void *const buf, const size_t len, const uint32_t startval = crc32c_startval);
 
-	template<class T, typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr>
+	template<class T, SHAGA_TYPE_IS_CLASS(T)>
 	uint32_t crc32c (const T &plain, const uint32_t startval = crc32c_startval)
 	{
 		return crc32c (plain.data (), plain.size (), startval);
@@ -89,7 +89,7 @@ namespace shaga::CRC {
 
 	uint16_t crc16_modbus (const void *const buf, const size_t len, const uint16_t startval = crc16_modbus_startval);
 
-	template<class T, typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr>
+	template<class T, SHAGA_TYPE_IS_CLASS(T)>
 	uint16_t crc16_modbus (const T &plain, const uint16_t startval = crc16_modbus_startval)
 	{
 		return crc16_modbus (plain.data (), plain.size (), startval);
@@ -105,7 +105,7 @@ namespace shaga::CRC {
 
 	uint8_t crc8_dallas (const void *const buf, const size_t len, const uint8_t startval = crc8_dallas_startval);
 
-	template<class T, typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr>
+	template<class T, SHAGA_TYPE_IS_CLASS(T)>
 	uint8_t crc8_dallas (const T &plain, const uint8_t startval = crc8_dallas_startval)
 	{
 		return crc8_dallas (plain.data (), plain.size (), startval);

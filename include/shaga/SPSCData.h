@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2022, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -206,7 +206,7 @@ namespace shaga {
 
 			virtual void free (void) override
 			{
-				if (nullptr != buffer) {
+				if (HEDLEY_LIKELY (nullptr != buffer)) {
 					::operator delete (buffer, _real_bufsize);
 					buffer = nullptr;
 				}

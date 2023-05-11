@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2022, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -117,8 +117,8 @@ namespace shaga {
 			void set_file_name (const std::string_view filename, const uint8_t mode);
 			void set_file_name (const std::string_view filename);
 
-			template <typename T = std::string_view>
-			SHAGA_STRV T get_file_name (void) const
+			template <typename T = std::string_view, SHAGA_TYPE_IS_CLASS(T)>
+			SHAGA_STRV auto get_file_name (void) const -> T
 			{
 				return T (_filename);
 			}
@@ -127,8 +127,8 @@ namespace shaga {
 			void set_rename_on_close_file_name (const std::string_view filename);
 			void disable_rename_on_close (void);
 
-			template <typename T = std::string_view>
-			SHAGA_STRV T get_rename_on_close_file_name (void) const
+			template <typename T = std::string_view, SHAGA_TYPE_IS_CLASS(T)>
+			SHAGA_STRV auto get_rename_on_close_file_name (void) const -> T
 			{
 				return T (_rename_on_close_filename);
 			}

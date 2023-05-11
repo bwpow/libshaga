@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2022, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -75,8 +75,8 @@ namespace shaga {
 			const COMMON_LIST get_list (const std::string_view section, const std::string_view key) const;
 			size_t get_list_size (const std::string_view section, const std::string_view key, const bool thr = false) const;
 
-			template <typename T>
-			T get_int (const std::string_view section, const std::string_view key, const T defvalue, const bool thr = false, const int base = 10) const
+			template <typename T, SHAGA_TYPE_IS_INTEGRAL(T)>
+			auto get_int (const std::string_view section, const std::string_view key, const T defvalue, const bool thr = false, const int base = 10) const -> T
 			{
 				if (auto val = get_last_value (_map, get_key (section, key))) {
 					return STR::to_int<T> (*val, base);
@@ -90,8 +90,8 @@ namespace shaga {
 			}
 
 			/* Please note: Use string_view only when you don't use any set_* methods. */
-			template <typename T = std::string_view>
-			SHAGA_STRV T get_string (const std::string_view section, const std::string_view key, const std::string_view defvalue, const bool thr = false) const
+			template <typename T = std::string_view, SHAGA_TYPE_IS_CLASS(T)>
+			SHAGA_STRV auto get_string (const std::string_view section, const std::string_view key, const std::string_view defvalue, const bool thr = false) const -> T
 			{
 				if (auto val = get_last_value (_map, get_key (section, key))) {
 					return T (*val);
@@ -104,8 +104,8 @@ namespace shaga {
 				return T (defvalue);
 			}
 
-			template <typename T = std::string_view>
-			SHAGA_STRV T get_string (const std::string_view section, const std::string_view key) const
+			template <typename T = std::string_view, SHAGA_TYPE_IS_CLASS(T)>
+			SHAGA_STRV auto get_string (const std::string_view section, const std::string_view key) const -> T
 			{
 				if (auto val = get_last_value (_map, get_key (section, key))) {
 					return T (*val);
@@ -127,7 +127,7 @@ namespace shaga {
 			int32_t get_int32 (const std::string_view section, const std::string_view key, const int32_t defvalue, const bool thr = false, const int base = 10) const;
 			int64_t get_int64 (const std::string_view section, const std::string_view key, const int64_t defvalue, const bool thr = false, const int base = 10) const;
 
-			template <typename T>
+			template <typename T, SHAGA_TYPE_IS_INTEGRAL(T)>
 			void set_int (const std::string_view section, const std::string_view key, const T val, const bool append = false, const int base = 10)
 			{
 				set_string (section, key, STR::from_int (val, base), append);

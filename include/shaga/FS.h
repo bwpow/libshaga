@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2022, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -38,13 +38,13 @@ namespace shaga::FS {
 
 	void glob (const std::string_view pattern, GLOB_CALLBACK callback);
 
-	template <typename T>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void glob (const std::string_view pattern, T &out)
 	{
 		glob (pattern, [&out](const std::string_view entry) { out.emplace_back (entry); });
 	}
 
-	template <typename T>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	auto glob (const std::string_view pattern) -> T
 	{
 		T out;
@@ -54,13 +54,13 @@ namespace shaga::FS {
 
 	void read_file (const std::string_view fname, READ_FILE_CALLBACK callback);
 
-	template <typename T>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void read_file (const std::string_view fname, T &out)
 	{
 		read_file (fname, [&out](const std::string_view line) { out.emplace_back (line); });
 	}
 
-	template <typename T>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	auto read_file (const std::string_view fname) -> T
 	{
 		T out;

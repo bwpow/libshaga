@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2022, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -82,31 +82,31 @@ namespace shaga::STR {
 	double to_double (const std::string_view s);
 	long double to_long_double (const std::string_view s);
 
-	template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_INTEGRAL(T)>
 	auto to_int (const std::string_view s, const int base = 10) -> T
 	{
-		if (std::is_same<T, bool>::value) {
+		if constexpr (std::is_same<T, bool>::value) {
 			return to_bool (s, base);
 		}
-		else if (std::is_same<T, uint8_t>::value) {
+		else if constexpr (std::is_same<T, uint8_t>::value) {
 			return to_uint8 (s, base);
 		}
-		else if (std::is_same<T, uint16_t>::value) {
+		else if constexpr (std::is_same<T, uint16_t>::value) {
 			return to_uint16 (s, base);
 		}
-		else if (std::is_same<T, uint32_t>::value) {
+		else if constexpr (std::is_same<T, uint32_t>::value) {
 			return to_uint32 (s, base);
 		}
-		else if (std::is_same<T, int8_t>::value) {
+		else if constexpr (std::is_same<T, int8_t>::value) {
 			return to_int8 (s, base);
 		}
-		else if (std::is_same<T, int16_t>::value) {
+		else if constexpr (std::is_same<T, int16_t>::value) {
 			return to_int16 (s, base);
 		}
-		else if (std::is_same<T, int32_t>::value) {
+		else if constexpr (std::is_same<T, int32_t>::value) {
 			return to_int32 (s, base);
 		}
-		else if (std::is_same<T, int64_t>::value) {
+		else if constexpr (std::is_same<T, int64_t>::value) {
 			return to_int64 (s, base);
 		}
 		else {
@@ -114,7 +114,7 @@ namespace shaga::STR {
 		}
 	}
 
-	template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_INTEGRAL(T)>
 	std::string from_int (const T t, const int base = 10)
 	{
 		std::ostringstream ss;
@@ -138,13 +138,13 @@ namespace shaga::STR {
 
 	void split (const std::string_view what, const std::string_view delimiter, std::function<void (std::string_view)> callback);
 
-	template <typename T>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void split (T &out, const std::string_view what, const std::string_view delimiter)
 	{
 		split (what, delimiter, [&out](std::string_view tok) -> void { out.emplace_back (tok); });
 	}
 
-	template <typename T>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	auto split (const std::string_view what, const std::string_view delimiter) -> T
 	{
 		T out;
@@ -152,7 +152,7 @@ namespace shaga::STR {
 		return out;
 	}
 
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void join (std::string &out, const T &input, const std::string_view delimiter)
 	{
 		bool first = true;
@@ -167,7 +167,7 @@ namespace shaga::STR {
 		}
 	}
 
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	std::string join (const T &input, const std::string_view delimiter)
 	{
 		std::string out;
@@ -175,7 +175,7 @@ namespace shaga::STR {
 		return out;
 	}
 
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void join (std::string &out, const T &input, const std::string_view prefix, const std::string_view suffix)
 	{
 		for (const auto &entry : input) {
@@ -185,7 +185,7 @@ namespace shaga::STR {
 		}
 	}
 
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	std::string join (const T &input, const std::string_view prefix, const std::string_view suffix)
 	{
 		std::string out;
@@ -218,7 +218,7 @@ namespace shaga::STR {
 	void rtrim (std::string &str, const std::string_view chars = SPACESZERO);
 	void rtrim (std::string_view &str, const std::string_view chars = SPACESZERO);
 
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void rtrim (T &input, const std::string_view chars = SPACESZERO)
 	{
 		for (auto &instance : input) {
@@ -229,7 +229,7 @@ namespace shaga::STR {
 	void ltrim (std::string &str, const std::string_view chars = SPACESZERO);
 	void ltrim (std::string_view &str, const std::string_view chars = SPACESZERO);
 
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void ltrim (T &input, const std::string_view chars = SPACESZERO)
 	{
 		for (auto &instance : input) {
@@ -240,7 +240,7 @@ namespace shaga::STR {
 	void trim (std::string &str, const std::string_view chars = SPACESZERO);
 	void trim (std::string_view &str, const std::string_view chars = SPACESZERO);
 
-	template <typename T, std::enable_if_t<shaga::is_iterable_v<T>, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void trim (T &input, const std::string_view chars = SPACESZERO)
 	{
 		for (auto &instance : input) {

@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2022, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -36,7 +36,7 @@ namespace shaga {
 		result = {(result * base) + digit};
 	}
 
-	template <typename T, std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_INTEGER(T)>
 	static auto _to_uint_process (const std::string_view src, const int base, const std::string_view type) -> T
 	{
 		if (base < 2) {
@@ -185,7 +185,7 @@ namespace shaga {
 		return _to_uint_process<int64_t> (s, base, "int64"sv);
 	}
 
-	template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+	template <typename T, SHAGA_TYPE_IS_FLOATING(T)>
 	static auto _to_float_process (std::string_view src, const std::string_view type) -> T
 	{
 		try {
