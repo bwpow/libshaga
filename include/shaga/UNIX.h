@@ -21,9 +21,9 @@ namespace shaga::UNIX {
 	std::string get_hostname (const bool to_lowercase = false, const char specchar = '\0');
 	pid_t daemonize (const std::string_view pidfile);
 
-	void renice (const int prio);
-	void renice (std::shared_ptr<shaga::INI> ini);
-	void renice (const shaga::INI *ini);
+	bool renice (const int prio);
+	bool renice (std::shared_ptr<shaga::INI> ini);
+	bool renice (const shaga::INI *const ini);
 }
 
 #endif // OS_WIN

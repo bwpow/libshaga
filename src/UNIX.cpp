@@ -124,7 +124,7 @@ namespace shaga {
 		}
 
 		/* Close all open file descriptors */
-		for (long x = ::sysconf (_SC_OPEN_MAX); x > 0; x--) {
+		for (long x = ::sysconf (_SC_OPEN_MAX); x >= 0; --x) {
 			::close (x);
 		}
 
@@ -134,40 +134,52 @@ namespace shaga {
 		return pid;
 	}
 
-	void UNIX::renice (const int prio)
+	bool UNIX::renice (const int prio)
 	{
-		pid_t id = ::getpgrp ();
+		const pid_t pid = ::getpid ();
 
 		errno = 0;
-		if (::setpriority (PRIO_PGRP, static_cast<int>(id), prio) != 0){
-			cThrow ("Could not lower priority: {}", strerror (errno));
+		if (::setpriority (PRIO_PROCESS, static_cast<int> (pid), prio) != 0) {
+			cThrow ("Could not set priority: {}"sv, strerror(errno));
 		}
+
+		errno = 0;
+		const int currentPrio = ::getpriority (PRIO_PROCESS, static_cast<int> (pid));
+		if (currentPrio == -1 && errno != 0) {
+			cThrow ("Could not get current priority: {}"sv, strerror(errno));
+		}
+
+		P::print ("Changing priority to {}, actually is {}"sv, prio, currentPrio);
+
+		return (prio == currentPrio);
 	}
 
-	void UNIX::renice (std::shared_ptr<shaga::INI> ini)
+	bool UNIX::renice (std::shared_ptr<shaga::INI> ini)
 	{
 		if (nullptr == ini) {
-			return;
+			return true;
 		}
 
-		const int prio = ini->get_uint8 (""sv, "renice"sv, UINT8_MAX);
-		if (prio != UINT8_MAX) {
-			P::print ("Changing priority to {}", prio);
-			renice (prio);
+		const int prio = ini->get_int16 (""sv, "renice"sv, INT16_MAX);
+		if (prio != INT16_MAX) {
+			return renice (prio);
 		}
+
+		return true;
 	}
 
-	void UNIX::renice (const shaga::INI *ini)
+	bool UNIX::renice (const shaga::INI *const ini)
 	{
 		if (nullptr == ini) {
-			return;
+			return true;
 		}
 
-		const int prio = ini->get_uint8 (""sv, "renice"sv, UINT8_MAX);
-		if (prio != UINT8_MAX) {
-			P::print ("Changing priority to {}", prio);
-			renice (prio);
+		const int prio = ini->get_int16 (""sv, "renice"sv, INT16_MAX);
+		if (prio != INT16_MAX) {
+			return renice (prio);
 		}
+
+		return true;
 	}
 
 }
