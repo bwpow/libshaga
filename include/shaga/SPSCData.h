@@ -14,8 +14,8 @@ namespace shaga {
 	class SPSCDataInterface
 	{
 		public:
-			explicit SPSCDataInterface () {}
-			virtual ~SPSCDataInterface () {}
+			explicit SPSCDataInterface() = default;
+			virtual ~SPSCDataInterface() = default;
 
 			/* Disable copy and assignment */
 			SPSCDataInterface (const SPSCDataInterface &) = delete;

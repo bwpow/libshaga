@@ -52,7 +52,7 @@ namespace shaga {
 			return 0;
 		}
 
-		cThrow ("Unknown protocol");
+		cThrow ("Unknown protocol"sv);
 	}
 
 	struct sockaddr_storage IPHelper::NOT (const int af, const struct sockaddr_storage &addr_in)
@@ -76,7 +76,7 @@ namespace shaga {
 			}
 		}
 		else {
-			cThrow ("Unknown protocol");
+			cThrow ("Unknown protocol"sv);
 		}
 
 		return addr_out;
@@ -105,7 +105,7 @@ namespace shaga {
 			}
 		}
 		else {
-			cThrow ("Unknown protocol");
+			cThrow ("Unknown protocol"sv);
 		}
 
 		return addr_out;
@@ -134,7 +134,7 @@ namespace shaga {
 			}
 		}
 		else {
-			cThrow ("Unknown protocol");
+			cThrow ("Unknown protocol"sv);
 		}
 
 		return addr_out;
@@ -146,7 +146,7 @@ namespace shaga {
 			const struct sockaddr_in* addr4 = (struct sockaddr_in*)&addr;
 			char str_ip4[INET_ADDRSTRLEN + 1];
 			if (::inet_ntop (AF_INET, (void *) &(addr4->sin_addr), str_ip4, sizeof (str_ip4)) == NULL) {
-				cThrow ("Unable to get IPv4 address: {}", strerror (errno));
+				cThrow ("Unable to get IPv4 address: {}"sv, strerror (errno));
 			}
 			return std::string (str_ip4);
 		}
@@ -154,7 +154,7 @@ namespace shaga {
 			const struct sockaddr_in6* addr6 = (struct sockaddr_in6*)&addr;
 			char str_ip6[INET6_ADDRSTRLEN + 1];
 			if (::inet_ntop (AF_INET6, (void *) &(addr6->sin6_addr), str_ip6, sizeof (str_ip6)) == NULL) {
-				cThrow ("Unable to get IPv6 address: {}", strerror (errno));
+				cThrow ("Unable to get IPv6 address: {}"sv, strerror (errno));
 			}
 			return std::string (str_ip6);
 		}
@@ -211,14 +211,14 @@ namespace shaga {
 			if (addr4->sin_family != _af) {
 				cThrow ("Incorrect protocol family set. Expected IPv4.");
 			}
-			P::debug_print ("IPHelper: IPv4 address '{}' port {} mask {}", get_ip_string (_af, _addr), ntohs (addr4->sin_port), _mask);
+			P::debug_print ("IPHelper: IPv4 address '{}' port {} mask {}"sv, get_ip_string (_af, _addr), ntohs (addr4->sin_port), _mask);
 		}
 		else if (_af == AF_INET6) {
 			const struct sockaddr_in6* addr6 = (struct sockaddr_in6*)&_addr;
 			if (addr6->sin6_family != _af) {
 				cThrow ("Incorrect protocol family set. Expected IPv6.");
 			}
-			P::debug_print ("IPHelper: IPv6 address '{}' port {} mask {}", get_ip_string (_af, _addr), ntohs (addr6->sin6_port), _mask);
+			P::debug_print ("IPHelper: IPv6 address '{}' port {} mask {}"sv, get_ip_string (_af, _addr), ntohs (addr6->sin6_port), _mask);
 		}
 		else {
 			cThrow ("Unknown protocol family or unrecognized address"sv);
@@ -282,11 +282,11 @@ namespace shaga {
 		const size_t pos = addr.find_first_of (":;,");
 		if (pos != std::string::npos) {
 			const std::string tstr = addr.substr (0, pos);
-			if (tstr == "ipv4" || tstr == "ip4" || tstr == "ip" || tstr == "IPv4") {
+			if (tstr == "ipv4"s || tstr == "ip4"s || tstr == "ip"s || tstr == "IPv4"s) {
 				_af = AF_INET;
 				addr.erase (0, pos + 1);
 			}
-			else if (tstr == "ipv6" || tstr == "ip6" || tstr == "IPv6") {
+			else if (tstr == "ipv6"s || tstr == "ip6"s || tstr == "IPv6"s) {
 				_af = AF_INET6;
 				addr.erase (0, pos + 1);
 			}
@@ -310,7 +310,7 @@ namespace shaga {
 					port = STR::to_uint16 (str_port.substr (1));
 				}
 				else {
-					cThrow ("Malformed port specification '{}'", str_port);
+					cThrow ("Malformed port specification '{}'"sv, str_port);
 				}
 			}
 		}
@@ -333,7 +333,7 @@ namespace shaga {
 		}
 
 		if (ok == false) {
-			cThrow ("String '{}' not recognized as valid IP address", buf);
+			cThrow ("String '{}' not recognized as valid IP address"sv, buf);
 		}
 
 		if (_mask < 0) {
@@ -357,7 +357,7 @@ namespace shaga {
 				break;
 
 			default:
-				cThrow ("Unknown protocol family");
+				cThrow ("Unknown protocol family"sv);
 		}
 
 		::memcpy (&_addr, &addr_in, sizeof (struct sockaddr_storage));
@@ -372,7 +372,7 @@ namespace shaga {
 
 		switch (type) {
 			case Type::Autodetect:
-				cThrow ("Not possible to use autodetect with binary format");
+				cThrow ("Not possible to use autodetect with binary format"sv);
 				break;
 
 			case Type::IPv4:
@@ -380,7 +380,7 @@ namespace shaga {
 				_mask = _max_mask = 32;
 				addr4->sin_family = AF_INET;
 				if (sze < sizeof (addr4->sin_addr)) {
-					cThrow ("Buffer too small. Expected at least {} bytes", sizeof (addr4->sin_addr));
+					cThrow ("Buffer too small. Expected at least {} bytes"sv, sizeof (addr4->sin_addr));
 				}
 				memcpy (&(addr4->sin_addr), buf, sizeof (addr4->sin_addr));
 				break;
@@ -390,7 +390,7 @@ namespace shaga {
 				_mask = _max_mask = 128;
 				addr6->sin6_family = AF_INET6;
 				if (sze < sizeof (addr6->sin6_addr)) {
-					cThrow ("Buffer too small. Expected at least {} bytes", sizeof (addr6->sin6_addr));
+					cThrow ("Buffer too small. Expected at least {} bytes"sv, sizeof (addr6->sin6_addr));
 				}
 				memcpy (&(addr6->sin6_addr), buf, sizeof (addr6->sin6_addr));
 				break;
@@ -408,12 +408,12 @@ namespace shaga {
 	{
 		switch (_af) {
 			case AF_INET:
-				return "IPv4";
+				return "IPv4"s;
 			case AF_INET6:
-				return "IPv6";
+				return "IPv6"s;
 
 			default:
-				return "UNK";
+				return "UNK"s;
 		}
 	}
 
@@ -437,7 +437,7 @@ namespace shaga {
 				break;
 
 			default:
-				cThrow ("Unknown protocol family");
+				cThrow ("Unknown protocol family"sv);
 		}
 	}
 
@@ -452,17 +452,17 @@ namespace shaga {
 			case AF_INET6:
 				return ntohs (addr6->sin6_port);
 			default:
-				cThrow ("Unknown protocol family");
+				cThrow ("Unknown protocol family"sv);
 		}
 	}
 
 	void IPHelper::set_mask (const int mask)
 	{
 		if (mask < 0 || mask > _max_mask) {
-			cThrow ("Value out of range");
+			cThrow ("Value out of range"sv);
 		}
 		else {
-			cThrow ("Unknown protocol family");
+			cThrow ("Unknown protocol family"sv);
 		}
 
 		_mask = mask;
@@ -488,7 +488,7 @@ namespace shaga {
 					str.append (get_byte_mask (_mask, i));
 				}
 				if (::inet_pton (AF_INET, str.c_str (), &(addr4->sin_addr)) != 1) {
-					cThrow ("Malformed network mask");
+					cThrow ("Malformed network mask"sv);
 				}
 				addr4->sin_family = AF_INET;
 				break;
@@ -499,13 +499,13 @@ namespace shaga {
 				}
 
 				if (::inet_pton (AF_INET6, str.c_str (), &(addr6->sin6_addr)) != 1) {
-					cThrow ("Malformed network mask");
+					cThrow ("Malformed network mask"sv);
 				}
 				addr6->sin6_family = AF_INET6;
 				break;
 
 			default:
-				cThrow ("Unknown protocol family or unrecognized address");
+				cThrow ("Unknown protocol family or unrecognized address"sv);
 		}
 
 		return addr;

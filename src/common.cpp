@@ -113,7 +113,7 @@ namespace shaga {
 	void add_at_exit_callback (std::function<void (void)> func)
 	{
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock (_callback_mutex);
+			std::lock_guard<std::mutex> lock (_callback_mutex);
 		#endif // SHAGA_THREADING
 		_at_exit_callback_list.push_back (func);
 	}
@@ -122,7 +122,7 @@ namespace shaga {
 	{
 		try {
 			#ifdef SHAGA_THREADING
-			std::unique_lock<std::recursive_mutex> exitlck (_exit_mutex);
+				std::unique_lock<std::recursive_mutex> exitlck (_exit_mutex);
 			#endif // SHAGA_THREADING
 
 			#ifdef SHAGA_THREADING
@@ -138,14 +138,14 @@ namespace shaga {
 			}
 
 			#ifdef SHAGA_THREADING
-			std::unique_lock<std::mutex> lck (_callback_mutex);
+				std::unique_lock<std::mutex> lck (_callback_mutex);
 			#endif // SHAGA_THREADING
 
 			CALLBACK_LIST lst;
 			lst.swap (_at_exit_callback_list);
 
 			#ifdef SHAGA_THREADING
-			lck.unlock ();
+				lck.unlock ();
 			#endif // SHAGA_THREADING
 
 			for (auto &func : lst) {
@@ -200,7 +200,7 @@ namespace shaga {
 	void add_at_shutdown_callback (std::function<void (void)> func)
 	{
 		#ifdef SHAGA_THREADING
-		std::lock_guard<std::mutex> lock(_callback_mutex);
+			std::lock_guard<std::mutex> lock(_callback_mutex);
 		#endif // SHAGA_THREADING
 		_at_shutdown_callback_list.push_back (func);
 	}
@@ -216,14 +216,14 @@ namespace shaga {
 			P::print ("Shutdown requested from {}: {} line {}"sv, file, funct, line);
 
 			#ifdef SHAGA_THREADING
-			std::unique_lock<std::mutex> lck (_callback_mutex);
+				std::unique_lock<std::mutex> lck (_callback_mutex);
 			#endif // SHAGA_THREADING
 
 			CALLBACK_LIST lst;
 			lst.swap (_at_shutdown_callback_list);
 
 			#ifdef SHAGA_THREADING
-			lck.unlock ();
+				lck.unlock ();
 			#endif // SHAGA_THREADING
 
 			for (auto &func : lst) {
@@ -238,9 +238,9 @@ namespace shaga {
 	HEDLEY_WARN_UNUSED_RESULT bool is_shutting_down (void)
 	{
 		#ifdef SHAGA_THREADING
-		return _is_shutdown.load (std::memory_order_relaxed);
+			return _is_shutdown.load (std::memory_order_relaxed);
 		#else
-		return _is_shutdown;
+			return _is_shutdown;
 		#endif // SHAGA_THREADING
 	}
 
@@ -260,9 +260,9 @@ namespace shaga {
 	{
 		struct timespec monotime;
 		#ifdef CLOCK_MONOTONIC_RAW
-		::clock_gettime(CLOCK_MONOTONIC_RAW, &monotime);
+			::clock_gettime(CLOCK_MONOTONIC_RAW, &monotime);
 		#else
-		::clock_gettime(CLOCK_MONOTONIC, &monotime);
+			::clock_gettime(CLOCK_MONOTONIC, &monotime);
 		#endif // CLOCK_MONOTONIC_RAW
 
 		const uint64_t val = static_cast<uint64_t> (monotime.tv_sec);
@@ -278,9 +278,9 @@ namespace shaga {
 	{
 		struct timespec monotime;
 		#ifdef CLOCK_MONOTONIC_RAW
-		::clock_gettime(CLOCK_MONOTONIC_RAW, &monotime);
+			::clock_gettime(CLOCK_MONOTONIC_RAW, &monotime);
 		#else
-		::clock_gettime(CLOCK_MONOTONIC, &monotime);
+			::clock_gettime(CLOCK_MONOTONIC, &monotime);
 		#endif // CLOCK_MONOTONIC_RAW
 
 		const uint64_t val = (static_cast<uint64_t> (monotime.tv_sec) * 1'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000'000);
@@ -296,9 +296,9 @@ namespace shaga {
 	{
 		struct timespec monotime;
 		#ifdef CLOCK_MONOTONIC_RAW
-		::clock_gettime(CLOCK_MONOTONIC_RAW, &monotime);
+			::clock_gettime(CLOCK_MONOTONIC_RAW, &monotime);
 		#else
-		::clock_gettime(CLOCK_MONOTONIC, &monotime);
+			::clock_gettime(CLOCK_MONOTONIC, &monotime);
 		#endif // CLOCK_MONOTONIC_RAW
 
 		const uint64_t val = (static_cast<uint64_t> (monotime.tv_sec) * 1'000'000) + (static_cast<uint64_t> (monotime.tv_nsec) / 1'000);
