@@ -32,7 +32,8 @@ ST_CPPFLAGS = \
 	-fsized-deallocation \
 	-O3 \
 	-std=c++17 \
-	-march=$(SHAGA_MARCH)
+	-march=$(SHAGA_MARCH) \
+	-mtune=$(SHAGA_MARCH)
 
 MT_LIBS = -pthread $(ST_LIBS) -latomic
 MT_CPPFLAGS = -pthread $(ST_CPPFLAGS)

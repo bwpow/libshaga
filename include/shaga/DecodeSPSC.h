@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2024, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -112,7 +112,7 @@ namespace shaga
 				#else
 					_SHAGA_SPSC_D_RING (next, _pos_write);
 
-					if (next == _pos_read) {
+					if (HEDLEY_UNLIKELY (next == _pos_read)) {
 						cThrow ("{}: Ring full"sv, _name);
 					}
 
@@ -120,10 +120,10 @@ namespace shaga
 				#endif // SHAGA_THREADING
 
 				#ifdef OS_LINUX
-				if (const ssize_t ret = ::write (this->_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)); ret < 0) {
+				if (const ssize_t ret = ::write (this->_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)); HEDLEY_UNLIKELY (ret < 0)) {
 					cThrow ("{}: Error writing to eventfd: {}"sv, _name, strerror (errno));
 				}
-				else if (ret != sizeof (_eventfd_write_val)) {
+				else if (HEDLEY_UNLIKELY (ret != sizeof (_eventfd_write_val))) {
 					cThrow ("{}: Error writing to eventfd: Unknown error"sv, _name);
 				}
 				#endif // OS_LINUX
@@ -754,7 +754,7 @@ namespace shaga
 			{
 				const uint_fast32_t sze = len - offset;
 
-				if (sze < 3) {
+				if (HEDLEY_UNLIKELY (sze < 3)) {
 					this->nonfatal_error ("Message too short"sv);
 					return;
 				}
@@ -775,7 +775,7 @@ namespace shaga
 					return;
 				}
 
-				if (data_length > this->_max_packet_size) {
+				if (HEDLEY_UNLIKELY (data_length > this->_max_packet_size)) {
 					this->nonfatal_error ("Message too long"sv);
 					return;
 				}

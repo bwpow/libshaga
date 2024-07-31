@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2024, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -245,7 +245,7 @@ namespace shaga {
 
 			/* Output is appended to 'out' only when encode succeeds, otherwise 'out' is untouched */
 			void encode (const std::string_view plain, std::string &out, const bool use_mixed = false);
-			std::string encode (const std::string_view plain, const bool use_mixed = false);
+			HEDLEY_WARN_UNUSED_RESULT std::string encode (const std::string_view plain, const bool use_mixed = false);
 
 			ReDataConfig get_config (void) const;
 			void set_config (const ReDataConfig &conf);

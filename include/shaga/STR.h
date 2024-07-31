@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2024, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -17,12 +17,12 @@ namespace shaga::STR {
 	#define NEWLINES std::string_view ("\n\r", 2)
 	#define NEWLINESZERO std::string_view ("\n\r\0", 3)
 
-	template <typename... Args>
+	template <typename... Args, typename = std::enable_if_t<all_convertible_to_string_view<Args...>::value>>
 	std::string concat (const Args & ... args)
 	{
 		const std::array<std::string_view,sizeof...(Args)> vin {args...};
 
-		size_t len = 0;
+		size_t len {0};
 		for (const auto &entry : vin) {
 			len += entry.size ();
 		}
@@ -34,6 +34,20 @@ namespace shaga::STR {
 		}
 
 		return out;
+	}
+
+	template <typename... Args>
+	std::string format_concat (const Args & ... args)
+	{
+		const std::array<std::string_view,sizeof...(Args)> vin {args...};
+		return fmt::to_string (fmt::join (vin, ""sv));
+	}
+
+	template <typename... Args>
+	std::string format_concat_delimiter (const std::string_view delimiter, const Args & ... args)
+	{
+		const std::array<std::string_view,sizeof...(Args)> vin {args...};
+		return fmt::to_string (fmt::join (vin, delimiter));
 	}
 
 	template <typename... Args>
@@ -115,11 +129,11 @@ namespace shaga::STR {
 	}
 
 	template <typename T, SHAGA_TYPE_IS_INTEGRAL(T)>
-	std::string from_int (const T t, const int base = 10)
+	std::string from_int (const T t, [[maybe_unused]]const int base = 10)
 	{
 		std::ostringstream ss;
 
-		if (std::is_same <T, bool>::value) {
+		if constexpr (std::is_same <T, bool>::value) {
 			if (t == true) {
 				ss << "true"sv;
 			}
@@ -127,7 +141,7 @@ namespace shaga::STR {
 				ss << "false"sv;
 			}
 		}
-		else if (std::is_same <T, int8_t>::value || std::is_same <T, uint8_t>::value || std::is_same <T, int16_t>::value || std::is_same <T, uint16_t>::value) {
+		else if constexpr (std::is_same <T, int8_t>::value || std::is_same <T, uint8_t>::value || std::is_same <T, int16_t>::value || std::is_same <T, uint16_t>::value) {
 			ss << std::setbase (base) << static_cast<int32_t> (t);
 		}
 		else {
@@ -163,7 +177,7 @@ namespace shaga::STR {
 			else {
 				first = false;
 			}
-			out.append (entry);
+			out.append (fmt::to_string (entry));
 		}
 	}
 

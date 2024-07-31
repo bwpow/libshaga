@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2024, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -78,7 +78,7 @@ namespace shaga {
 
 			virtual uint_fast32_t set_size (const uint_fast32_t new_size) override
 			{
-				if (new_size > _bufsize) {
+				if (HEDLEY_UNLIKELY (new_size > _bufsize)) {
 					cThrow ("Unable to set size"sv);
 				}
 				return (_size = new_size);
@@ -109,7 +109,7 @@ namespace shaga {
 
 			virtual void alloc (const uint_fast32_t alloc_size) override
 			{
-				if (alloc_size > _bufsize) {
+				if (HEDLEY_UNLIKELY (alloc_size > _bufsize)) {
 					cThrow ("Requested larger alloc size in constant container"sv);
 				}
 			}
@@ -156,7 +156,7 @@ namespace shaga {
 
 			virtual uint_fast32_t set_size (const uint_fast32_t new_size) override
 			{
-				if (new_size > _real_bufsize) {
+				if (HEDLEY_UNLIKELY (new_size > _real_bufsize)) {
 					cThrow ("Unable to set size"sv);
 				}
 				return (_size = new_size);

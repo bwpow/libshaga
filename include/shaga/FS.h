@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2024, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -19,8 +19,10 @@ namespace shaga::FS {
 	struct stat file_stat (const std::string_view fname);
 
 	off64_t file_size (const std::string_view fname);
+	std::optional<off64_t> file_size_optional (const char *const fname);
 
 	time_t file_mtime (const std::string_view fname);
+	std::optional<time_t> file_mtime_optional (const std::string_view fname);
 
 	bool is_dir (const std::string_view dname);
 

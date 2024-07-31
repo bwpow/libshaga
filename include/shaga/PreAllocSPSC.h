@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2024, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -97,7 +97,7 @@ namespace shaga
 				#ifdef SHAGA_THREADING
 					if (next == _pos_read.load (std::memory_order_acquire)) {
 				#else
-					if (next == _pos_read) {
+					if (HEDLEY_UNLIKELY (next == _pos_read)) {
 				#endif // SHAGA_THREADING
 					cThrow ("Ring full"sv);
 				}
@@ -118,7 +118,7 @@ namespace shaga
 				#ifdef SHAGA_THREADING
 					if (next == _pos_read.load (std::memory_order_acquire)) {
 				#else
-					if (next == _pos_read) {
+					if (HEDLEY_UNLIKELY (next == _pos_read)) {
 				#endif // SHAGA_THREADING
 					cThrow ("Ring full");
 				}
@@ -139,7 +139,7 @@ namespace shaga
 					if (now == _pos_write.load (std::memory_order_acquire)) {
 				#else
 					const uint_fast32_t now = _pos_read;
-					if (now == _pos_write) {
+					if (HEDLEY_UNLIKELY (now == _pos_write)) {
 				#endif // SHAGA_THREADING
 					cThrow ("Ring empty"sv);
 				}
@@ -154,7 +154,7 @@ namespace shaga
 					if (now == _pos_write.load (std::memory_order_acquire)) {
 				#else
 					const uint_fast32_t now = _pos_read;
-					if (now == _pos_write) {
+					if (HEDLEY_UNLIKELY (now == _pos_write)) {
 				#endif // SHAGA_THREADING
 					cThrow ("Ring empty"sv);
 				}

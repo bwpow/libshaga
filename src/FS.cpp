@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2024, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -56,11 +56,29 @@ namespace shaga {
 		return st.st_size;
 	}
 
+	std::optional<off64_t> FS::file_size_optional (const char *const fname)
+	{
+		struct stat st;
+		if (::stat (s_c_str (fname), &st) != 0) {
+			return std::nullopt;
+		}
+		return st.st_size;
+	}
+
 	time_t FS::file_mtime (const std::string_view fname)
 	{
 		struct stat st;
 		if (::stat (s_c_str (fname), &st) != 0) {
 			cThrow ("Unable to get file mtime of '{}'"sv, fname);
+		}
+		return st.st_mtime;
+	}
+
+	std::optional<time_t> FS::file_mtime_optional (const std::string_view fname)
+	{
+		struct stat st;
+		if (::stat (s_c_str (fname), &st) != 0) {
+			return std::nullopt;
 		}
 		return st.st_mtime;
 	}

@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2023, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2024, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -170,6 +170,7 @@ All rights reserved.
 /* https://github.com/fmtlib/fmt */
 #define FMT_HEADER_ONLY
 #include "3rdparty/fmt/format.h"
+#include "3rdparty/fmt/ranges.h"
 
 #include "3rdparty/json.hpp"
 
@@ -249,6 +250,9 @@ namespace shaga
 
 	template <typename T>
 	constexpr bool is_iterable_v = is_iterable<T>::value;
+
+	template <typename... Args>
+	using all_convertible_to_string_view = std::conjunction<std::is_convertible<Args, std::string_view>...>;
 
 	template <typename T, typename F, std::enable_if_t<(std::is_enum<T>::value && std::is_convertible_v<std::underlying_type_t<T>,F>), bool> = true>
 	constexpr auto convert (const T e) noexcept -> F
@@ -390,10 +394,11 @@ namespace shaga
 	}
 
 	#define LOG_REGISTER
+	#define LOCALE_REGISTER
 
 	#define SHAGA_MAIN(body) int main ([[maybe_unused]] int argc, [[maybe_unused]] char **argv) try \
 	{ \
-		{ shaga_check (); LOG_REGISTER; } \
+		{ LOCALE_REGISTER; shaga_check (); LOG_REGISTER; } \
 		{ body } \
 		shaga::exit (); \
 	} \
