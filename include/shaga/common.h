@@ -221,11 +221,23 @@ using namespace nlohmann::literals;
 #define _SHAGA_SPSC_D_RING(x,y) const uint_fast32_t x = ((y) + 1) % this->_num_packets
 #define _SHAGA_SPSC_I_RING(x) x = (x + 1) % this->_num_packets
 
+/* Macro to enable a template function only if T is an iterable type */
 #define SHAGA_TYPE_IS_ITERABLE(T) std::enable_if_t<shaga::is_iterable_v<T>, bool> = true
+
+/* Macro to enable a template function only if T is an integer type (according to std::numeric_limits) */
 #define SHAGA_TYPE_IS_INTEGER(T) std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true
+
+/* Macro to enable a template function only if T is an integral type (according to std::is_integral) */
 #define SHAGA_TYPE_IS_INTEGRAL(T) std::enable_if_t<std::is_integral<T>::value, bool> = true
+
+/* Macro to enable a template function only if T is a floating-point type */
 #define SHAGA_TYPE_IS_FLOATING(T) std::enable_if_t<std::is_floating_point<T>::value, bool> = true
-#define SHAGA_TYPE_IS_CLASS(T) typename std::enable_if<std::is_class<T>::value,T>::type* = nullptr
+
+/* Macro to enable a template function only if T is a class type */
+#define SHAGA_TYPE_IS_CLASS(T) typename std::enable_if<std::is_class<T>::value, T>::type* = nullptr
+
+/* Macro to enable a template function only if T is a numeric type (either integral or floating-point) */
+#define SHAGA_TYPE_IS_NUMBER(T) std::enable_if_t<std::is_arithmetic<T>::value, bool> = true
 
 /* This macro is used to identify methods and functions that return std::string view */
 /* Useful for static analysis to point out potentially dangerous methods. */
@@ -233,7 +245,7 @@ using namespace nlohmann::literals;
 	#define SHAGA_STRV
 #endif // SHAGA_STRV
 
-/* This is useful for conversion of enums to underlying types without too much typin */
+/* This is useful for conversion of enums to underlying types without too much typing */
 template <typename T, std::enable_if_t<std::is_enum<T>::value, bool> = true>
 constexpr auto operator+ (const T e) noexcept -> std::underlying_type_t<T>
 {
@@ -333,7 +345,7 @@ namespace shaga
 		catch (...) {
 			shaga::_exit (format, EXIT_FAILURE);
 		}
-}
+	}
 
 	typedef std::function<void (const std::string_view, const int)> FINAL_CALL;
 	void set_final_call (FINAL_CALL func);

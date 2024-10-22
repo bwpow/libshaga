@@ -29,8 +29,8 @@ namespace shaga {
 			cThrow ("Unrecognized character '{:c}' (base {})"sv, static_cast<char> (chr), base);
 		}
 
-		if (result > (UINT64_MAX / base) || (result * base) > (UINT64_MAX - digit)) {
-			cThrow ("Out of range"sv);
+		if (result > (UINT64_MAX - digit) / base) {
+			cThrow("Out of range"sv);
 		}
 
 		result = {(result * base) + digit};
