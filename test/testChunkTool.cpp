@@ -140,7 +140,9 @@ TEST (ChunkTool, trim)
 		v.emplace_back (0, "AAAA", Chunk::Priority::pDEBUG);
 	}
 
-	std::random_shuffle (v.begin (), v.end ());
+	std::random_device rd;
+	std::mt19937 rng (rd ());
+	std::shuffle (v.begin (), v.end (), rng);
 
 	CHUNKSET cset;
 	for (const auto &c : v) {
@@ -166,4 +168,61 @@ TEST (ChunkTool, trim)
 		ChunkTool::trim (cs, 0, Chunk::Priority::pCRITICAL);
 		EXPECT_TRUE (cs.size () == 0);
 	}
+}
+
+TEST(ChunkTool, EmptyCollections) {
+    CHUNKLIST lst;
+    CHUNKSET cset;
+    ChunkTool tool(true, nullptr);
+
+    // Test empty collections
+    EXPECT_NO_THROW(ChunkTool::change_source_hwid(lst, 5, false));
+
+    auto bin = tool.to_bin(lst, 0, Chunk::Priority::pDEBUG);
+    EXPECT_TRUE(bin.empty());
+
+    auto cset_bin = tool.to_bin(cset, 0, Chunk::Priority::pDEBUG);
+    EXPECT_TRUE(cset_bin.empty());
+
+    EXPECT_NO_THROW(ChunkTool::trim(cset, 0, Chunk::Priority::pDEBUG));
+}
+
+TEST(ChunkTool, SingleElementCollections) {
+    CHUNKLIST lst;
+    lst.emplace_back(1, "AAAA", Chunk::Priority::pCRITICAL);
+
+    // Test with single element
+    ChunkTool::change_source_hwid(lst, 5, false);
+    EXPECT_EQ(lst.front().get_source_hwid(), 5);
+
+    ChunkTool tool(true, nullptr);
+    auto bin = tool.to_bin(lst, 0, Chunk::Priority::pDEBUG);
+    EXPECT_FALSE(bin.empty());
+
+    auto decoded = tool.from_bin<CHUNKLIST>(bin);
+    EXPECT_EQ(decoded.size(), 1);
+    EXPECT_EQ(decoded.front().get_source_hwid(), 5);
+}
+
+TEST (ChunkTool, MaxSizeHandling)
+{
+    const size_t sze = 10;
+    CHUNKLIST lst;
+
+    // Fill with increasing payload sizes
+    for (size_t i = 0; i < sze; ++i) {
+        Chunk chunk(1, "AAAA", Chunk::Priority::pCRITICAL);
+        chunk.set_payload(std::string(i * 1000, 'X')); // Increasing payload size
+        lst.push_back(chunk);
+    }
+
+    ChunkTool tool(true, nullptr);
+
+    // Test with different max_size limits
+    auto bin1 = tool.to_bin(lst, 100, Chunk::Priority::pDEBUG);  // Very small limit
+    auto bin2 = tool.to_bin(lst, 10000, Chunk::Priority::pDEBUG);  // Medium limit
+    auto bin3 = tool.to_bin(lst, 0, Chunk::Priority::pDEBUG);  // No limit
+
+    EXPECT_TRUE(bin1.size() < bin2.size());
+    EXPECT_TRUE(bin2.size() <= bin3.size());
 }
