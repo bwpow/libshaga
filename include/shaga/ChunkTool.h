@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2024, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2025, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -10,18 +10,16 @@ All rights reserved.
 
 #include "common.h"
 
-namespace shaga
-{
+namespace shaga {
 	typedef std::list<Chunk> CHUNKLIST;
 	typedef std::multiset<Chunk> CHUNKSET;
 
-	class ChunkTool
-	{
+	class ChunkTool {
 		private:
-			const Chunk::SPECIAL_TYPES *const _special_types {nullptr};
+			const Chunk::SPECIAL_TYPES *const _special_types{nullptr};
 
-			bool _enable_thr {true};
-			bool _store_binary {false};
+			bool _enable_thr{true};
+			bool _store_binary{false};
 
 			std::string _temp_str;
 			std::string _out_str;
@@ -37,14 +35,14 @@ namespace shaga
 			void from_bin (const std::string_view buf, size_t &offset, CHUNKLIST &out_append) const;
 			void from_bin (const std::string_view buf, size_t &offset, CHUNKSET &out_append) const;
 
-			template <class T, SHAGA_TYPE_IS_ITERABLE(T)>
+			template <class T, SHAGA_TYPE_IS_ITERABLE (T)>
 			void from_bin (const std::string_view buf, T &out_append) const
 			{
-				size_t offset {0};
+				size_t offset{0};
 				from_bin (buf, offset, out_append);
 			}
 
-			template <class T, SHAGA_TYPE_IS_ITERABLE(T)>
+			template <class T, SHAGA_TYPE_IS_ITERABLE (T)>
 			auto from_bin (const std::string_view buf, size_t &offset) const -> T
 			{
 				T out;
@@ -52,17 +50,17 @@ namespace shaga
 				return out;
 			}
 
-			template <class T, SHAGA_TYPE_IS_ITERABLE(T)>
+			template <class T, SHAGA_TYPE_IS_ITERABLE (T)>
 			auto from_bin (const std::string_view buf) const -> T
 			{
 				T out;
-				size_t offset {0};
+				size_t offset{0};
 				from_bin (buf, offset, out);
 				return out;
 			}
 
 			/*** To binary string ***/
-			/* All entries that are converted to binary are erased from the list/set */
+			/* All entries that are converted to binary are erased from the* list/set */
 			void to_bin (CHUNKLIST &lst_erase, std::string &out_append, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool erase_skipped = false);
 			std::string to_bin (CHUNKLIST &lst_erase, const size_t max_size = 0, const Chunk::Priority max_priority = Chunk::Priority::pDEBUG, const bool erase_skipped = false);
 
@@ -74,8 +72,8 @@ namespace shaga
 			static void trim (CHUNKSET &cset, const size_t treshold_size, const Chunk::Priority treshold_prio);
 
 			/* Purge entry if callback returns false */
-			template <class T, SHAGA_TYPE_IS_ITERABLE(T)>
-			static void purge (T &lst, std::function<bool(const Chunk &)> callback)
+			template <class T, SHAGA_TYPE_IS_ITERABLE (T)>
+			static void purge (T &lst, std::function<bool (const Chunk &)> callback)
 			{
 				if (nullptr == callback) {
 					cThrow ("Callback function is not defined"sv);
@@ -93,8 +91,8 @@ namespace shaga
 	};
 
 	/*** TTL ***/
-	static const Chunk::TTL TTL_local {Chunk::TTL::TTL1};
-	static const Chunk::TTL TTL_wide {Chunk::_TTL_last};
+	static const Chunk::TTL TTL_local{Chunk::TTL::TTL1};
+	static const Chunk::TTL TTL_wide{Chunk::_TTL_last};
 
 	Chunk::TTL uint8_to_ttl (const uint8_t v);
 	uint8_t ttl_to_uint8 (const Chunk::TTL v);
@@ -119,6 +117,6 @@ namespace shaga
 	Chunk::Channel bool_to_channel (const bool val);
 	bool channel_to_bool (const Chunk::Channel channel);
 	SHAGA_STRV std::string_view channel_to_string (const Chunk::Channel channel);
-}
+}  // namespace shaga
 
-#endif // HEAD_shaga_ChunkTool
+#endif	// HEAD_shaga_ChunkTool

@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2024, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2025, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -267,6 +267,84 @@ TEST (BIN, size)
 {
 	_size<std::string> ();
 	_size<std::string_view> ();
+}
+
+TEST (BIN, base64)
+{
+	// Test empty input
+	EXPECT_TRUE(BIN::to_base64("") == "");
+	EXPECT_TRUE(BIN::from_base64("") == "");
+
+	// Test standard base64
+	EXPECT_TRUE(BIN::to_base64("A") == "QQ==");
+	EXPECT_TRUE(BIN::to_base64("AB") == "QUI=");
+	EXPECT_TRUE(BIN::to_base64("ABC") == "QUJD");
+	EXPECT_TRUE(BIN::to_base64("Hello World!") == "SGVsbG8gV29ybGQh");
+
+	// Test alternate base64
+	EXPECT_TRUE(BIN::to_base64("A", true) == "QQ--");
+	EXPECT_TRUE(BIN::to_base64("AB", true) == "QUI-");
+	EXPECT_TRUE(BIN::to_base64("ABC", true) == "QUJD");
+	EXPECT_TRUE(BIN::to_base64("Hello World!", true) == "SGVsbG8gV29ybGQh");
+
+	// Test decoding
+	EXPECT_TRUE(BIN::from_base64("QQ==") == "A");
+	EXPECT_TRUE(BIN::from_base64("QUI=") == "AB");
+	EXPECT_TRUE(BIN::from_base64("QUJD") == "ABC");
+	EXPECT_TRUE(BIN::from_base64("SGVsbG8gV29ybGQh") == "Hello World!");
+
+	// Test alternate decoding
+	EXPECT_TRUE(BIN::from_base64("QQ--", true) == "A");
+	EXPECT_TRUE(BIN::from_base64("QUI-", true) == "AB");
+	EXPECT_TRUE(BIN::from_base64("QUJD", true) == "ABC");
+	EXPECT_TRUE(BIN::from_base64("SGVsbG8gV29ybGQh", true) == "Hello World!");
+
+	// Test binary data
+	std::string binary;
+	for (size_t i = 0; i < 256; ++i) {
+		binary.push_back(static_cast<char>(i));
+	}
+	const std::string encoded = BIN::to_base64(binary);
+	EXPECT_TRUE(BIN::from_base64(encoded) == binary);
+
+	// Test error cases
+	EXPECT_THROW(BIN::from_base64("QQ="), CommonException);  // Invalid length
+	EXPECT_THROW(BIN::from_base64("Q==="), CommonException); // Invalid padding
+	EXPECT_THROW(BIN::from_base64("===="), CommonException); // Invalid input
+	EXPECT_THROW(BIN::from_base64("!@#$"), CommonException); // Invalid characters
+
+	// Test append functionality
+	std::string append_test;
+	BIN::to_base64("Test", append_test);
+	BIN::to_base64(" append", append_test);
+	EXPECT_TRUE(append_test == "VGVzdA==IGFwcGVuZA==");
+
+	std::string decoded;
+	BIN::from_base64("VGVzdA==", decoded);
+	BIN::from_base64("IGFwcGVuZA==", decoded);
+	EXPECT_TRUE(decoded == "Test append");
+}
+
+// Test base64 with random data of various lengths
+TEST (BIN, base64_random)
+{
+	std::string input;
+	for (size_t len = 1; len < 1000; len += 111) {
+		input.clear();
+		for (size_t i = 0; i < len; ++i) {
+			input.push_back(static_cast<char>(rand() & 0xFF));
+		}
+
+		// Test standard base64
+		const std::string encoded = BIN::to_base64(input);
+		const std::string decoded = BIN::from_base64(encoded);
+		EXPECT_TRUE(decoded == input);
+
+		// Test alternate base64
+		const std::string alt_encoded = BIN::to_base64(input, true);
+		const std::string alt_decoded = BIN::from_base64(alt_encoded, true);
+		EXPECT_TRUE(alt_decoded == input);
+	}
 }
 
 //TEST (BIN, special_chars)

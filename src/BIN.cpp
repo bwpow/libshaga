@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2024, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2025, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -12,18 +12,16 @@ namespace shaga {
 
 		static const uint8_t _b_hex[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-		static const uint8_t _b_64_table[64] = {
-				'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-				'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-				'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/' };
+		static const uint8_t _b_64_table[64] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'};
 		static const uint8_t _b_64_pad = '=';
 
-		static const uint8_t _b_alt64_table[64] = {
-				'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-				'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-				'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_', '.' };
+		static const uint8_t _b_alt64_table[64] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_', '.'};
 		static const uint8_t _b_alt64_pad = '-';
-	}
+
+		static const int8_t _b_64_reverse[256] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+
+		static const int8_t _b_alt64_reverse[256] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 63, -1, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, 62, -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+	}  // namespace BIN
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Endian detection  ///////////////////////////////////////////////////////////////////////////////////////////
@@ -31,20 +29,20 @@ namespace shaga {
 
 	bool BIN::is_little_endian (void)
 	{
-		#if BYTE_ORDER == LITTLE_ENDIAN
+#if BYTE_ORDER == LITTLE_ENDIAN
 		return true;
-		#else
+#else
 		return false;
-		#endif // BYTE_ORDER
+#endif	// BYTE_ORDER
 	}
 
 	bool BIN::is_big_endian (void)
 	{
-		#if BYTE_ORDER == BIG_ENDIAN
+#if BYTE_ORDER == BIG_ENDIAN
 		return true;
-		#else
+#else
 		return false;
-		#endif // BYTE_ORDER
+#endif	// BYTE_ORDER
 	}
 
 	SHAGA_STRV std::string_view BIN::endian_to_string (void)
@@ -59,7 +57,7 @@ namespace shaga {
 
 	std::string BIN::machine_type_to_string (void)
 	{
-		return fmt::format ("{}bit {} machine with {}bit time"sv, sizeof (void*) * 8, endian_to_string (), sizeof (time_t) * 8);
+		return fmt::format ("{}bit {} machine with {}bit time"sv, sizeof (void *) * 8, endian_to_string (), sizeof (time_t) * 8);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,7 +74,8 @@ namespace shaga {
 
 		while (lhs_it != lhs.end () && rhs_it != rhs.cend ()) {
 			*lhs_it = static_cast<uint8_t> (*lhs_it) | static_cast<uint8_t> (*rhs_it);
-			++lhs_it; ++rhs_it;
+			++lhs_it;
+			++rhs_it;
 		}
 	}
 
@@ -90,7 +89,8 @@ namespace shaga {
 
 		while (lhs_it != lhs.end () && rhs_it != rhs.cend ()) {
 			*lhs_it = static_cast<uint8_t> (*lhs_it) ^ static_cast<uint8_t> (*rhs_it);
-			++lhs_it; ++rhs_it;
+			++lhs_it;
+			++rhs_it;
 		}
 	}
 
@@ -104,7 +104,8 @@ namespace shaga {
 
 		while (lhs_it != lhs.end () && rhs_it != rhs.cend ()) {
 			*lhs_it = static_cast<uint8_t> (*lhs_it) & static_cast<uint8_t> (*rhs_it);
-			++lhs_it; ++rhs_it;
+			++lhs_it;
+			++rhs_it;
 		}
 	}
 
@@ -157,7 +158,7 @@ namespace shaga {
 				return _b_hex[b & 15];
 			}
 		}
-	}
+	}  // namespace BIN
 
 	uint8_t BIN::byte_from_hex (const uint8_t b_high, const uint8_t b_low)
 	{
@@ -219,26 +220,16 @@ namespace shaga {
 	//  Base64 functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/* Base64 adapted from episec.com/people/edelkind/arc/c/misc/base64.c‎ */
+	/* Base64 adapted from episec.com/people/edelkind/arc/c/misc/base64.c */
 
 	namespace BIN {
 		static inline uint8_t _byte_from_b64 (const uint8_t c, const bool use_alt)
 		{
-			if (use_alt) {
-				for (uint_fast8_t i = 0; i < 64; i++) {
-					if (_b_alt64_table[i] == c) {
-						return i;
-					}
-				}
+			const int8_t val = use_alt ? _b_alt64_reverse[c] : _b_64_reverse[c];
+			if (val == -1) {
+				cThrow ("Invalid base64 character"sv);
 			}
-			else {
-				for (uint_fast8_t i = 0; i < 64; i++) {
-					if (_b_64_table[i] == c) {
-						return i;
-					}
-				}
-			}
-			cThrow ("Value out of range"sv);
+			return static_cast<uint8_t> (val);
 		}
 
 		static inline uint8_t _b64_from_byte (const uint8_t b, const bool use_alt)
@@ -251,7 +242,7 @@ namespace shaga {
 			}
 			return _b_64_table[b];
 		}
-	}
+	}  // namespace BIN
 
 	uint8_t BIN::byte_from_b64 (const uint8_t c, const bool use_alt)
 	{
@@ -276,16 +267,16 @@ namespace shaga {
 		const uint8_t pad = use_alt ? _b_alt64_pad : _b_64_pad;
 
 		for (; len >= 3; len -= 3) {
-			cbyte = (uint8_t) *(fromp++);
+			cbyte = (uint8_t) * (fromp++);
 			append_to.push_back (_b64_from_byte (cbyte >> 2, use_alt));
 			obyte = (cbyte << 4) & 0x30; /* 0011 0000 */
 
-			cbyte = (uint8_t) *(fromp++);
+			cbyte = (uint8_t) * (fromp++);
 			obyte |= (cbyte >> 4); /* 0000 1111 */
 			append_to.push_back (_b64_from_byte (obyte, use_alt));
 			obyte = (cbyte << 2) & 0x3C; /* 0011 1100 */
 
-			cbyte = (uint8_t) *(fromp++);
+			cbyte = (uint8_t) * (fromp++);
 			obyte |= (cbyte >> 6); /* 0000 0011 */
 			append_to.push_back (_b64_from_byte (obyte, use_alt));
 			append_to.push_back (_b64_from_byte (cbyte & 0x3F, use_alt)); /* 0011 1111 */
@@ -295,7 +286,8 @@ namespace shaga {
 			end[0] = (uint8_t) * (fromp++);
 			if (--len) {
 				end[1] = (uint8_t) * (fromp++);
-			} else {
+			}
+			else {
 				end[1] = 0;
 			}
 			end[2] = 0;
@@ -311,7 +303,8 @@ namespace shaga {
 
 			if (len) {
 				append_to.push_back (_b64_from_byte (obyte, use_alt));
-			} else {
+			}
+			else {
 				append_to.push_back (pad);
 			}
 
@@ -330,69 +323,60 @@ namespace shaga {
 
 	size_t BIN::from_base64 (const std::string_view from, std::string &append_to, const bool use_alt)
 	{
-		append_to.reserve (append_to.size () + (from.size () >> 1));
+		// Base64 must be in multiples of 4
+		if ((from.size () % 4) != 0) {
+			cThrow ("Invalid base64 input length");
+		}
+
+		// Pre‐reserve final size
+		// each group of 4 chars -> up to 3 bytes
+		append_to.reserve (append_to.size () + ((from.size () * 3) / 4));
 		const size_t start_size = append_to.size ();
 
+		const uint8_t pad = use_alt ? _b_alt64_pad : _b_64_pad;
+
 		try {
-			std::string_view::const_iterator fromp = from.cbegin ();
-			uint8_t cbyte;
-			uint8_t obyte;
-			int padding = 0;
-			size_t len = from.size ();
-			const uint8_t pad = use_alt ? _b_alt64_pad : _b_64_pad;
+			// Process in 4‐character chunks
+			for (size_t i = 0; i < from.size (); i += 4) {
+				const uint8_t c1 = from[i + 0];
+				const uint8_t c2 = from[i + 1];
+				const uint8_t c3 = from[i + 2];
+				const uint8_t c4 = from[i + 3];
 
-			for (; len >= 4; len -= 4) {
-				if ( (cbyte = (uint8_t) * (fromp++)) == pad) {
-					cbyte = 0;
-				} else {
-					cbyte = _byte_from_b64 (cbyte, use_alt);
+				if ((c1 == pad) || (c2 == pad) || ((c3 == pad) && (c4 != pad))) {
+					cThrow ("Malformed base64 input data");
 				}
-				obyte = cbyte << 2; /* 1111 1100 */
 
-				if ( (cbyte = (uint8_t) * (fromp++)) == pad) {
-					cbyte = 0;
-				} else {
-					cbyte = _byte_from_b64 (cbyte, use_alt);
+				// Decode the first two Base64 bytes
+				const uint8_t b1 = _byte_from_b64 (c1, use_alt);
+				const uint8_t b2 = _byte_from_b64 (c2, use_alt);
+
+				// First output byte
+				const uint8_t o1 = ((b1 << 2) | (b2 >> 4));
+				append_to.push_back (static_cast<char> (o1));
+
+				// If third char isn't '=', decode second output byte
+				if (c3 != pad) {
+					const uint8_t b3 = _byte_from_b64 (c3, use_alt);
+					const uint8_t o2 = (b2 << 4) | (b3 >> 2);
+					append_to.push_back (static_cast<char> (o2));
+
+					// If fourth char isn't '=', decode third output byte
+					if (c4 != pad) {
+						const uint8_t b4 = _byte_from_b64 (c4, use_alt);
+						const uint8_t o3 = (b3 << 6) | b4;
+						append_to.push_back (static_cast<char> (o3));
+					}
 				}
-				obyte |= cbyte >> 4; /* 0000 0011 */
-
-				append_to.push_back (obyte);
-
-				obyte = cbyte << 4; /* 1111 0000 */
-				if ( (cbyte = (uint8_t) * (fromp++)) == pad) {
-					cbyte = 0;
-					padding++;
-				} else {
-					padding = 0;
-					cbyte = _byte_from_b64 (cbyte, use_alt);
-				}
-				obyte |= cbyte >> 2; /* 0000 1111 */
-
-				append_to.push_back (obyte);
-
-				obyte = cbyte << 6; /* 1100 0000 */
-				if ( (cbyte = (uint8_t) * (fromp++)) == pad) {
-					cbyte = 0;
-					padding++;
-				} else {
-					padding = 0;
-					cbyte = _byte_from_b64 (cbyte, use_alt);
-				}
-				obyte |= cbyte; /* 0011 1111 */
-
-				append_to.push_back (obyte);
 			}
-
-			if (len || fromp != from.cend ()) {
-				cThrow ("Malformed data"sv);
-			}
-
-			append_to.erase (append_to.size () - padding, std::string::npos);
 		}
 		catch (...) {
+			// Roll back to the original size if any error
 			append_to.resize (start_size);
 			throw;
 		}
+
+		// Return how many bytes we appended
 		return append_to.size () - start_size;
 	}
 
@@ -408,15 +392,15 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	namespace BIN {
-		#ifdef SHAGA_THREADING
-			static thread_local char _be_le_buf[8];
-			static thread_local const char *_be_le_data;
-		#else
-			static char _be_le_buf[8];
-			static const char *_be_le_data;
-		#endif // SHAGA_THREADING
+#ifdef SHAGA_THREADING
+		static thread_local char _be_le_buf[8];
+		static thread_local const char *_be_le_data;
+#else
+		static char _be_le_buf[8];
+		static const char *_be_le_data;
+#endif	// SHAGA_THREADING
 
-		template<typename T, typename S>
+		template <typename T, typename S>
 		static inline auto _be_to_int (const S &s, size_t &offset) -> T
 		{
 			if ((offset + sizeof (T)) > s.size ()) {
@@ -439,7 +423,7 @@ namespace shaga {
 			}
 		}
 
-		template<typename T, typename S>
+		template <typename T, typename S>
 		static inline auto _to_int (const S &s, size_t &offset) -> T
 		{
 			if ((offset + sizeof (T)) > s.size ()) {
@@ -462,7 +446,7 @@ namespace shaga {
 			}
 		}
 
-		template<typename S>
+		template <typename S>
 		static inline uint32_t _be_to_uint24 (const S &s, size_t &offset)
 		{
 			if ((offset + 3) > s.size ()) {
@@ -471,14 +455,14 @@ namespace shaga {
 			_be_le_data = s.data () + offset;
 			offset += 3;
 
-			#define SAT(x) static_cast<uint8_t> (_be_le_data[x])
-			const uint32_t v = (SAT(0) << 16) | (SAT(1) << 8) | SAT(2);
-			#undef SAT
+#define SAT(x) static_cast<uint8_t> (_be_le_data[x])
+			const uint32_t v = (SAT (0) << 16) | (SAT (1) << 8) | SAT (2);
+#undef SAT
 
 			return v;
 		}
 
-		template<typename S>
+		template <typename S>
 		static inline uint32_t _to_uint24 (const S &s, size_t &offset)
 		{
 			if ((offset + 3) > s.size ()) {
@@ -487,13 +471,13 @@ namespace shaga {
 			_be_le_data = s.data () + offset;
 			offset += 3;
 
-			#define SAT(x) static_cast<uint8_t> (_be_le_data[x])
-			const uint32_t v = SAT(0) | (SAT(1) << 8) | (SAT(2) << 16);
-			#undef SAT
+#define SAT(x) static_cast<uint8_t> (_be_le_data[x])
+			const uint32_t v = SAT (0) | (SAT (1) << 8) | (SAT (2) << 16);
+#undef SAT
 
 			return v;
 		}
-	}
+	}  // namespace BIN
 
 	void BIN::be_from_uint8 (const uint8_t v, std::string &s)
 	{
@@ -508,11 +492,11 @@ namespace shaga {
 
 	void BIN::be_from_uint24 (const uint32_t v, std::string &s)
 	{
-		#define TAS(p,x) _be_le_buf[p] = static_cast<char> ((v >> x) & 0xFF)
+#define TAS(p, x) _be_le_buf[p] = static_cast<char> ((v >> x) & 0xFF)
 		TAS (0, 16);
 		TAS (1, 8);
 		TAS (2, 0);
-		#undef TAS
+#undef TAS
 
 		s.append (_be_le_buf, 3);
 	}
@@ -725,11 +709,11 @@ namespace shaga {
 
 	void BIN::from_uint24 (const uint32_t v, std::string &s)
 	{
-		#define TAS(p,x) _be_le_buf[p] = static_cast<unsigned char> ((v >> x) & 0xFF)
+#define TAS(p, x) _be_le_buf[p] = static_cast<unsigned char> ((v >> x) & 0xFF)
 		TAS (0, 0);
 		TAS (1, 8);
 		TAS (2, 16);
-		#undef TAS
+#undef TAS
 
 		s.append (_be_le_buf, 3);
 	}
@@ -930,9 +914,11 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	size_t BIN::to_size (const std::string_view s, size_t &offset)
 	{
-		size_t v {0};
+		size_t v{0};
 
-		#define SAT static_cast<uint8_t> (s.at (offset)); ++offset
+#define SAT                               \
+	static_cast<uint8_t> (s.at (offset)); \
+	++offset
 		const size_t d1 = SAT;
 		if (d1 & 0x80) {
 			const size_t d2 = SAT;
@@ -940,20 +926,20 @@ namespace shaga {
 				const size_t d3 = SAT;
 				if (d1 & 0x20) {
 					const size_t d4 = SAT;
-					v = ( (d1 & 0x1F) << 24) | (d2 << 16) | (d3 << 8) | d4;
+					v = ((d1 & 0x1F) << 24) | (d2 << 16) | (d3 << 8) | d4;
 				}
 				else {
-					v = ( (d1 & 0x3F) << 16) | (d2 << 8) | d3;
+					v = ((d1 & 0x3F) << 16) | (d2 << 8) | d3;
 				}
 			}
 			else {
-				v = ( (d1 & 0x7F) << 8) | d2;
+				v = ((d1 & 0x7F) << 8) | d2;
 			}
 		}
 		else {
 			v = d1;
 		}
-		#undef SAT
+#undef SAT
 
 		return v;
 	}
@@ -964,19 +950,19 @@ namespace shaga {
 			s.push_back (static_cast<uint8_t> (sze));
 		}
 		else if (sze <= 0x3FFF) {
-			s.push_back (static_cast<uint8_t> ( (0x01 << 7) | ( (sze >> 8) & 0x3F) ));
-			s.push_back (static_cast<uint8_t> ( sze & 0xFF ));
+			s.push_back (static_cast<uint8_t> ((0x01 << 7) | ((sze >> 8) & 0x3F)));
+			s.push_back (static_cast<uint8_t> (sze & 0xFF));
 		}
 		else if (sze <= 0x1FFFFF) {
-			s.push_back (static_cast<uint8_t> ( (0x03 << 6) | ( (sze >> 16) & 0x1F) ));
-			s.push_back (static_cast<uint8_t> ( (sze >> 8) & 0xFF ));
-			s.push_back (static_cast<uint8_t> ( sze & 0xFF ));
+			s.push_back (static_cast<uint8_t> ((0x03 << 6) | ((sze >> 16) & 0x1F)));
+			s.push_back (static_cast<uint8_t> ((sze >> 8) & 0xFF));
+			s.push_back (static_cast<uint8_t> (sze & 0xFF));
 		}
 		else if (sze <= 0xFFFFFFF) {
-			s.push_back (static_cast<uint8_t> ( (0x07 << 5) | ( (sze >> 24) & 0xF) ));
-			s.push_back (static_cast<uint8_t> ( (sze >> 16) & 0xFF ));
-			s.push_back (static_cast<uint8_t> ( (sze >> 8) & 0xFF ));
-			s.push_back (static_cast<uint8_t> ( sze & 0xFF ));
+			s.push_back (static_cast<uint8_t> ((0x07 << 5) | ((sze >> 24) & 0xF)));
+			s.push_back (static_cast<uint8_t> ((sze >> 16) & 0xFF));
+			s.push_back (static_cast<uint8_t> ((sze >> 8) & 0xFF));
+			s.push_back (static_cast<uint8_t> (sze & 0xFF));
 		}
 		else {
 			cThrow ("Unable to encode size larger than 0xFFFFFFF"sv);
@@ -990,4 +976,4 @@ namespace shaga {
 		from_size (sze, out);
 		return out;
 	}
-}
+}  // namespace shaga
