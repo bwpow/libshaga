@@ -10,31 +10,27 @@ All rights reserved.
 
 #include "common.h"
 
-namespace shaga
-{
+namespace shaga {
 	class ChunkTool;
 
 	static constexpr uint32_t _chunk_key_to_bin_helper (const char str[5], const size_t pos)
 	{
-		return (pos < 4) ?
-				(_chunk_key_to_bin_helper (str, pos + 1) * 26) + (str[pos] - 'A')
-			:
-				0;
+		return (pos < 4) ? (_chunk_key_to_bin_helper (str, pos + 1) * 26) + (str[pos] - 'A')
+						 : 0;
 	}
 
 	static constexpr uint32_t _chunk_key_to_bin (const char str[5])
 	{
 		return (str[0] >= 'A' && str[0] <= 'Z') &&
-			(str[1] >= 'A' && str[1] <= 'Z') &&
-			(str[2] >= 'A' && str[2] <= 'Z') &&
-			(str[3] >= 'A' && str[3] <= 'Z') &&
-			(str[4] == '\0') ?
-				(_chunk_key_to_bin_helper (str, 0) + 1)
-			:
-				0;
+					   (str[1] >= 'A' && str[1] <= 'Z') &&
+					   (str[2] >= 'A' && str[2] <= 'Z') &&
+					   (str[3] >= 'A' && str[3] <= 'Z') &&
+					   (str[4] == '\0')
+				   ? (_chunk_key_to_bin_helper (str, 0) + 1)
+				   : 0;
 	}
 
-	#define ChKEY(a) shaga::_chunk_key_to_bin(a)
+#define ChKEY(a) shaga::_chunk_key_to_bin (a)
 
 	class Chunk {
 		public:
@@ -50,8 +46,8 @@ namespace shaga
 				UNTRUSTED,
 			};
 
-			static const constexpr TrustLevel _TrustLevel_first {TrustLevel::INTERNAL};
-			static const constexpr TrustLevel _TrustLevel_last {TrustLevel::UNTRUSTED};
+			static const constexpr TrustLevel _TrustLevel_first{TrustLevel::INTERNAL};
+			static const constexpr TrustLevel _TrustLevel_last{TrustLevel::UNTRUSTED};
 
 			enum class Priority : uint32_t {
 				pCRITICAL = 0,
@@ -60,8 +56,8 @@ namespace shaga
 				pDEBUG,
 			};
 
-			static const constexpr Priority _Priority_first {Priority::pCRITICAL};
-			static const constexpr Priority _Priority_last {Priority::pDEBUG};
+			static const constexpr Priority _Priority_first{Priority::pCRITICAL};
+			static const constexpr Priority _Priority_last{Priority::pDEBUG};
 
 			enum class TTL : uint8_t {
 				TTL0 = 0,
@@ -74,8 +70,8 @@ namespace shaga
 				TTL7 = 7,
 			};
 
-			static const constexpr TTL _TTL_first {TTL::TTL0};
-			static const constexpr TTL _TTL_last {TTL::TTL7};
+			static const constexpr TTL _TTL_first{TTL::TTL0};
+			static const constexpr TTL _TTL_last{TTL::TTL7};
 
 			enum class Channel : bool {
 				PRIMARY = true,
@@ -89,32 +85,32 @@ namespace shaga
 			instead of 32-bit. It still retains all other capabilities standard chunk has like payload and metadata. */
 			static const constexpr uint32_t key_type_tracert = ChKEY ("TRAC");
 
-			static const uint32_t key_tracert_mask      {0b0000'0000'0000'1111'0000'0000'0000'0000};
+			static const uint32_t key_tracert_mask		{0b0000'0000'0000'1111'0000'0000'0000'0000};
 
-			static const uint32_t key_type_mask         {0b0000'0000'0000'0111'1111'1111'1111'1111};
-			static const uint32_t key_special_type_mask {0b0000'0000'0000'1000'0000'0000'0000'0000};
-			static const uint32_t key_trust_mask        {0b0000'0000'0011'0000'0000'0000'0000'0000};
-			static const uint32_t key_prio_mask         {0b0000'0000'1100'0000'0000'0000'0000'0000};
-			static const uint32_t key_ttl_mask          {0b0000'0111'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_type_mask			{0b0000'0000'0000'0111'1111'1111'1111'1111};
+			static const uint32_t key_special_type_mask	{0b0000'0000'0000'1000'0000'0000'0000'0000};
+			static const uint32_t key_trust_mask		{0b0000'0000'0011'0000'0000'0000'0000'0000};
+			static const uint32_t key_prio_mask			{0b0000'0000'1100'0000'0000'0000'0000'0000};
+			static const uint32_t key_ttl_mask			{0b0000'0111'0000'0000'0000'0000'0000'0000};
 
-			static const uint32_t key_has_payload_mask  {0b0000'1000'0000'0000'0000'0000'0000'0000};
-			static const uint32_t key_has_dest_mask     {0b0001'0000'0000'0000'0000'0000'0000'0000};
-			static const uint32_t key_has_cbor_mask     {0b0010'0000'0000'0000'0000'0000'0000'0000};
-			static const uint32_t key_channel_mask      {0b0100'0000'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_has_payload_mask	{0b0000'1000'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_has_dest_mask		{0b0001'0000'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_has_cbor_mask		{0b0010'0000'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_channel_mask		{0b0100'0000'0000'0000'0000'0000'0000'0000};
 
-			static const uint32_t key_highbit_mask      {0b1000'0000'0000'0000'0000'0000'0000'0000};
+			static const uint32_t key_highbit_mask		{0b1000'0000'0000'0000'0000'0000'0000'0000};
 
 			static const constexpr uint32_t key_trust_shift = BIN::count_trailing_zeros (key_trust_mask);
 			static const constexpr uint32_t key_prio_shift = BIN::count_trailing_zeros (key_prio_mask);
 			static const constexpr uint32_t key_ttl_shift = BIN::count_trailing_zeros (key_ttl_mask);
 
-			static const constexpr uint8_t max_ttl {0x7};
-			static const constexpr uint8_t max_hop_counter {max_ttl};
+			static const constexpr uint8_t max_ttl{0x7};
+			static const constexpr uint8_t max_hop_counter{max_ttl};
 
-			static const constexpr uint32_t num_special_types {0b111};
+			static const constexpr uint32_t num_special_types{0b111};
 
-			static const constexpr uint_fast8_t channel_primary {0b01};
-			static const constexpr uint_fast8_t channel_secondary {0b10};
+			static const constexpr uint_fast8_t channel_primary{0b01};
+			static const constexpr uint_fast8_t channel_secondary{0b10};
 
 			typedef std::array<uint_fast32_t, num_special_types> SPECIAL_TYPES;
 
@@ -122,20 +118,20 @@ namespace shaga
 			static std::string bin_to_key (const uint32_t bkey);
 
 		private:
-			bool _channel {true};
-			HWID _hwid_source {HWID_UNKNOWN};
-			uint32_t _type {0};
+			bool _channel{true};
+			HWID _hwid_source{HWID_UNKNOWN};
+			uint32_t _type{0};
 			std::string _payload;
 			std::vector<uint8_t> _cbor;
-			Priority _prio {Priority::pMANDATORY};
-			TrustLevel _trust {TrustLevel::INTERNAL};
-			uint_fast64_t _counter {0};
-			uint_fast8_t _ttl {max_ttl};
+			Priority _prio{Priority::pMANDATORY};
+			TrustLevel _trust{TrustLevel::INTERNAL};
+			uint_fast64_t _counter{0};
+			uint_fast8_t _ttl{max_ttl};
 			HWIDMASK _hwid_dest;
 			std::list<TRACERT_HOP> _tracert_hops;
 
 			mutable std::string _stored_binary;
-			mutable size_t _stored_header_size {0};
+			mutable size_t _stored_header_size{0};
 
 			bool should_continue (const std::string_view s, const size_t offset) const;
 			uint32_t generate_header (char *const out, size_t &offset, const SPECIAL_TYPES *const special_types) const;
@@ -144,50 +140,50 @@ namespace shaga
 
 			void _construct (void);
 
-			template<typename ... Types>
-			void _construct (const std::string_view payload, Types&& ... rest)
+			template <typename... Types>
+			void _construct (const std::string_view payload, Types &&...rest)
 			{
 				_payload.assign (payload);
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			void _construct (const std::string &payload, Types&& ... rest)
+			template <typename... Types>
+			void _construct (const std::string &payload, Types &&...rest)
 			{
 				_payload.assign (payload);
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			void _construct (std::string &&payload, Types&& ... rest)
+			template <typename... Types>
+			void _construct (std::string &&payload, Types &&...rest)
 			{
 				_payload = std::move (payload);
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			void _construct (const Priority prio, Types&& ... rest)
+			template <typename... Types>
+			void _construct (const Priority prio, Types &&...rest)
 			{
 				_prio = prio;
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			void _construct (const TrustLevel trust, Types&& ... rest)
+			template <typename... Types>
+			void _construct (const TrustLevel trust, Types &&...rest)
 			{
 				_trust = trust;
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			void _construct (const TTL ttl, Types&& ... rest)
+			template <typename... Types>
+			void _construct (const TTL ttl, Types &&...rest)
 			{
 				_ttl = +ttl;
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			void _construct (const Channel channel, Types&& ... rest)
+			template <typename... Types>
+			void _construct (const Channel channel, Types &&...rest)
 			{
 				switch (channel) {
 					case Channel::PRIMARY:
@@ -201,43 +197,43 @@ namespace shaga
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			void _construct (const HWIDMASK &hwidmask, Types&& ... rest)
+			template <typename... Types>
+			void _construct (const HWIDMASK &hwidmask, Types &&...rest)
 			{
 				_hwid_dest = hwidmask;
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			void _construct (const ChunkMeta &m, Types&& ... rest)
+			template <typename... Types>
+			void _construct (const ChunkMeta &m, Types &&...rest)
 			{
 				meta = m;
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			void _construct (ChunkMeta &&m, Types&& ... rest)
+			template <typename... Types>
+			void _construct (ChunkMeta &&m, Types &&...rest)
 			{
 				meta = std::move (m);
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			void _construct (const nlohmann::json &data, Types&& ... rest)
+			template <typename... Types>
+			void _construct (const nlohmann::json &data, Types &&...rest)
 			{
 				_cbor = nlohmann::json::to_cbor (data);
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			void _construct (const std::vector<uint8_t> &cbor, Types&& ... rest)
+			template <typename... Types>
+			void _construct (const std::vector<uint8_t> &cbor, Types &&...rest)
 			{
 				_cbor = cbor;
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			void _construct (std::vector<uint8_t> &&cbor, Types&& ... rest)
+			template <typename... Types>
+			void _construct (std::vector<uint8_t> &&cbor, Types &&...rest)
 			{
 				_cbor = std::move (cbor);
 				_construct (rest...);
@@ -262,14 +258,16 @@ namespace shaga
 			Chunk (const HWID hwid_source, const std::string_view type);
 			Chunk (const HWID hwid_source, const uint32_t type);
 
-			template<typename ... Types>
-			Chunk (const HWID hwid_source, const std::string_view type, Types&& ... rest) : Chunk (hwid_source, type)
+			template <typename... Types>
+			Chunk (const HWID hwid_source, const std::string_view type, Types &&...rest)
+				: Chunk (hwid_source, type)
 			{
 				_construct (rest...);
 			}
 
-			template<typename ... Types>
-			Chunk (const HWID hwid_source, const uint32_t type, Types&& ... rest) : Chunk (hwid_source, type)
+			template <typename... Types>
+			Chunk (const HWID hwid_source, const uint32_t type, Types &&...rest)
+				: Chunk (hwid_source, type)
 			{
 				_construct (rest...);
 			}
@@ -304,7 +302,7 @@ namespace shaga
 			void set_payload (std::string &&payload);
 			void swap_payload (std::string &other);
 
-			template<typename T = std::string_view>
+			template <typename T = std::string_view>
 			SHAGA_STRV T get_payload (void) const
 			{
 				return _payload;
@@ -320,7 +318,7 @@ namespace shaga
 			void swap_cbor (std::vector<uint8_t> &other);
 
 			nlohmann::json get_json (void) const;
-			const std::vector<uint8_t>& get_cbor (void) const;
+			const std::vector<uint8_t> &get_cbor (void) const;
 
 			/* Priority */
 			void set_prio (const Priority prio);
@@ -375,6 +373,6 @@ namespace shaga
 
 			friend ChunkTool;
 	};
-}
+}  // namespace shaga
 
-#endif // HEAD_shaga_Chunk
+#endif	// HEAD_shaga_Chunk
