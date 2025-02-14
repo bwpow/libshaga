@@ -29,11 +29,23 @@ namespace shaga {
 			cThrow ("Unrecognized character '{:c}' (base {})"sv, static_cast<char> (chr), base);
 		}
 
-		if (result > (UINT64_MAX - digit) / base) {
-			cThrow("Out of range"sv);
-		}
-
-		result = {(result * base) + digit};
+		#if defined(__has_builtin)
+			#if __has_builtin(__builtin_mul_overflow) && __has_builtin(__builtin_add_overflow)
+				if (uint64_t temp; __builtin_mul_overflow (result, base, &temp) || __builtin_add_overflow (temp, digit, &result)) {
+					cThrow ("Out of range"sv);
+				}
+			#else
+				if (result > (UINT64_MAX - digit) / base) {
+					cThrow ("Out of range"sv);
+				}
+				result = (result * base) + digit;
+			#endif
+		#else
+			if (result > (UINT64_MAX - digit) / base) {
+				cThrow ("Out of range"sv);
+			}
+			result = (result * base) + digit;
+		#endif
 	}
 
 	template <typename T, SHAGA_TYPE_IS_INTEGER(T)>
@@ -99,32 +111,63 @@ namespace shaga {
 			}
 
 			if (std::numeric_limits<T>::is_signed == false && true == is_negative) {
-				/* This is not a signed type, but the parsed integer is negative */
+				// Unsigned type can't store negative values
 				cThrow ("Out of range"sv);
 			}
 			else if (false == is_negative) {
-				if (out > std::numeric_limits<T>::max ()) {
-					cThrow ("Out of range"sv);
-				}
-
-				result = static_cast<T> (out);
+				// Positive number - check if it fits in T
+				#if defined(__has_builtin) && __has_builtin(__builtin_add_overflow)
+					if (T temp; __builtin_add_overflow (out, 0, &temp)) {
+						cThrow("Out of range"sv);
+					}
+					else {
+						result = temp;
+					}
+				#else
+					if (out > std::numeric_limits<T>::max ()) {
+						cThrow ("Out of range"sv);
+					}
+					result = static_cast<T> (out);
+				#endif
 			}
-			else if (std::is_same <T, int64_t>::value) {
-				// uint64_t can be converted to int64_t when out is larger than 1<<63 on most platforms
-				// !!! IMPORTANT !!! Fix this code to be platform independent
-				if (out > (1ULL << 63)) {
+			else if (std::is_same<T, int64_t>::value) {
+				// Special case for int64_t
+				if (out > static_cast<uint64_t> (std::numeric_limits<int64_t>::max ()) + 1) {
+					// This catches anything larger than INT64_MIN when negated
 					cThrow ("Out of range"sv);
 				}
-
-				result = -out;
+				else if (out == static_cast<uint64_t> (std::numeric_limits<int64_t>::max ()) + 1) {
+					result = std::numeric_limits<int64_t>::min ();
+				}
+				else {
+					#if defined(__has_builtin) && __has_builtin(__builtin_sub_overflow)
+						if (int64_t temp; __builtin_sub_overflow (0LL, static_cast<int64_t> (out), &temp)) {
+							cThrow ("Out of range"sv);
+						}
+						else {
+							result = temp;
+						}
+					#else
+						result = -static_cast<int64_t> (out);
+					#endif
+				}
 			}
 			else {
-				const int64_t nout = -static_cast<int64_t> (out);
-				if (nout < static_cast<int64_t> (std::numeric_limits<T>::min ())) {
-					cThrow ("Out of range"sv);
-				}
-
-				result = static_cast<T> (nout);
+				// Other signed types
+				#if defined(__has_builtin) && __has_builtin(__builtin_sub_overflow)
+					T temp;
+					if (int64_t nout; __builtin_sub_overflow (0LL, static_cast<int64_t> (out), &nout) || __builtin_add_overflow (nout, 0, &temp)) {
+						cThrow ("Out of range"sv);
+					}
+					result = temp;
+				#else
+					if (const int64_t nout = -static_cast<int64_t>(out); nout < static_cast<int64_t>(std::numeric_limits<T>::min())) {
+						cThrow("Out of range"sv);
+					}
+					else {
+						result = static_cast<T> (nout);
+					}
+				#endif
 			}
 
 			return result;
@@ -681,12 +724,14 @@ namespace shaga {
 
 	COMMON_VECTOR STR::to_argv (std::string cmd)
 	{
-		COMMON_VECTOR vout;
+		COMMON_VECTOR vout;  // Vector for storing command line arguments
 
+		// Replace escape sequences with temporary markers to prevent interference
 		replace (cmd, "\\\\"s, std::string (1, 0x02));
 		replace (cmd, "\\\""s, std::string (1, 0x03));
 		replace (cmd, "\\'"s,  std::string (1, 0x04));
 
+		// Replace double and single quotes with a placeholder marker (0x01)
 		std::string what_find = "\"'";
 		size_t pos = 0, last_pos;
 		while (true) {
@@ -694,18 +739,19 @@ namespace shaga {
 			if (std::string::npos == pos) {
 				break;
 			}
-
+			// If more than one quote type remains, select the one found
 			if (what_find.size () > 1) {
 				what_find = cmd.at (pos);
 			}
 			else {
 				what_find = "\"'";
 			}
-
+			// Replace the quote with a marker to flag quoted sections
 			cmd.replace (pos, 1, 1, 0x01);
 			pos++;
 		}
 
+		// Restore the escaped backslashes/quotes from temporary markers
 		replace (cmd, std::string (1, 0x02), "\\"s);
 		replace (cmd, std::string (1, 0x03), "\""s);
 		replace (cmd, std::string (1, 0x04), "'"s);
@@ -713,11 +759,14 @@ namespace shaga {
 		pos = 0;
 		bool in_quotes = false;
 
+		// Process the command string splitting tokens by marker and whitespace.
 		while (true) {
 			last_pos = pos;
 			pos = cmd.find_first_of (0x01, pos);
 			if (std::string::npos == pos) {
+				// No more markers; handle remaining token.
 				if (true == in_quotes) {
+					// If within quotes, merge with previous token or add new token.
 					if (last_pos >= 2 && (cmd.at (last_pos - 2) == ' ' || cmd.at (last_pos - 2) == '\t')) {
 						vout.push_back (cmd.substr (last_pos));
 					}
@@ -731,12 +780,12 @@ namespace shaga {
 					}
 					split (vout, cmd.substr (last_pos), " \t"sv);
 				}
-
 				break;
 			}
 
 			if (pos > 0) {
 				if (true == in_quotes) {
+					// Inside quotes, append the extracted part to the last token.
 					if (last_pos >= 2 && (cmd.at (last_pos - 2) == ' ' || cmd.at (last_pos - 2) == '\t')) {
 						vout.push_back (cmd.substr (last_pos, pos - last_pos));
 					}
@@ -745,6 +794,7 @@ namespace shaga {
 					}
 				}
 				else {
+					// Not in quotes, split the token on whitespace.
 					if (last_pos < cmd.size () && cmd.at (last_pos) != ' ' && cmd.at (last_pos) != '\t' && vout.empty () == false) {
 						vout.back ().append (1, 0x01);
 					}
@@ -754,36 +804,32 @@ namespace shaga {
 			else {
 				vout.push_back ("");
 			}
-
 			pos++;
-			in_quotes = !in_quotes;
+			in_quotes = !in_quotes;  // Toggle quote state
 		}
 
 		std::string to_prefix;
 		to_prefix.clear ();
 
+		// Merge tokens that end with the marker into a prefix for the following token.
 		for (COMMON_VECTOR::iterator iter = vout.begin (); iter != vout.end (); ) {
-			if (to_prefix.empty () == false) {
+			if (false == to_prefix.empty ()) {
 				*iter = to_prefix + *iter;
 				to_prefix.clear ();
 			}
-
 			if ( (*iter).empty ()) {
 				iter = vout.erase (iter);
 				continue;
 			}
 			if (iter->back () == 0x01) {
-				iter->pop_back ();
-				to_prefix.assign (*iter);
-
-				iter = vout.erase (iter);
+				iter->pop_back ();         // Remove the marker
+				to_prefix.assign (*iter);   // Save as prefix to merge with next token
+				iter = vout.erase (iter);   // Erase current token
 				continue;
 			}
-
 			++iter;
 		}
-
-		if (to_prefix.empty () == false) {
+		if (false == to_prefix.empty ()) {
 			vout.push_back (to_prefix);
 		}
 

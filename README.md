@@ -69,6 +69,6 @@ I was basically listening to their music exclusively while working on the code.
 You can contact me using email address skupka@sageteam.eu or visit [my homepage](https://www.bwpow.eu/).
 
 If you would like to support my work, send me some cryptocoins:
-* BTC: bc1qq3z9w5fnxugcgn9c3q67emtx4zmwj42nwa5dm6
+* BTC: bc1qmjr8rrft6adqv2xjj226kttwsmpy7shf4dufcj
 * XMR: 82Uy7LbE411dNrTWSHjf6jKCQG59mveSNDh3ps1KFVj5NZ8Gzj1avNDTG4hJZpyDck5JcPbyowSV3RiUC7cC71zQ7y5a7km
-* Doge: DHc4pnanvhTJpnza31DtFD1wSbEMJme7yy
+* Doge: DTuiDgZyqobQS5wMWU2wCsubpGo5w7LDRn

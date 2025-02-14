@@ -21,7 +21,7 @@ namespace shaga {
 
 	void signal_handler (int sgn)
 	{
-		P::print ("Caught signal: {}", strsignal (sgn));
+		P::print ("Caught signal: {}"sv, strsignal (sgn));
 		TRY_TO_SHUTDOWN ();
 	}
 

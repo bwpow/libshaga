@@ -22,17 +22,17 @@ namespace shaga {
 
 		if (key_short != 0) {
 			s.append (fmt::format ("-{:c}"sv, key_short));
-			if (has_param == true) {
+			if (true == has_param) {
 				s.append ("<"s + param_type + ">"s);
 			}
 		}
 
-		if (key_long.empty () == false) {
-			if (s.empty () == false) {
+		if (false == key_long.empty ()) {
+			if (false == s.empty ()) {
 				s.append ("|"s);
 			}
 			s.append ("--"s + key_long);
-			if (has_param == true) {
+			if (true == has_param) {
 				s.append ("=<"s + param_type + ">"s);
 			}
 		}
@@ -59,8 +59,9 @@ namespace shaga {
 
 	void ArgTable::process_entry (Entry &e, const std::string_view var)
 	{
-		if (var.empty () == true) {
-			e.vars.push_back (STR::from_int (true));
+		if (true == var.empty ()) {
+			// Store "1" for no-param options
+			e.vars.push_back ("1"s);
 		}
 		else {
 			e.vars.emplace_back (var);
@@ -79,10 +80,8 @@ namespace shaga {
 			process_entry (*_actual_entry, data);
 		}
 		else if (data.substr (0, 2) == "--"sv) {
-			/* This measn we have --key_long */
-			const size_t pos = data.find_first_of ("="s, 2);
-			if (pos == std::string::npos) {
-				/* There is no '=', so let's check if there should be parameter */
+			if (auto pos = data.find_first_of ('=', 2); pos == std::string::npos) {
+				// No '=' found, so check if parameter is required.
 				_actual_entry = find_entry_by_key (data.substr (2), 0);
 				if (true == _actual_entry->has_param) {
 					cThrow ("Option '{}' is missing parameter"sv, data);
@@ -98,7 +97,7 @@ namespace shaga {
 			}
 		}
 		else if (data.size () >= 2 && data.at (0) == '-') {
-			/* We have -key_short */
+			// Process short options; explicit flag for parameter.
 			size_t pos = 1;
 			_next_entry_is_param = true;
 
@@ -244,7 +243,7 @@ namespace shaga {
 		e.has_param = has_param;
 		e.incidence = incidence;
 
-		if (param_type.empty () == true) {
+		if (true == param_type.empty ()) {
 			e.param_type.assign ("PARAM"s);
 		}
 		else {

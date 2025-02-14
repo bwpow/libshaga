@@ -31,7 +31,7 @@ namespace shaga {
 				std::string get_str (void) const;
 			};
 
-			typedef std::vector <Entry> Entries;
+			typedef std::vector<Entry> Entries;
 
 			Entries _entries;
 			Entries::iterator _actual_entry;
