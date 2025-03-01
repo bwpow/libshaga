@@ -7,6 +7,11 @@ All rights reserved.
 *******************************************************************************/
 #include "shaga/common.h"
 
+/* Compatibility for older GCC versions */
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
 namespace shaga {
 
 	static inline void _to_uint_process_char (uint64_t &result, const uint8_t chr, const uint64_t base)

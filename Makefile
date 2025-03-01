@@ -30,21 +30,38 @@ ST_CPPFLAGS = \
 	-Wno-unknown-warning-option \
 	-fstack-protector-strong \
 	-fsized-deallocation \
+	-fwrapv \
+	-freorder-blocks-algorithm=simple \
 	-O3 \
 	-std=c++17 \
 	-march=$(SHAGA_MARCH) \
 	-mtune=$(SHAGA_MARCH)
 
-MT_LIBS = -pthread $(ST_LIBS) -latomic
-MT_CPPFLAGS = -pthread $(ST_CPPFLAGS)
+# Detect compiler type and version
+COMPILER_ID := $(shell $(GPP) -v 2>&1 | grep -q "gcc version" && echo "GCC" || ($(GPP) -v 2>&1 | grep -q "clang version" && echo "CLANG" || echo "OTHER"))
+
+# If GCC, check version
+ifeq ($(COMPILER_ID),GCC)
+	GCC_VERSION := $(shell $(GPP) -dumpversion)
+	GCC_VERSION_GE9 := $(shell echo "$(GCC_VERSION) >= 9" | bc)
+
+	# Add -flto=auto for GCC 9 or higher
+	ifeq ($(GCC_VERSION_GE9),1)
+		ST_CPPFLAGS += -flto=auto
+	endif
+else
+	# For Clang, MSVC, or any other compiler, always add -flto=auto
+	ST_CPPFLAGS += -flto=auto
+endif
 
 ifdef SHAGA_SANITY
 	SANITY = -fsanitize=address -fsanitize=undefined -fsanitize=leak -fsanitize-address-use-after-scope -fno-omit-frame-pointer
 	ST_LIBS += $(SANITY)
 	ST_CPPFLAGS += $(SANITY)
-	MT_LIBS += $(SANITY)
-	MT_CPPFLAGS += $(SANITY)
 endif
+
+MT_LIBS = -pthread $(ST_LIBS) -latomic
+MT_CPPFLAGS = -pthread $(ST_CPPFLAGS)
 
 LIBDIR = lib
 OBJDIR = obj
