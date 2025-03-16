@@ -1,14 +1,18 @@
-GPP ?= g++
-AR ?= ar
+CROSS_COMPILE ?=
+GPP ?= $(CROSS_COMPILE)g++
+AR ?= $(CROSS_COMPILE)ar
 RM ?= rm -f
 CP ?= cp
 MKDIR ?= @mkdir -p
-STRIP ?= strip --strip-unneeded --preserve-dates
+STRIP ?= $(CROSS_COMPILE)strip --strip-unneeded --preserve-dates
 
 SHAGA_MARCH ?= native
+SHAGA_MTUNE ?= native
 
 DESTINCLUDE ?= /usr/local/include/
 DESTLIB ?= /usr/local/lib/
+
+ADDITIONAL_CPPFLAGS ?=
 
 ST_LIBS = \
 	-pie \
@@ -35,24 +39,8 @@ ST_CPPFLAGS = \
 	-O3 \
 	-std=c++17 \
 	-march=$(SHAGA_MARCH) \
-	-mtune=$(SHAGA_MARCH)
-
-# Detect compiler type and version
-COMPILER_ID := $(shell $(GPP) -v 2>&1 | grep -q "gcc version" && echo "GCC" || ($(GPP) -v 2>&1 | grep -q "clang version" && echo "CLANG" || echo "OTHER"))
-
-# If GCC, check version
-ifeq ($(COMPILER_ID),GCC)
-	GCC_VERSION := $(shell $(GPP) -dumpversion)
-	GCC_VERSION_GE9 := $(shell echo "$(GCC_VERSION) >= 9" | bc)
-
-	# Add -flto=auto for GCC 9 or higher
-	ifeq ($(GCC_VERSION_GE9),1)
-		ST_CPPFLAGS += -flto=auto
-	endif
-else
-	# For Clang, MSVC, or any other compiler, always add -flto=auto
-	ST_CPPFLAGS += -flto=auto
-endif
+	-mtune=$(SHAGA_MTUNE) \
+	$(ADDITIONAL_CPPFLAGS)
 
 ifdef SHAGA_SANITY
 	SANITY = -fsanitize=address -fsanitize=undefined -fsanitize=leak -fsanitize-address-use-after-scope -fno-omit-frame-pointer
