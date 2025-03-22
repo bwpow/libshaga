@@ -38,7 +38,14 @@ namespace shaga {
 				0;
 	}
 
-	#define ChMetaKEY(a) shaga::_chunkmeta_key_to_bin(a)
+	#define ChMetaKEY(a) ([] () constexpr -> uint16_t {                                   \
+		static_assert (((a)[0] >= 'A' && (a)[0] <= 'Z') || (a)[0] == '_', "Invalid character in chunk key"); \
+		static_assert (((a)[1] >= 'A' && (a)[1] <= 'Z') || (a)[1] == '_', "Invalid character in chunk key"); \
+		static_assert (((a)[2] >= 'A' && (a)[2] <= 'Z') || (a)[2] == '_', "Invalid character in chunk key"); \
+		static_assert ((a)[3] == '\0', "Chunk key must be exactly 3 characters long");    \
+		return shaga::_chunkmeta_key_to_bin (a);                                          \
+	}())
+
 
 	class ChunkMeta {
 		public:

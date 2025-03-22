@@ -30,7 +30,14 @@ namespace shaga {
 				   : 0;
 	}
 
-#define ChKEY(a) shaga::_chunk_key_to_bin (a)
+	#define ChKEY(a) ([] () constexpr -> uint32_t {                                       \
+		static_assert ((a)[0] >= 'A' && (a)[0] <= 'Z', "Invalid character in chunk key"); \
+		static_assert ((a)[1] >= 'A' && (a)[1] <= 'Z', "Invalid character in chunk key"); \
+		static_assert ((a)[2] >= 'A' && (a)[2] <= 'Z', "Invalid character in chunk key"); \
+		static_assert ((a)[3] >= 'A' && (a)[3] <= 'Z', "Invalid character in chunk key"); \
+		static_assert ((a)[4] == '\0', "Chunk key must be exactly 4 characters long");    \
+		return shaga::_chunk_key_to_bin (a);                                              \
+	}())
 
 	class Chunk {
 		public:

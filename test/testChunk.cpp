@@ -34,7 +34,7 @@ TEST (Chunk, keys)
 		key.append (1, chars[(i/17576) % 26]);
 
 		const uint32_t k = Chunk::key_to_bin (key);
-		const uint32_t ck = ChKEY (key.c_str ());
+		const uint32_t ck = _chunk_key_to_bin (key.c_str ());
 
 		EXPECT_TRUE (k == ck);
 

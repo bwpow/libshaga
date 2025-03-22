@@ -7,6 +7,109 @@ All rights reserved.
 *******************************************************************************/
 #include "shaga/common.h"
 
+#if defined(__SSE4_2__) || defined(__AVX__) || (defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86)))
+	#if defined(_MSC_VER)
+		#include <intrin.h>
+		#if defined(_M_X64)
+			#pragma intrinsic(_mm_crc32_u64)
+			#pragma intrinsic(_mm_crc32_u8)
+		#else
+			#pragma intrinsic(_mm_crc32_u32)
+			#pragma intrinsic(_mm_crc32_u8)
+		#endif
+	#else
+		#include <nmmintrin.h>
+	#endif
+
+	namespace shaga::CRC::_INT {
+
+		inline bool _has_sse42 (void)
+		{
+			#if defined(_MSC_VER)
+				int cpuInfo[4];
+				__cpuid(cpuInfo, 1);
+				return (cpuInfo[2] & (1 << 20)) != 0; // Check SSE4.2 bit
+			#else
+				uint32_t eax, ebx, ecx, edx;
+				#if defined(__i386__) && defined(__PIC__)
+					// In PIC mode on 32-bit, we need to preserve EBX
+					__asm__ volatile("movl %%ebx, %%edi; cpuid; movl %%ebx, %1; movl %%edi, %%ebx;"
+						: "=a"(eax), "=r"(ebx), "=c"(ecx), "=d"(edx)
+						: "a"(1)
+						: "edi");
+				#else
+					__asm__ volatile("cpuid"
+						: "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
+						: "a"(1));
+				#endif
+				return (ecx & (1 << 20)) != 0; // Check SSE4.2 bit
+			#endif
+		}
+
+		// Cache the result of CPU feature detection
+		inline bool _sse42_supported (void)
+		{
+			static const bool has_support = _has_sse42 ();
+			return has_support;
+		}
+
+		// Hardware accelerated CRC32C implementation
+		HEDLEY_ALWAYS_INLINE uint32_t _crc32c_hw (const void* const buf, const size_t len, uint32_t crc)
+		{
+			const uint8_t* const data = static_cast<const uint8_t*> (buf);
+			crc ^= UINT32_MAX;
+
+			if (len < 8) {
+				for (size_t i = 0; i < len; i++) {
+					crc = _mm_crc32_u8 (crc, data[i]);
+				}
+				return crc ^ UINT32_MAX;
+			}
+
+			#if defined(__x86_64__) || defined(_M_X64)
+				const size_t blocks = len / 8;
+				const uint64_t* data64 = reinterpret_cast<const uint64_t*> (data);
+				size_t j = 0;
+				const size_t unroll_count = blocks / 4;
+				for (size_t i = 0; i < unroll_count; i++) {
+					crc = _mm_crc32_u64 (crc, data64[j]);
+					crc = _mm_crc32_u64 (crc, data64[j + 1]);
+					crc = _mm_crc32_u64 (crc, data64[j + 2]);
+					crc = _mm_crc32_u64 (crc, data64[j + 3]);
+					j += 4;
+				}
+				for (; j < blocks; j++) {
+					crc = _mm_crc32_u64 (crc, data64[j]);
+				}
+				size_t i = blocks * 8;
+				for (; i < len; i++) {
+					crc = _mm_crc32_u8 (crc, data[i]);
+				}
+			#else
+				const size_t blocks = len / 4;
+				const uint32_t* data32 = reinterpret_cast<const uint32_t*> (data);
+				size_t j = 0;
+				const size_t unroll_count = blocks / 4;
+				for (size_t i = 0; i < unroll_count; i++) {
+					crc = _mm_crc32_u32 (crc, data32[j]);
+					crc = _mm_crc32_u32 (crc, data32[j + 1]);
+					crc = _mm_crc32_u32 (crc, data32[j + 2]);
+					crc = _mm_crc32_u32 (crc, data32[j + 3]);
+					j += 4;
+				}
+				for (; j < blocks; j++) {
+					crc = _mm_crc32_u32 (crc, data32[j]);
+				}
+				size_t i = blocks * 4;
+				for (; i < len; i++) {
+					crc = _mm_crc32_u8 (crc, data[i]);
+				}
+			#endif
+			return crc ^ UINT32_MAX;
+		}
+	}
+#endif  // SSE4.2 check
+
 namespace shaga::CRC {
 	/* Bit reverse table is used for CRC-32 Atmel compatible algorithm */
 	const uint_fast32_t _bit_reverse_table[256] = {
@@ -353,6 +456,15 @@ namespace shaga::CRC {
 		0x74, 0x2a, 0xc8, 0x96, 0x15, 0x4b, 0xa9, 0xf7,
 		0xb6, 0xe8, 0x0a, 0x54, 0xd7, 0x89, 0x6b, 0x35
 	};
+
+	bool is_crc32c_hw_accelerated (void)
+	{
+		#if defined(__SSE4_2__) || defined(__AVX__) || (defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86)))
+		return _INT::_sse42_supported ();
+		#else
+		return false;
+		#endif // defined
+	}
 }
 
 namespace shaga {
@@ -513,6 +625,12 @@ namespace shaga {
 
 	uint32_t CRC::crc32c (const void *const buf, const size_t len, const uint32_t startval)
 	{
+		#if defined(__SSE4_2__) || defined(__AVX__) || (defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86)))
+		if (_INT::_sse42_supported ()) {
+			return _INT::_crc32c_hw (buf, len, startval);
+		}
+		#endif
+
 		uint_fast32_t val = startval ^ UINT32_MAX;
 
 		#define UPDC32(octet,crc) crc=(_crc32c_table[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))

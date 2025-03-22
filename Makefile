@@ -35,7 +35,6 @@ ST_CPPFLAGS = \
 	-fstack-protector-strong \
 	-fsized-deallocation \
 	-fwrapv \
-	-freorder-blocks-algorithm=simple \
 	-O3 \
 	-std=c++17 \
 	-march=$(SHAGA_MARCH) \

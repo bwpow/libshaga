@@ -9,6 +9,21 @@ All rights reserved.
 
 using namespace shaga;
 
+TEST (ChunkMeta, add_value)
+{
+	ChunkMeta meta;
+
+	EXPECT_NO_THROW (meta.add_value ("ABC", "abc"sv));
+	EXPECT_NO_THROW (meta.add_value ("XYZ", "abc"sv));
+	EXPECT_NO_THROW (meta.add_value ("ABC", "def"sv));
+	EXPECT_NO_THROW (meta.add_value ("XYZ", "def"sv));
+
+	EXPECT_TRUE (meta.size () == 4);
+	EXPECT_TRUE (meta.count ("ABC") == 2);
+	EXPECT_TRUE (meta.count ("XYZ") == 2);
+	EXPECT_TRUE (meta.count ("DEF") == 0);
+}
+
 TEST (ChunkMeta, modify_value)
 {
 	ChunkMeta meta;
@@ -150,7 +165,7 @@ TEST (ChunkMeta, keys)
 		EXPECT_NO_THROW (meta.add_value (key, BIN::from_int64 (i))) << "Key value: " << key;
 
 		const uint16_t k = ChunkMeta::key_to_bin (key);
-		const uint16_t ck = ChMetaKEY (key.c_str ());
+		const uint16_t ck = _chunkmeta_key_to_bin (key.c_str ());
 
 		EXPECT_TRUE (k == ck);
 

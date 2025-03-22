@@ -20,6 +20,8 @@ namespace shaga::CRC {
 	extern const uint_fast16_t _crc16_modbus_table[256];
 	extern const uint_fast8_t _crc8_dallas_table[256];
 
+	bool is_crc32c_hw_accelerated (void);
+
 	/*** CRC-64 Jones ***/
 	static const uint64_t crc64_magic {0};
 	static const uint64_t crc64_startval {0};
