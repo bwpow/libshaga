@@ -20,10 +20,15 @@ namespace shaga {
 		}
 
 		if constexpr (std::is_same<T, bool>::value) {
-			return shaga::STR::to_bool (data[key].get<std::string_view> ());
+			if (true == data.at (key).is_boolean ()) {
+				return data.at (key).get<bool> ();
+			}
+			else {
+				return shaga::STR::to_bool (data.at (key).get<std::string_view> ());
+			}
 		}
 		else {
-			return data[key].get<T> ();
+			return data.at (key).get<T> ();
 		}
 	}
 
@@ -42,10 +47,15 @@ namespace shaga {
 
 		try {
 			if constexpr (std::is_same<T, bool>::value) {
-				return shaga::STR::to_bool (data[key].get<std::string_view> ());
+				if (true == data.at (key).is_boolean ()) {
+					return data.at (key).get<bool> ();
+				}
+				else {
+					return shaga::STR::to_bool (data.at (key).get<std::string_view> ());
+				}
 			}
 			else {
-				return data[key].get<T> ();
+				return data.at (key).get<T> ();
 			}
 		}
 		catch (...) {
