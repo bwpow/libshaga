@@ -262,5 +262,36 @@ namespace shaga {
 
 		return ok;
 	}
+
+	HEDLEY_WARN_UNUSED_RESULT bool LINUX::is_file_used (const std::string_view fname)
+	{
+		struct stat dst;
+		try {
+			dst = FS::file_stat (fname);
+		}
+		catch (...) {
+			/* Ignore, can't open file */
+			return false;
+		}
+
+		bool found {false};
+
+		FS::glob_interruptable ("/proc/*/fd/*", [&](const std::string_view file) -> bool {
+			try {
+				const auto st = FS::file_stat (file);
+				if (dst.st_ino == st.st_ino && dst.st_dev == st.st_dev) {
+					found = true;
+					/* End loop */
+					return false;
+				}
+			}
+			catch (...) { /* Ignore, can't open file */ }
+
+			/* Continue */
+			return true;
+		});
+
+		return found;
+	}
 }
 #endif // OS_LINUX

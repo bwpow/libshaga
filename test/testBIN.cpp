@@ -255,7 +255,19 @@ static void _size (void)
 		const size_t cnt = (1 << i) - 1;
 		const std::string str = BIN::from_size (cnt);
 
-		size_t offset = 0;
+		size_t offset {0};
+		const size_t output = BIN::to_size (T(str), offset);
+
+		EXPECT_TRUE (str.size () == offset);
+		EXPECT_TRUE (cnt == output);
+	}
+
+	// Test random values
+	for (size_t i = 0; i < 1'000'000; i++) {
+		const size_t cnt = ((rand() & 0x0FFF) << 16) + (rand () & 0xFFFF); // Up to 29 bits
+		const std::string str = BIN::from_size (cnt);
+
+		size_t offset {0};
 		const size_t output = BIN::to_size (T(str), offset);
 
 		EXPECT_TRUE (str.size () == offset);
@@ -267,6 +279,191 @@ TEST (BIN, size)
 {
 	_size<std::string> ();
 	_size<std::string_view> ();
+}
+
+TEST (BIN, size_invalid_prefix)
+{
+	// Construct invalid 4-byte prefix: 1111xxxx which should not be accepted
+	std::string invalid4 (4, '\0');
+	invalid4[0] = static_cast<char> (0xF0); // 1111 0000
+	invalid4[1] = '\0';
+	invalid4[2] = '\0';
+	invalid4[3] = '\0';
+
+	size_t offset = 0;
+	EXPECT_THROW ({
+		(void) shaga::BIN::to_size (invalid4, offset);
+	}, CommonException);
+}
+
+template <typename T>
+static void _size_utf8 (void)
+{
+	// Test valid UTF-8 range (U+0000 to U+10FFFF)
+	for (size_t i = 0; i <= 21; i++) { // 21 bits covers U+0000 to U+10FFFF
+		const size_t cnt = (i == 0) ? 0 : (1ULL << i) - 1; // Start with 0, then 2^i - 1
+		if (cnt > 0x10FFFF) continue; // Skip values beyond UTF-8 range
+
+		std::string str;
+		ASSERT_NO_THROW ({
+			BIN::from_size_utf8 (cnt, str);
+		}) << "Failed to encode size: " << cnt;
+
+		size_t offset {0};
+		size_t output {0};
+		ASSERT_NO_THROW({
+			output = BIN::to_size_utf8(T(str), offset);
+		}) << "Failed to decode size: " << cnt;
+
+		EXPECT_EQ (str.size(), offset) << "Offset mismatch for size: " << cnt;
+		EXPECT_EQ (cnt, output) << "Value mismatch for size: " << cnt;
+	}
+
+	{
+		// Test invalid input (> U+10FFFF)
+		std::string str;
+		EXPECT_THROW ({
+			BIN::from_size_utf8 (0x110000, str);
+		}, CommonException) << "Expected exception for size > U+10FFFF";
+	}
+
+	{
+		// Test surrogate range (U+D800 to U+DFFF)
+		std::string str;
+		EXPECT_THROW ({
+			BIN::from_size_utf8 (0xD800, str);
+		}, CommonException) << "Expected exception for surrogate code point U+D800";
+
+		str.clear();
+		EXPECT_THROW ({
+			BIN::from_size_utf8 (0xDFFF, str);
+		}, CommonException) << "Expected exception for surrogate code point U+DFFF";
+
+		str.clear();
+		EXPECT_THROW ({
+			BIN::from_size_utf8 (0xDBFF, str);
+		}, CommonException) << "Expected exception for surrogate code point U+DBFF";
+	}
+
+	{
+		// Test empty string for decoding
+		size_t offset {0};
+		EXPECT_THROW ({
+			BIN::to_size_utf8 (T (""), offset);
+		}, std::exception) << "Expected exception for empty string";
+	}
+
+	{
+		// Test invalid UTF-8 sequence (e.g., lone continuation byte)
+		std::string invalid_str;
+		invalid_str.push_back (static_cast<char> (0x80)); // Invalid: 10xxxxxx
+		size_t offset {0};
+		EXPECT_THROW ({
+			BIN::to_size_utf8 (T(invalid_str), offset);
+		}, CommonException) << "Expected exception for invalid UTF-8 sequence";
+	}
+}
+
+TEST (BIN, size_utf8)
+{
+	_size_utf8<std::string> ();
+	_size_utf8<std::string_view> ();
+}
+
+TEST (BIN, size_utf8_roundtrip)
+{
+	// Define test cases: each pair contains a UTF-8 string and its expected code points
+	struct TestCase {
+		std::string input;
+		std::vector<size_t> expected_code_points;
+	};
+
+	const std::vector<TestCase> test_cases = {
+		// Test 1: ASCII (1-byte), 2-byte, 3-byte, and 4-byte sequences
+		{
+			std::string("zŒϕ𐀀"), // U+007A, U+0152, U+03D5, U+10000
+			{0x7A, 0x152, 0x3D5, 0x10000}
+		},
+		// Test 2: Empty string
+		{
+			std::string(""),
+			{}
+		},
+		// Test 3: Only ASCII
+		{
+			std::string("Hello!"),
+			{0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x21}
+		},
+		// Test 4: Mixed multi-byte (Latin, Cyrillic, CJK)
+		{
+			std::string("éД汉"), // U+00E9, U+0414, U+6C49
+			{0xE9, 0x414, 0x6C49}
+		},
+		// Test 5: Max valid Unicode code point (using raw UTF-8 bytes)
+		{
+			std::string("\xF4\x8F\xBF\xBF"), // U+10FFFF (raw bytes)
+			{0x10FFFF}
+		}
+	};
+
+	// Test decoding: UTF-8 string to code points
+	for (size_t i = 0; i < test_cases.size(); ++i) {
+		const auto& test = test_cases[i];
+		std::vector<size_t> decoded_points;
+		size_t offset = 0;
+
+		// Decode each code point
+		while (offset < test.input.size()) {
+			size_t code_point = 0;
+			ASSERT_NO_THROW({
+				code_point = BIN::to_size_utf8(test.input, offset);
+			}) << "Failed to decode UTF-8 string at test case " << i << ", offset " << offset;
+			decoded_points.push_back(code_point);
+		}
+
+		// Verify decoded code points match expected
+		EXPECT_EQ(decoded_points, test.expected_code_points)
+			<< "Decoded code points mismatch for test case " << i;
+
+		// Verify all bytes were consumed
+		EXPECT_EQ(offset, test.input.size())
+			<< "Not all bytes consumed for test case " << i;
+
+		// Test encoding: code points back to UTF-8 string
+		std::string encoded_str;
+		for (size_t code_point : test.expected_code_points) {
+			ASSERT_NO_THROW({
+				BIN::from_size_utf8(code_point, encoded_str);
+			}) << "Failed to encode code point 0x" << std::hex << code_point << " in test case " << i;
+		}
+
+		// Verify round-trip: encoded string matches input
+		EXPECT_EQ(encoded_str, test.input)
+			<< "Round-trip encoding mismatch for test case " << i;
+	}
+
+	// Test invalid UTF-8 sequences
+	std::vector<std::string> invalid_inputs = {
+		std::string("\x80"),           // Lone continuation byte
+		std::string("\xC2"),           // Incomplete 2-byte sequence
+		std::string("\xE0\x80"),       // Incomplete 3-byte sequence
+		std::string("\xF0\x80\x80"),   // Incomplete 4-byte sequence
+		std::string("\xC0\x80"),       // Overlong encoding of U+0000
+		std::string("\xF5\x80\x80\x80") // Beyond U+10FFFF
+	};
+
+	for (size_t i = 0; i < invalid_inputs.size(); ++i) {
+		size_t offset = 0;
+		EXPECT_THROW({
+			BIN::to_size_utf8(invalid_inputs[i], offset);
+		}, std::exception) << "Expected exception for invalid UTF-8 sequence in test case " << i;
+	}
+
+	// Test encoding invalid code point
+	std::string str;
+	EXPECT_THROW({
+		BIN::from_size_utf8 (0x110000, str);
+	}, CommonException) << "Expected exception for code point > U+10FFFF";
 }
 
 TEST (BIN, base64)

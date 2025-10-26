@@ -912,54 +912,78 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Size functions  /////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	size_t BIN::to_size (const std::string_view s, size_t &offset)
+	size_t BIN::to_size (const std::string_view s, size_t& offset)
 	{
+		// This is big endian encoding with up to top three bits used to indicate number of bytes used
+		// 0b0xxx'xxxx = 1 byte
+		// 0b10xx'xxxx  yyyy'yyyy = 2 bytes
+		// 0b110x'xxxx  yyyy'yyyy  zzzz'zzzz = 3 bytes
+		// 0b1110'xxxx  yyyy'yyyy  zzzz'zzzz  aaaa'aaaa = 4 bytes
+		// Maximal number of bits that can be stored is 28 (0xFFFFFFF)
+
 		size_t v{0};
 
-#define SAT                               \
-	static_cast<uint8_t> (s.at (offset)); \
-	++offset
-		const size_t d1 = SAT;
-		if (d1 & 0x80) {
-			const size_t d2 = SAT;
-			if (d1 & 0x40) {
-				const size_t d3 = SAT;
-				if (d1 & 0x20) {
-					const size_t d4 = SAT;
+		const size_t d1 = static_cast<uint8_t> (s.at (offset));
+		++offset;
+		if (d1 & 0x80) {  // 0b1000'0000 bit is set
+			const size_t d2 = static_cast<uint8_t> (s.at (offset));
+			++offset;
+			if (d1 & 0x40) {  // 0b0100'0000 bit is also set
+				const size_t d3 = static_cast<uint8_t> (s.at (offset));
+				++offset;
+				if (d1 & 0x20) {  // 0b0010'0000 bit is also set
+					// Validate prefix for 4-byte form: must be 1110'xxxx (not 1111'xxxx)
+					if ((d1 & 0xF0) != 0xE0) {
+						cThrow ("Malformed data"sv);
+					}
+					const size_t d4 = static_cast<uint8_t> (s.at (offset));
+					++offset;
+					// mask first three bits 0b0001'1111
 					v = ((d1 & 0x1F) << 24) | (d2 << 16) | (d3 << 8) | d4;
 				}
 				else {
+					// mask first two bits 0b0011'1111
 					v = ((d1 & 0x3F) << 16) | (d2 << 8) | d3;
 				}
 			}
 			else {
+				// mask first bit 0b0111'1111
 				v = ((d1 & 0x7F) << 8) | d2;
 			}
 		}
 		else {
 			v = d1;
 		}
-#undef SAT
 
 		return v;
 	}
 
-	void BIN::from_size (const size_t sze, std::string &s)
+	size_t BIN::to_size (const std::string_view s)
+	{
+		size_t offset{0};
+		return to_size (s, offset);
+	}
+
+	void BIN::from_size (const size_t sze, std::string& s)
 	{
 		if (sze <= 0x7F) {
+			// 0b0xxx'xxxx = 1 byte
 			s.push_back (static_cast<uint8_t> (sze));
 		}
 		else if (sze <= 0x3FFF) {
-			s.push_back (static_cast<uint8_t> ((0x01 << 7) | ((sze >> 8) & 0x3F)));
+			// 0b10xx'xxxx  yyyy'yyyy = 2 bytes
+			s.push_back (static_cast<uint8_t> (0b1000'0000 | ((sze >> 8) & 0x3F)));
 			s.push_back (static_cast<uint8_t> (sze & 0xFF));
 		}
 		else if (sze <= 0x1FFFFF) {
-			s.push_back (static_cast<uint8_t> ((0x03 << 6) | ((sze >> 16) & 0x1F)));
+			// 0b110x'xxxx  yyyy'yyyy  zzzz'zzzz = 3 bytes
+			s.push_back (static_cast<uint8_t> (0b1100'0000 | ((sze >> 16) & 0x1F)));
 			s.push_back (static_cast<uint8_t> ((sze >> 8) & 0xFF));
 			s.push_back (static_cast<uint8_t> (sze & 0xFF));
 		}
 		else if (sze <= 0xFFFFFFF) {
-			s.push_back (static_cast<uint8_t> ((0x07 << 5) | ((sze >> 24) & 0xF)));
+			// 0b1110'xxxx  yyyy'yyyy  zzzz'zzzz  aaaa'aaaa = 4 bytes
+			s.push_back (static_cast<uint8_t> (0b1110'0000 | ((sze >> 24) & 0xF)));
 			s.push_back (static_cast<uint8_t> ((sze >> 16) & 0xFF));
 			s.push_back (static_cast<uint8_t> ((sze >> 8) & 0xFF));
 			s.push_back (static_cast<uint8_t> (sze & 0xFF));
@@ -976,4 +1000,136 @@ namespace shaga {
 		from_size (sze, out);
 		return out;
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Size functions as UTF8  /////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	size_t BIN::to_size_utf8 (const std::string_view s, size_t& offset)
+	{
+		size_t v{0};
+		const uint8_t first_byte = static_cast<uint8_t> (s.at (offset)); ++offset;
+
+		// Single-byte UTF-8 (ASCII)
+		if ((first_byte & 0x80) == 0) {
+			return first_byte;
+		}
+
+		// Multi-byte UTF-8
+		if ((first_byte & 0xC0) == 0x80) {
+			cThrow ("Invalid UTF-8: continuation byte at start"sv);
+		}
+
+		// Two-byte sequence
+		if ((first_byte & 0xE0) == 0xC0) {
+			const uint8_t second_byte = static_cast<uint8_t>(s.at (offset)); ++offset;
+			if ((second_byte & 0xC0) != 0x80) {
+				cThrow ("Invalid UTF-8: missing continuation byte"sv);
+			}
+
+			v = ((first_byte & 0x1F) << 6) | (second_byte & 0x3F);
+
+			// Validate code point range (must be at least 0x80)
+			if (v < 0x80) {
+				cThrow ("Invalid UTF-8: overlong encoding"sv);
+			}
+
+			return v;
+		}
+
+		// Three-byte sequence
+		if ((first_byte & 0xF0) == 0xE0) {
+			const uint8_t second_byte = static_cast<uint8_t>(s.at (offset)); ++offset;
+			const uint8_t third_byte = static_cast<uint8_t>(s.at (offset)); ++offset;
+			if ((second_byte & 0xC0) != 0x80 || (third_byte & 0xC0) != 0x80) {
+				cThrow ("Invalid UTF-8: missing continuation byte"sv);
+			}
+
+			v = ((first_byte & 0x0F) << 12) | ((second_byte & 0x3F) << 6) | (third_byte & 0x3F);
+
+			// Validate code point range (must be at least 0x800)
+			if (v < 0x800) {
+				cThrow ("Invalid UTF-8: overlong encoding"sv);
+			}
+
+			// Validate against surrogate range (U+D800 to U+DFFF)
+			if (v >= 0xD800 && v <= 0xDFFF) {
+				cThrow ("Invalid UTF-8: surrogate code point"sv);
+			}
+
+			return v;
+		}
+
+		// Four-byte sequence
+		if ((first_byte & 0xF8) == 0xF0) {
+			const uint8_t second_byte = static_cast<uint8_t>(s.at (offset)); ++offset;
+			const uint8_t third_byte = static_cast<uint8_t>(s.at (offset)); ++offset;
+			const uint8_t fourth_byte = static_cast<uint8_t>(s.at (offset)); ++offset;
+
+			if ((second_byte & 0xC0) != 0x80 || (third_byte & 0xC0) != 0x80 || (fourth_byte & 0xC0) != 0x80) {
+				cThrow ("Invalid UTF-8: missing continuation byte"sv);
+			}
+
+			v = ((first_byte & 0x07) << 18) | ((second_byte & 0x3F) << 12) | ((third_byte & 0x3F) << 6) | (fourth_byte & 0x3F);
+
+			// Validate code point range (must be at least 0x10000 and at most 0x10FFFF)
+			if (v < 0x10000 || v > 0x10FFFF) {
+				cThrow ("Invalid UTF-8: code point out of range"sv);
+			}
+
+			return v;
+		}
+
+		cThrow ("Invalid UTF-8: unrecognized byte sequence"sv);
+	}
+
+	size_t BIN::to_size_utf8 (const std::string_view s)
+	{
+		size_t offset {0};
+		return to_size_utf8 (s, offset);
+	}
+
+	void BIN::from_size_utf8 (const size_t sze, std::string& s)
+	{
+		// Validate input range (UTF-8 supports up to U+10FFFF)
+		if (sze > 0x10FFFF) {
+			cThrow ("Unable to encode size larger than U+10FFFF in UTF-8"sv);
+		}
+
+		// Validate against surrogate range (U+D800 to U+DFFF)
+		if (sze >= 0xD800 && sze <= 0xDFFF) {
+			cThrow ("Unable to encode surrogate code point in UTF-8"sv);
+		}
+
+		if (sze <= 0x7F) {
+			// Single-byte UTF-8 (U+0000 to U+007F)
+			s.push_back (static_cast<uint8_t>(sze));
+		}
+		else if (sze <= 0x7FF) {
+			// Two-byte UTF-8 (U+0080 to U+07FF)
+			s.push_back (static_cast<uint8_t>(0xC0 | (sze >> 6)));			// First byte: 110xxxxx
+			s.push_back (static_cast<uint8_t>(0x80 | (sze & 0x3F)));		// Continuation: 10xxxxxx
+		}
+		else if (sze <= 0xFFFF) {
+			// Three-byte UTF-8 (U+0800 to U+FFFF)
+			s.push_back (static_cast<uint8_t>(0xE0 | (sze >> 12)));			// First byte: 1110xxxx
+			s.push_back (static_cast<uint8_t>(0x80 | ((sze >> 6) & 0x3F)));	// Continuation: 10xxxxxx
+			s.push_back (static_cast<uint8_t>(0x80 | (sze & 0x3F)));		// Continuation: 10xxxxxx
+		}
+		else {
+			// Four-byte UTF-8 (U+10000 to U+10FFFF)
+			s.push_back (static_cast<uint8_t>(0xF0 | (sze >> 18)));			// First byte: 11110xxx
+			s.push_back (static_cast<uint8_t>(0x80 | ((sze >> 12) & 0x3F)));// Continuation: 10xxxxxx
+			s.push_back (static_cast<uint8_t>(0x80 | ((sze >> 6) & 0x3F)));	// Continuation: 10xxxxxx
+			s.push_back (static_cast<uint8_t>(0x80 | (sze & 0x3F)));		// Continuation: 10xxxxxx
+		}
+	}
+
+	std::string BIN::from_size_utf8 (const size_t sze)
+	{
+		std::string out;
+		out.reserve (4);
+		from_size_utf8 (sze, out);
+		return out;
+	}
+
 }  // namespace shaga

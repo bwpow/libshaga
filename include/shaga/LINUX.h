@@ -38,6 +38,8 @@ namespace shaga::LINUX {
 
 	HEDLEY_WARN_UNUSED_RESULT bool login_to_uid (const std::string_view text, uid_t &uid);
 	HEDLEY_WARN_UNUSED_RESULT bool group_to_gid (const std::string_view text, gid_t &gid);
+
+	HEDLEY_WARN_UNUSED_RESULT bool is_file_used (const std::string_view fname);
 }
 
 #endif // OS_LINUX

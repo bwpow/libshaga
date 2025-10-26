@@ -12,6 +12,7 @@ All rights reserved.
 
 namespace shaga::FS {
 	typedef std::function<void (const std::string_view)> GLOB_CALLBACK;
+	typedef std::function<bool (const std::string_view)> GLOB_CALLBACK_RETURN;
 	typedef std::function<void (const std::string_view)> READ_FILE_CALLBACK;
 
 	std::string realpath (const std::string_view path, const bool strip_fname = false);
@@ -38,6 +39,8 @@ namespace shaga::FS {
 
 	void touch (const std::string_view fname, const time_t timestamp = std::numeric_limits<time_t>::max());
 
+	/* Return false to end, true to continue */
+	void glob_interruptable (const std::string_view pattern, GLOB_CALLBACK_RETURN callback);
 	void glob (const std::string_view pattern, GLOB_CALLBACK callback);
 
 	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
@@ -69,6 +72,9 @@ namespace shaga::FS {
 		read_file (fname, [&out](const std::string_view line) { out.emplace_back (line); });
 		return out;
 	}
+
+	void read_whole_file (const std::string_view fname, std::string &output);
+	std::string read_whole_file (const std::string_view fname);
 }
 
 #endif // HEAD_shaga_FS

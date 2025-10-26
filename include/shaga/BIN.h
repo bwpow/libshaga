@@ -177,9 +177,17 @@ namespace shaga::BIN
 
 	/* size */
 	size_t to_size (const std::string_view s, size_t &offset);
+	size_t to_size (const std::string_view s);
 
 	void from_size (const size_t sze, std::string &s);
 	std::string from_size (const size_t sze);
+
+	/* size utf8 */
+	size_t to_size_utf8 (const std::string_view s, size_t &offset);
+	size_t to_size_utf8 (const std::string_view s);
+
+	void from_size_utf8 (const size_t sze, std::string &s);
+	std::string from_size_utf8 (const size_t sze);
 }
 
 #endif // HEAD_shaga_BIN

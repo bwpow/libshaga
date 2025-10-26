@@ -173,7 +173,7 @@ namespace shaga {
 		}
 	}
 
-	void FS::glob ([[maybe_unused]] const std::string_view pattern, [[maybe_unused]] GLOB_CALLBACK callback)
+	void FS::glob_interruptable ([[maybe_unused]] const std::string_view pattern, [[maybe_unused]] GLOB_CALLBACK_RETURN callback)
 	{
 #ifndef OS_WIN
 		glob_t glob_result;
@@ -194,7 +194,9 @@ namespace shaga {
 				cThrow ("glob error for pattern '{}': Unknown error"sv, pattern);
 			}
 			for (size_t i = 0; i < glob_result.gl_pathc; ++i) {
-				callback (glob_result.gl_pathv[i]);
+				if (false == callback (glob_result.gl_pathv[i])) {
+					break;
+				}
 			}
 			::globfree (&glob_result);
 		}
@@ -205,6 +207,14 @@ namespace shaga {
 #else
 		cThrow ("This function is not supported in this OS"sv);
 #endif // OS_WIN
+	}
+
+	void FS::glob (const std::string_view pattern, GLOB_CALLBACK callback)
+	{
+		glob_interruptable (pattern, [&](const std::string_view fname) -> bool {
+			callback (fname);
+			return true;
+		});
 	}
 
 	void FS::read_file (const std::string_view fname, READ_FILE_CALLBACK callback)
@@ -229,4 +239,36 @@ namespace shaga {
 			cThrow ("Error reading from file '{}'"sv, fname);
 		}
 	}
+
+	void FS::read_whole_file (const std::string_view fname, std::string &output)
+	{
+		std::ifstream infile;
+
+		infile.open (std::string (fname), std::ifstream::in | std::ifstream::binary | std::ifstream::ate);
+		if (infile.is_open () == false) {
+			cThrow ("Unable to open file '{}'"sv, fname);
+		}
+
+		const auto sze = infile.tellg ();
+		if (sze == -1) {
+			cThrow ("Error determining size of file '{}'"sv, fname);
+		}
+
+		output.resize (static_cast<std::string::size_type> (sze));
+
+		infile.seekg (0);
+		infile.read (output.data(), sze);
+
+		if (infile.fail () == true && infile.eof () == false) {
+			cThrow ("Error reading from file '{}'"sv, fname);
+		}
+	}
+
+	std::string FS::read_whole_file (const std::string_view fname)
+	{
+		std::string output;
+		read_whole_file (fname, output);
+		return output;
+	}
+
 }
