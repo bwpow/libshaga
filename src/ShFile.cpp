@@ -351,7 +351,7 @@ namespace shaga {
 		read (data, std::min (static_cast<uint64_t> (max_len), file_sze));
 	}
 
-	void ShFile::dump_in_c_format (const std::string_view varname, const size_t len, std::function<std::string(const size_t pos)> callback, const size_t per_line, const bool add_len)
+	void ShFile::dump_in_c_format (const std::string_view varname, const size_t len, DumpCFormatElementCallback callback, const size_t per_line, const bool add_len)
 	{
 		if (true == add_len) {
 			print ("{}[{}] = {{"sv, varname, len);
@@ -395,6 +395,38 @@ namespace shaga {
 		else {
 			write (data.dump ());
 		}
+	}
+
+	void ShFile::read_json (nlohmann::json &data, const bool from_file_start)
+	{
+		FILE* file = ::fdopen (dup(_fd), "r");
+		if (nullptr == file) {
+			cThrow ("Error opening file for reading"sv);
+		}
+
+		try {
+			if (false == from_file_start) {
+				if (::fseek (file, tell (), SEEK_SET) != 0) {
+					cThrow ("Error seeking in file"sv);
+				}
+			}
+
+			data = nlohmann::json::parse (file, nullptr, true, true);
+
+			seek (::ftell (file), SEEK::SET);
+		}
+		catch (const std::exception &e) {
+			fclose (file);
+			cThrow ("Error parsing JSON: {}"sv, e.what ());
+		}
+		::fclose (file);
+	}
+
+	nlohmann::json ShFile::read_json (const bool from_file_start)
+	{
+		nlohmann::json data;
+		read_json (data, from_file_start);
+		return data;
 	}
 
 	bool ShFile::has_file_name (void) const

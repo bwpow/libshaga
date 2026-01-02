@@ -23,7 +23,7 @@ namespace shaga {
 				RENAME_FAIL,	/* Right after rename failed */
 			};
 			/* Reference of calling ShFile and action */
-			typedef std::function<bool (ShFile &file, const ShFile::CallbackAction action)> ShFileCallback;
+			using ShFileCallback = std::function<bool (ShFile&, const ShFile::CallbackAction)>;
 
 			static const uint8_t mREAD    { 0b00'00'00'01 };
 			static const uint8_t mWRITE   { 0b00'00'00'10 };
@@ -97,6 +97,12 @@ namespace shaga {
 				write (fmt::format (format, args...));
 			}
 
+			template <typename... Args>
+			void format (const std::string_view format, const Args & ... args)
+			{
+				write (fmt::format (format, args...));
+			}
+
 			bool read (std::string &data, const size_t len, const bool thr_eof = true);
 			std::string read (const size_t len, const bool thr_eof = true);
 			bool read (void *const buf, const size_t len, const bool thr_eof = true);
@@ -106,12 +112,18 @@ namespace shaga {
 			std::string read_whole_file (const size_t max_len = SIZE_MAX);
 			void read_whole_file (void *const data, const size_t max_len = SIZE_MAX);
 
-			void dump_in_c_format (const std::string_view varname, const size_t len, std::function<std::string(const size_t pos)> callback, const size_t per_line = 16, const bool add_len = true);
+			/* This will dump input as valid C array that can be included from C/C++ source. */
+			using DumpCFormatElementCallback = std::function<std::string(const size_t pos)>;
+			void dump_in_c_format (const std::string_view varname, const size_t len, DumpCFormatElementCallback callback, const size_t per_line = 16, const bool add_len = true);
 			void dump_in_c_format (const std::string_view varname, const void *const data, const size_t len, const size_t per_line = 16, const bool add_len = true);
 			void dump_in_c_format (const std::string_view varname, const std::string_view data, const size_t per_line = 16, const bool add_len = true);
 
-			/* Write json as string */
+			/* Write json as string. Pretty will use tabs. */
 			void dump_json (const nlohmann::json &data, const bool pretty = false);
+
+			/* Read json from file. */
+			void read_json (nlohmann::json &data, const bool from_file_start);
+			nlohmann::json read_json (const bool from_file_start);
 
 			bool has_file_name (void) const;
 			void set_file_name (const std::string_view filename, const uint8_t mode);
@@ -123,6 +135,7 @@ namespace shaga {
 				return T (_filename);
 			}
 
+			/* Rename file when closing. Useful for using temporary file during write and renaming only when finished. */
 			bool has_rename_on_close (void) const;
 			void set_rename_on_close_file_name (const std::string_view filename);
 			void disable_rename_on_close (void);
