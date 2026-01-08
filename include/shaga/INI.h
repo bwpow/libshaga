@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2025, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -13,15 +13,17 @@ All rights reserved.
 namespace shaga {
 	class INI {
 		private:
-			typedef struct {
-				std::string section;
-				std::string line;
-			} INI_KEY;
+			struct INI_KEY {
+				const std::string section;
+				const std::string line;
 
-			friend bool operator< (const INI_KEY &a, const INI_KEY &b);
-			friend bool operator== (const INI_KEY &a, const INI_KEY &b);
+				INI_KEY (const std::string_view _section, const std::string_view _line);
 
-			typedef std::map<INI_KEY, COMMON_LIST> INI_MAP;
+				bool operator< (const INI_KEY &other) const;
+				bool operator== (const INI_KEY &other) const;
+			};
+
+			using INI_MAP = std::map<INI_KEY, COMMON_LIST>;
 
 			INI_MAP _map;
 			COMMON_DEQUE _nested_parse_file;
@@ -29,7 +31,6 @@ namespace shaga {
 
 			std::string get_last_nested_realpath (void) const;
 
-			INI_KEY get_key (const std::string_view section, const std::string_view line) const;
 			COMMON_LIST & get_list_ref (INI_MAP &ini_map, const INI_KEY &key, const bool create) const;
 			const COMMON_LIST & get_list_ref (const INI_MAP &ini_map, const INI_KEY &key) const;
 			COMMON_LIST get_list_copy (const INI_MAP &ini_map, const INI_KEY &key) const;
@@ -78,7 +79,7 @@ namespace shaga {
 			template <typename T, SHAGA_TYPE_IS_INTEGRAL(T)>
 			auto get_int (const std::string_view section, const std::string_view key, const T defvalue, const bool thr = false, const int base = 10) const -> T
 			{
-				if (auto val = get_last_value (_map, get_key (section, key))) {
+				if (auto val = get_last_value (_map, INI_KEY {section, key})) {
 					return STR::to_int<T> (*val, base);
 				}
 
@@ -93,7 +94,7 @@ namespace shaga {
 			template <typename T = std::string_view, SHAGA_TYPE_IS_CLASS(T)>
 			SHAGA_STRV auto get_string (const std::string_view section, const std::string_view key, const std::string_view defvalue, const bool thr = false) const -> T
 			{
-				if (auto val = get_last_value (_map, get_key (section, key))) {
+				if (auto val = get_last_value (_map, {section, key})) {
 					return T (*val);
 				}
 
@@ -107,7 +108,7 @@ namespace shaga {
 			template <typename T = std::string_view, SHAGA_TYPE_IS_CLASS(T)>
 			SHAGA_STRV auto get_string (const std::string_view section, const std::string_view key) const -> T
 			{
-				if (auto val = get_last_value (_map, get_key (section, key))) {
+				if (auto val = get_last_value (_map, {section, key})) {
 					return T (*val);
 				}
 				return T(""sv);
@@ -148,6 +149,11 @@ namespace shaga {
 			{
 				set_string (section, key, fmt::format (format, args...), true);
 			}
+
+			size_t erase (const std::string_view section, const std::string_view key);
+
+			using EraseCallback = std::function<bool (const std::string_view section, const std::string_view key)>;
+			size_t erase (EraseCallback should_delete);
 	};
 }
 

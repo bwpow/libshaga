@@ -1,7 +1,7 @@
 /******************************************************************************
 Shaga library is released under the New BSD license (see LICENSE.md):
 
-Copyright (c) 2012-2025, SAGE team s.r.o., Samuel Kupka
+Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
@@ -12,24 +12,30 @@ All rights reserved.
 namespace shaga {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
+	//  INI_KEY  ////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	bool operator< (const INI::INI_KEY &a, const INI::INI_KEY &b)
-	{
-		if (a.section < b.section) return true;
-		if (a.section > b.section) return false;
 
-		return a.line < b.line;
+	INI::INI_KEY::INI_KEY (const std::string_view _section, const std::string_view _line) :
+		section (_section),
+		line (_line)
+	{ }
+
+	bool INI::INI_KEY::operator< (const INI_KEY &other) const
+	{
+		if (section < other.section) return true;
+		if (section > other.section) return false;
+		return line < other.line;
 	}
 
-	bool operator== (const INI::INI_KEY &a, const INI::INI_KEY &b)
+	bool INI::INI_KEY::operator== (const INI_KEY &other) const
 	{
-		return (a.section == b.section) && (a.line == b.line);
+		return (section == other.section) && (line == other.line);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	std::string INI::get_last_nested_realpath (void) const
 	{
 		if (_nested_parse_file.empty () == true) {
@@ -37,14 +43,6 @@ namespace shaga {
 		}
 
 		return FS::realpath (_nested_parse_file.back (), true);
-	}
-
-	INI::INI_KEY INI::get_key (const std::string_view section, const std::string_view line) const
-	{
-		INI_KEY k;
-		k.section.assign (section);
-		k.line.assign (line);
-		return k;
 	}
 
 	COMMON_LIST & INI::get_list_ref (INI_MAP &ini_map, const INI_KEY &key, const bool create) const
@@ -88,7 +86,7 @@ namespace shaga {
 
 	INI::INI_MAP::iterator INI::begin_of_section (INI_MAP &ini_map, const std::string_view section) const
 	{
-		return ini_map.lower_bound (get_key (section, ""sv));
+		return ini_map.lower_bound (INI_KEY {section, ""sv});
 	}
 
 	bool INI::is_same_section (const INI_KEY &key, const std::string_view section) const
@@ -209,7 +207,7 @@ namespace shaga {
 			append = true;
 		}
 
-		COMMON_LIST &vec = get_list_ref (ini_map, get_key (active_section, line_key), true);
+		COMMON_LIST &vec = get_list_ref (ini_map, INI_KEY {active_section, line_key}, true);
 
 		if (append == false) {
 			vec.clear ();
@@ -218,16 +216,17 @@ namespace shaga {
 		if (true == refer) {
 			COMMON_VECTOR refval = STR::split<COMMON_VECTOR> (line_val, "/"sv);
 
-			INI_KEY key;
-			if (refval.size () == 1) {
-				key = get_key (active_section, line_val);
-			}
-			else if (refval.size () == 2) {
-				key = get_key (refval[0], refval[1]);
-			}
-			else {
-				cThrow ("Malformed reference. Reference has to contain either key from current section or section/key."sv);
-			}
+			INI_KEY key = [] (const auto &_active_section, const auto &_refval, const auto &_line_val) -> INI_KEY {
+				if (_refval.size () == 1) {
+					return INI_KEY{_active_section, _line_val};
+				}
+				else if (_refval.size () == 2) {
+					return INI_KEY{_refval[0], _refval[1]};
+				}
+				else {
+					cThrow ("Malformed reference. Reference has to contain either key from current section or section/key."sv);
+				}
+			} (active_section, refval, line_val);
 
 			COMMON_LIST referenced_list = get_list_copy (ini_map, key);
 			vec.splice (vec.end (), std::move (referenced_list));
@@ -473,7 +472,7 @@ namespace shaga {
 	{
 		COMMON_VECTOR out;
 		try {
-			const COMMON_LIST &lst = get_list_ref (_map, get_key (section, key));
+			const COMMON_LIST &lst = get_list_ref (_map, INI_KEY {section, key});
 			out.reserve (lst.size ());
 			std::copy (lst.cbegin(), lst.cend(), std::back_inserter(out));
 		}
@@ -492,7 +491,7 @@ namespace shaga {
 	const COMMON_LIST & INI::get_list (const std::string_view section, const std::string_view key, const COMMON_LIST &defvalue, const bool thr) const
 	{
 		try {
-			return get_list_ref (_map, get_key (section, key));
+			return get_list_ref (_map, INI_KEY {section, key});
 		}
 		catch (...) {
 			if (true == thr) {
@@ -505,7 +504,7 @@ namespace shaga {
 	const COMMON_LIST INI::get_list (const std::string_view section, const std::string_view key) const
 	{
 		try {
-			return get_list_copy (_map, get_key (section, key));
+			return get_list_copy (_map, INI_KEY {section, key});
 		}
 		catch (...) {
 		}
@@ -515,7 +514,7 @@ namespace shaga {
 	size_t INI::get_list_size (const std::string_view section, const std::string_view key, const bool thr) const
 	{
 		try {
-			return get_list_ref (_map, get_key (section, key)).size ();
+			return get_list_ref (_map, INI_KEY {section, key}).size ();
 		}
 		catch (...) {
 			if (true == thr) {
@@ -620,7 +619,7 @@ namespace shaga {
 
 	void INI::set_string (const std::string_view section, const std::string_view key, const std::string_view val, const bool append)
 	{
-		COMMON_LIST &v = get_list_ref (_map, get_key (section, key), true);
+		COMMON_LIST &v = get_list_ref (_map, INI_KEY {section, key}, true);
 		if (append == false) {
 			v.clear ();
 		}
@@ -629,7 +628,7 @@ namespace shaga {
 
 	void INI::set_vector (const std::string_view section, const std::string_view key, const COMMON_VECTOR &val, const bool append)
 	{
-		COMMON_LIST &v = get_list_ref (_map, get_key (section, key), true);
+		COMMON_LIST &v = get_list_ref (_map, INI_KEY {section, key}, true);
 		if (false == append) {
 			v.clear ();
 		}
@@ -638,10 +637,37 @@ namespace shaga {
 
 	void INI::set_list (const std::string_view section, const std::string_view key, const COMMON_LIST &val, const bool append)
 	{
-		COMMON_LIST &v = get_list_ref (_map, get_key (section, key), true);
+		COMMON_LIST &v = get_list_ref (_map, INI_KEY {section, key}, true);
 		if (false == append) {
 			v.clear ();
 		}
 		v.insert (v.end (), val.begin (), val.end ());
+	}
+
+	size_t INI::erase (const std::string_view section, const std::string_view key)
+	{
+		return _map.erase (INI_KEY {section, key});
+	}
+
+	size_t INI::erase (INI::EraseCallback should_delete)
+	{
+		if (nullptr == should_delete) {
+			return 0;
+		}
+
+		size_t erased = 0;
+		for (auto it = _map.begin (); it != _map.end (); /* no increment */) {
+			const INI_KEY &k = it->first;
+
+			if (should_delete (std::string_view (k.section), std::string_view (k.line))) {
+				it = _map.erase (it);
+				++erased;
+				continue;
+			}
+
+			++it;
+		}
+
+		return erased;
 	}
 }
