@@ -154,23 +154,23 @@ TEST (CRC, CRC16_modbus)
 
 	/* Check reference too */
 	const std::string refdata = BIN::from_hex ("55450A000900030106320000");
-	EXPECT_TRUE (CRC::crc16_modbus (refdata) == 0x3d'90);
-	EXPECT_TRUE (_ref_implementation (reinterpret_cast<const uint8_t *> (refdata.data ()), refdata.size ()) == 0x3d'90);
+	EXPECT_EQ (CRC::crc16_modbus (refdata), 0x3d'90);
+	EXPECT_EQ (_ref_implementation (reinterpret_cast<const uint8_t *> (refdata.data ()), refdata.size ()), 0x3d'90);
 
 	/* Some common strings */
-	EXPECT_TRUE (CRC::crc16_modbus (std::string ("1234567890")) == 0xc2'0a);
-	EXPECT_TRUE (CRC::crc16_modbus (std::string ("test")) == 0xdc'2e);
+	EXPECT_EQ (CRC::crc16_modbus ("1234567890"s), 0xc2'0a);
+	EXPECT_EQ (CRC::crc16_modbus ("test"s), 0xdc'2e);
 
 	std::array <uint8_t, 256> data;
 
 	std::fill (data.begin (), data.end (), 0x00);
-	EXPECT_TRUE (CRC::crc16_modbus (data) == _ref_implementation (data.data (), data.size ()));
+	EXPECT_EQ (CRC::crc16_modbus (data), _ref_implementation (data.data (), data.size ()));
 
 	std::fill (data.begin (), data.end (), 0xff);
-	EXPECT_TRUE (CRC::crc16_modbus (data) == _ref_implementation (data.data (), data.size ()));
+	EXPECT_EQ (CRC::crc16_modbus (data), _ref_implementation (data.data (), data.size ()));
 
 	std::iota (data.begin (), data.end (), 0x00);
-	EXPECT_TRUE (CRC::crc16_modbus (data) == _ref_implementation (data.data (), data.size ()));
+	EXPECT_EQ (CRC::crc16_modbus (data), _ref_implementation (data.data (), data.size ()));
 
 	/* Append and check */
 	std::string str ("1234567890xyz");
@@ -180,7 +180,7 @@ TEST (CRC, CRC16_modbus)
 
 	std::string_view view (str);
 	EXPECT_NO_THROW (CRC::crc16_modbus_check_and_trim (view));
-	EXPECT_TRUE (view.size () == sze);
+	EXPECT_EQ (view.size (), sze);
 	EXPECT_THROW (CRC::crc16_modbus_check_and_trim (view), CommonException);
 
 	str.append ("xy");
@@ -188,6 +188,70 @@ TEST (CRC, CRC16_modbus)
 
 	str.clear ();
 	EXPECT_THROW (CRC::crc16_modbus_check (str), CommonException);
+}
+
+TEST (CRC, CRC16_ccitt_false)
+{
+	auto _ref_implementation = [](const uint8_t* data, const size_t length) -> uint16_t
+	{
+		/* CRC-16/CCITT-FALSE */
+		/* poly = 0x1021, init = 0xFFFF, refin=false, refout=false, xorout=0x0000 */
+		uint16_t crc = 0xFFFF;
+
+		for (size_t pos = 0; pos < length; ++pos) {
+			crc ^= static_cast<uint16_t> (data[pos]) << 8; // align byte to MSB
+			for (int i = 0; i < 8; ++i) {
+				if (crc & 0x8000) {
+					crc = static_cast<uint16_t>((crc << 1) ^ 0x1021);
+				}
+				else {
+					crc = static_cast<uint16_t>(crc << 1);
+				}
+			}
+		}
+		return crc;
+	};
+
+	/* Check reference too */
+	const std::string refdata = "123456789"s;
+	EXPECT_EQ (CRC::crc16_ccitt_false (refdata), 0x29B1);
+	EXPECT_EQ (_ref_implementation (reinterpret_cast<const uint8_t *> (refdata.data ()), refdata.size ()), 0x29B1);
+
+	{
+		std::array <uint8_t, 256> data;
+
+		std::fill (data.begin (), data.end (), 0x00);
+		EXPECT_EQ (CRC::crc16_ccitt_false (data), _ref_implementation (data.data (), data.size ()));
+
+		std::fill (data.begin (), data.end (), 0xff);
+		EXPECT_EQ (CRC::crc16_ccitt_false (data), _ref_implementation (data.data (), data.size ()));
+
+		std::iota (data.begin (), data.end (), 0x00);
+		EXPECT_EQ (CRC::crc16_ccitt_false (data), _ref_implementation (data.data (), data.size ()));
+	}
+
+	{
+		/* bytes with high bit set */
+		const std::array<uint8_t, 8> data = {0x80, 0x81, 0xFE, 0xFF, 0x90, 0xA5, 0xC3, 0x7F};
+		EXPECT_EQ (CRC::crc16_ccitt_false (data), _ref_implementation (data.data (), data.size ()));
+	}
+
+	/* Append and check */
+	std::string str = "1234567890xyz"s;
+	const size_t sze = str.size ();
+	EXPECT_NO_THROW (CRC::crc16_ccitt_false_append (str));
+	EXPECT_NO_THROW (CRC::crc16_ccitt_false_check (str));
+
+	std::string_view view (str);
+	EXPECT_NO_THROW (CRC::crc16_ccitt_false_check_and_trim (view));
+	EXPECT_EQ (view.size (), sze);
+	EXPECT_THROW (CRC::crc16_ccitt_false_check_and_trim (view), CommonException);
+
+	str.append ("xy");
+	EXPECT_THROW (CRC::crc16_ccitt_false_check (str), CommonException);
+
+	str.clear ();
+	EXPECT_THROW (CRC::crc16_ccitt_false_check (str), CommonException);
 }
 
 TEST (CRC, CRC8_dallas)

@@ -18,6 +18,7 @@ namespace shaga::CRC {
 	extern const uint_fast32_t _crc32_atmel_table[256];
 	extern const uint_fast32_t _crc32c_table[256];
 	extern const uint_fast16_t _crc16_modbus_table[256];
+	extern const uint_fast16_t _crc16_ccitt_false_table[256];
 	extern const uint_fast8_t _crc8_dallas_table[256];
 
 	bool is_crc32c_hw_accelerated (void);
@@ -100,6 +101,21 @@ namespace shaga::CRC {
 	size_t crc16_modbus_check (const std::string_view plain, const uint16_t startval = crc16_modbus_startval);
 	void crc16_modbus_check_and_trim (std::string_view &plain, const uint16_t startval = crc16_modbus_startval);
 	void crc16_modbus_append (std::string &plain, const uint16_t startval = crc16_modbus_startval);
+
+	/*** CRC-16 CCITT-FALSE compatible ***/
+	static const uint16_t crc16_ccitt_false_startval {UINT16_MAX};
+
+	uint16_t crc16_ccitt_false (const void *const buf, const size_t len, const uint16_t startval = crc16_ccitt_false_startval);
+
+	template<class T, SHAGA_TYPE_IS_CLASS(T)>
+	uint16_t crc16_ccitt_false (const T &plain, const uint16_t startval = crc16_ccitt_false_startval)
+	{
+		return crc16_ccitt_false (plain.data (), plain.size (), startval);
+	}
+
+	size_t crc16_ccitt_false_check (const std::string_view plain, const uint16_t startval = crc16_ccitt_false_startval);
+	void crc16_ccitt_false_check_and_trim (std::string_view &plain, const uint16_t startval = crc16_ccitt_false_startval);
+	void crc16_ccitt_false_append (std::string &plain, const uint16_t startval = crc16_ccitt_false_startval);
 
 	/*** CRC-8 Dallas/Maxim ***/
 	static const uint8_t crc8_dallas_magic {0};
