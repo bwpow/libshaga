@@ -45,7 +45,10 @@ namespace shaga {
 	ShFile::~ShFile ()
 	{
 		if (true == _unlink_on_destruct) {
-			unlink ();
+			try {
+				unlink ();
+			}
+			catch (...) { /* Ignore */ }
 		}
 		else {
 			close ();
@@ -107,6 +110,7 @@ namespace shaga {
 		bool req_write = false;
 
 		if (_mode & mAPPEND) {
+			flags |= O_APPEND;
 			req_write = true;
 		}
 
@@ -166,29 +170,31 @@ namespace shaga {
 	{
 		/* Disarm destruct */
 		_unlink_on_destruct = false;
-
-		if (_fd >= 0) {
-			P::debug_print ("ShFile {}: CLOSE"sv, _filename);
-			if (nullptr != _callback) {
-				_callback (*this, CallbackAction::CLOSE);
-			}
-			::close (_fd);
-			_fd = -1;
-
-			if (false == ignore_rename_on_close && has_rename_on_close () == true) {
-				const int ret = ::rename (_filename.c_str (), _rename_on_close_filename.c_str ());
-				if (ret < 0) {
-					if (nullptr != _callback) {
-						_callback (*this, CallbackAction::RENAME_FAIL);
-					}
+		try {
+			if (_fd >= 0) {
+				P::debug_print ("ShFile {}: CLOSE"sv, _filename);
+				if (nullptr != _callback) {
+					_callback (*this, CallbackAction::CLOSE);
 				}
-				else {
-					if (nullptr != _callback) {
-						_callback (*this, CallbackAction::RENAME);
+				::close (_fd);
+				_fd = -1;
+
+				if (false == ignore_rename_on_close && has_rename_on_close () == true) {
+					const int ret = ::rename (_filename.c_str (), _rename_on_close_filename.c_str ());
+					if (ret < 0) {
+						if (nullptr != _callback) {
+							_callback (*this, CallbackAction::RENAME_FAIL);
+						}
+					}
+					else {
+						if (nullptr != _callback) {
+							_callback (*this, CallbackAction::RENAME);
+						}
 					}
 				}
 			}
 		}
+		catch (...) { /* Ignore */ }
 	}
 
 	void ShFile::sync ([[maybe_unused]] const bool also_metadata)
@@ -213,7 +219,7 @@ namespace shaga {
 		if (ret < 0) {
 			cThrow ("Error writing to file '{}': {}"sv, _filename, strerror (errno));
 		}
-		if (static_cast<size_t> (ret) != len) {
+		if (static_cast<size_t> (ret) != std::min (len, data.size ())) {
 			cThrow ("Error writing to file '{}': Not all bytes written"sv, _filename);
 		}
 	}
@@ -399,27 +405,58 @@ namespace shaga {
 
 	void ShFile::read_json (nlohmann::json &data, const bool from_file_start)
 	{
-		FILE* file = ::fdopen (dup(_fd), "r");
+		FILE* file = ::fdopen (dup(_fd), "rb");
 		if (nullptr == file) {
 			cThrow ("Error opening file for reading"sv);
 		}
 
-		try {
-			if (false == from_file_start) {
-				if (::fseek (file, tell (), SEEK_SET) != 0) {
+		auto close_file = [&file]() noexcept {
+			if (nullptr != file) {
+				::fclose (file);
+				file = nullptr;
+			}
+		};
+
+		if (false == from_file_start) {
+			const off64_t cur_pos = tell ();
+			#ifdef OS_WIN
+				if (::_fseeki64 (file, static_cast<__int64>(cur_pos), SEEK_SET) != 0) {
+					close_file ();
 					cThrow ("Error seeking in file"sv);
 				}
-			}
+			#else
+				if (::fseeko (file, static_cast<off_t>(cur_pos), SEEK_SET) != 0) {
+					close_file ();
+					cThrow ("Error seeking in file"sv);
+				}
+			#endif // OS_WIN
+		}
 
+		try {
 			data = nlohmann::json::parse (file, nullptr, true, true);
-
-			seek (::ftell (file), SEEK::SET);
 		}
 		catch (const std::exception &e) {
-			fclose (file);
+			close_file ();
 			cThrow ("Error parsing JSON: {}"sv, e.what ());
 		}
-		::fclose (file);
+
+		#ifdef OS_WIN
+			const __int64 new_pos = ::_ftelli64 (file);
+			if (new_pos < 0) {
+				close_file ();
+				cThrow ("Error telling position in file"sv);
+			}
+			seek (static_cast<off64_t>(new_pos), SEEK::SET);
+		#else
+			const off_t new_pos = ::ftello (file);
+			if (new_pos < 0) {
+				close_file ();
+				cThrow ("Error telling position in file"sv);
+			}
+			seek (static_cast<off64_t>(new_pos), SEEK::SET);
+		#endif // OS_WIN
+
+		close_file ();
 	}
 
 	nlohmann::json ShFile::read_json (const bool from_file_start)
@@ -586,6 +623,7 @@ namespace shaga {
 #ifndef OS_WIN
 		const int ret = ::futimens (fd, nullptr);
 		if (ret < 0) {
+			::close (fd);
 			cThrow ("Touch failed: {}"sv, strerror (errno));
 		}
 #endif // OS_WIN

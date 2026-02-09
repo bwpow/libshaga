@@ -92,6 +92,7 @@ All rights reserved.
 #include <ctime>
 #include <cinttypes>
 #include <climits>
+#include <csignal>
 
 #include "3rdparty/hedley.h"
 
@@ -115,6 +116,7 @@ All rights reserved.
 #include <memory>
 #include <optional>
 #include <any>
+#include <variant>
 
 #include <random>
 #include <chrono>
@@ -174,8 +176,8 @@ All rights reserved.
 
 #include "3rdparty/json.hpp"
 
-/* Use literals for ""s, ""sv and ""_json */
-using namespace std::literals;
+	/* Use literals for ""s, ""sv and ""_json */
+	using namespace std::literals;
 using namespace nlohmann::literals;
 
 #ifndef INT64_C

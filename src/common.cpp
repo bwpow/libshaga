@@ -88,8 +88,8 @@ namespace shaga {
 		static std::atomic<bool> _is_shutdown {false};
 		static std::atomic<bool> _is_in_exit {false};
 	#else
-		volatile bool _is_shutdown {false};
-		bool _is_in_exit {false};
+		volatile static std::sig_atomic_t _is_shutdown {0};
+		static bool _is_in_exit {false};
 	#endif // SHAGA_THREADING
 
 	#ifdef SHAGA_THREADING
@@ -208,11 +208,11 @@ namespace shaga {
 	void _try_to_shutdown (const char *file, const char *funct, const int line)
 	{
 		#ifdef SHAGA_THREADING
-		if (_is_shutdown.exchange (true, std::memory_order_seq_cst) == false)
+		if (_is_shutdown.exchange (true, std::memory_order_seq_cst) == false) {
 		#else
-		if (std::exchange (_is_shutdown, true) == false)
+		if (0 == (_is_shutdown)) {
+			_is_shutdown = 1;
 		#endif // SHAGA_THREADING
-		{
 			P::print ("Shutdown requested from {}: {} line {}"sv, file, funct, line);
 
 			#ifdef SHAGA_THREADING
@@ -240,7 +240,7 @@ namespace shaga {
 		#ifdef SHAGA_THREADING
 			return _is_shutdown.load (std::memory_order_relaxed);
 		#else
-			return _is_shutdown;
+			return (_is_shutdown != 0);
 		#endif // SHAGA_THREADING
 	}
 

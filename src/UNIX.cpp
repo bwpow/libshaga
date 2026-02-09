@@ -75,6 +75,13 @@ namespace shaga {
 		pid_t pid;
 		FILE *pidf = nullptr;
 
+		auto close_pidf = [&pidf]() noexcept {
+			if (nullptr != pidf) {
+				::fclose (pidf);
+				pidf = nullptr;
+			}
+		};
+
 		if (pidfile.empty () == false) {
 			pidf = ::fopen (s_c_str (pidfile), "w");
 			if (nullptr == pidf) {
@@ -87,6 +94,7 @@ namespace shaga {
 
 		/* An error occurred */
 		if (pid < 0) {
+			close_pidf ();
 			cThrow (strerror (errno));
 		}
 
@@ -97,6 +105,7 @@ namespace shaga {
 
 		/* On success: The child process becomes session leader */
 		if (::setsid () < 0) {
+			close_pidf ();
 			cThrow (strerror (errno));
 		}
 
@@ -108,6 +117,7 @@ namespace shaga {
 
 		/* An error occurred */
 		if (pid < 0) {
+			close_pidf ();
 			cThrow (strerror (errno));
 		}
 
@@ -120,11 +130,22 @@ namespace shaga {
 
 		if (pidf != nullptr) {
 			::fprintf (pidf, "%d\n", static_cast<int> (pid));
-			::fclose (pidf);
+			close_pidf ();
 		}
 
 		/* Close all open file descriptors */
-		for (long x = ::sysconf (_SC_OPEN_MAX); x >= 0; --x) {
+		long maxfd = ::sysconf (_SC_OPEN_MAX);
+		if (maxfd < 0) {
+			struct rlimit rl;
+			if (::getrlimit (RLIMIT_NOFILE, &rl) == 0) {
+				maxfd = static_cast<long> (rl.rlim_cur);
+			}
+			else {
+				maxfd = 1024;
+			}
+		}
+
+		for (long x = maxfd; x >= 0; --x) {
 			::close (x);
 		}
 
