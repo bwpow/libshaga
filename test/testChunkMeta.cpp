@@ -24,6 +24,172 @@ TEST (ChunkMeta, add_value)
 	EXPECT_TRUE (meta.count ("DEF") == 0);
 }
 
+TEST (ChunkMeta, add_numeric_getters)
+{
+	ChunkMeta meta;
+
+	const uint16_t key_u8 = ChunkMeta::key_to_bin ("UAA");
+	const uint16_t key_i8 = ChunkMeta::key_to_bin ("IAB");
+	const uint16_t key_u16 = ChunkMeta::key_to_bin ("UAC");
+	const uint16_t key_i16 = ChunkMeta::key_to_bin ("IAD");
+	const uint16_t key_u32 = ChunkMeta::key_to_bin ("UAE");
+	const uint16_t key_i32 = ChunkMeta::key_to_bin ("IAF");
+	const uint16_t key_u64 = ChunkMeta::key_to_bin ("UAG");
+	const uint16_t key_i64 = ChunkMeta::key_to_bin ("IAH");
+
+	EXPECT_NO_THROW (meta.add_uint8 ("UAA", static_cast<uint8_t>(200)));
+	EXPECT_NO_THROW (meta.add_int8 (key_i8, static_cast<int8_t>(-5)));
+
+	EXPECT_NO_THROW (meta.add_uint16 ("UAC", static_cast<uint16_t>(65530)));
+	EXPECT_NO_THROW (meta.add_int16 (key_i16, static_cast<int16_t>(-1234)));
+
+	EXPECT_NO_THROW (meta.add_uint32 ("UAE", 0x10203040u));
+	EXPECT_NO_THROW (meta.add_int32 (key_i32, static_cast<int32_t>(-123456)));
+
+	EXPECT_NO_THROW (meta.add_uint64 ("UAG", 0x1020304050607080ULL));
+	EXPECT_NO_THROW (meta.add_int64 (key_i64, static_cast<int64_t>(-1234567890123LL)));
+
+	EXPECT_EQ (meta.get_uint8 ("UAA", 0), 200);
+	EXPECT_EQ (meta.get_uint8 (key_u8, 0), 200);
+	EXPECT_EQ (meta.get_int8 ("IAB", 0), -5);
+	EXPECT_EQ (meta.get_int8 (key_i8, 0), -5);
+
+	EXPECT_EQ (meta.get_uint16 ("UAC", 0), 65530);
+	EXPECT_EQ (meta.get_uint16 (key_u16, 0), 65530);
+	EXPECT_EQ (meta.get_int16 ("IAD", 0), -1234);
+	EXPECT_EQ (meta.get_int16 (key_i16, 0), -1234);
+
+	EXPECT_EQ (meta.get_uint32 ("UAE", 0), 0x10203040u);
+	EXPECT_EQ (meta.get_uint32 (key_u32, 0), 0x10203040u);
+	EXPECT_EQ (meta.get_int32 ("IAF", 0), -123456);
+	EXPECT_EQ (meta.get_int32 (key_i32, 0), -123456);
+
+	EXPECT_EQ (meta.get_uint64 ("UAG", 0), 0x1020304050607080ULL);
+	EXPECT_EQ (meta.get_uint64 (key_u64, 0), 0x1020304050607080ULL);
+	EXPECT_EQ (meta.get_int64 ("IAH", 0), -1234567890123LL);
+	EXPECT_EQ (meta.get_int64 (key_i64, 0), -1234567890123LL);
+}
+
+TEST (ChunkMeta, add_value_numeric)
+{
+	ChunkMeta meta;
+
+	EXPECT_NO_THROW (meta.add_value ("TUA", static_cast<uint8_t>(9)));
+	EXPECT_NO_THROW (meta.add_value ("TIA", static_cast<int16_t>(-9)));
+	EXPECT_NO_THROW (meta.add_value ("TUB", static_cast<uint32_t>(1234)));
+	EXPECT_NO_THROW (meta.add_value ("TIC", static_cast<int64_t>(-123456)));
+
+	EXPECT_EQ (meta.get_uint8 ("TUA", 0), 9);
+	EXPECT_EQ (meta.get_int16 ("TIA", 0), -9);
+	EXPECT_EQ (meta.get_uint32 ("TUB", 0), 1234u);
+	EXPECT_EQ (meta.get_int64 ("TIC", 0), -123456);
+}
+
+TEST (ChunkMeta, ctor_numeric)
+{
+	ChunkMeta meta_u ("CUA", static_cast<uint16_t>(42));
+	EXPECT_EQ (meta_u.get_uint16 ("CUA", 0), 42);
+
+	ChunkMeta meta_i (ChunkMeta::key_to_bin ("CIB"), static_cast<int32_t>(-42));
+	EXPECT_EQ (meta_i.get_int32 ("CIB", 0), -42);
+}
+
+TEST (ChunkMeta, get_defaults_optional)
+{
+	ChunkMeta meta;
+
+	EXPECT_EQ (meta.get_int32 ("DEF", -7), -7);
+	EXPECT_FALSE (meta.get_int32_optional ("DEF").has_value ());
+
+	EXPECT_NO_THROW (meta.add_value ("SML", "A"sv));
+	EXPECT_EQ (meta.get_uint32 ("SML", 55u), 55u);
+	EXPECT_FALSE (meta.get_uint32_optional ("SML").has_value ());
+
+	EXPECT_NO_THROW (meta.add_int16 ("OPT", static_cast<int16_t>(-12)));
+	const auto opt = meta.get_int16_optional ("OPT");
+	EXPECT_TRUE (opt.has_value ());
+	EXPECT_EQ (opt.value (), -12);
+}
+
+TEST (ChunkMeta, modify_value_missing)
+{
+	ChunkMeta meta;
+	bool called = false;
+
+	EXPECT_NO_THROW (meta.modify_value ("ABC", [&](std::string &value) {
+		called = true;
+		value = "init";
+	}));
+
+	EXPECT_TRUE (called);
+	EXPECT_EQ (meta.count ("ABC"), 1);
+	EXPECT_EQ (meta.get_value ("ABC"), "init"sv);
+}
+
+TEST (ChunkMeta, modify_values_missing)
+{
+	ChunkMeta meta;
+	bool called = false;
+
+	EXPECT_NO_THROW (meta.modify_values (ChunkMeta::key_to_bin ("XYZ"), [&](std::string &value) {
+		called = true;
+		value = "seed";
+		return true;
+	}));
+
+	EXPECT_TRUE (called);
+	EXPECT_EQ (meta.count ("XYZ"), 1);
+	EXPECT_EQ (meta.get_value ("XYZ"), "seed"sv);
+}
+
+TEST (ChunkMeta, erase_find)
+{
+	ChunkMeta meta;
+
+	meta.add_value ("ABC", "one"sv);
+	meta.add_value ("ABC", "two"sv);
+	meta.add_value ("XYZ", "three"sv);
+
+	EXPECT_EQ (meta.count ("ABC"), 2);
+	EXPECT_EQ (meta.count ("XYZ"), 1);
+
+	EXPECT_EQ (meta.erase ("ABC"), 2);
+	EXPECT_EQ (meta.count ("ABC"), 0);
+
+	EXPECT_NE (meta.find ("XYZ"), meta.cend ());
+	EXPECT_EQ (meta.find ("ABC"), meta.cend ());
+}
+
+TEST (ChunkMeta, bin_roundtrip_mixed)
+{
+	ChunkMeta meta;
+
+	meta.add_value ("AAA", "alpha"sv);
+	meta.add_uint16 ("BBB", static_cast<uint16_t>(123));
+	meta.add_int32 ("CCC", static_cast<int32_t>(-456));
+	meta.add_value ("RPT", "first"sv);
+	meta.add_value ("RPT", "second"sv);
+
+	const std::string bin = meta.to_bin ();
+
+	ChunkMeta restored;
+	size_t offset = 0;
+	EXPECT_NO_THROW (restored.from_bin (bin, offset));
+	EXPECT_EQ (offset, bin.size ());
+
+	EXPECT_EQ (restored.count ("AAA"), 1);
+	EXPECT_EQ (restored.get_value ("AAA"), "alpha"sv);
+	EXPECT_EQ (restored.get_uint16 ("BBB", 0), 123);
+	EXPECT_EQ (restored.get_int32 ("CCC", 0), -456);
+
+	EXPECT_EQ (restored.count ("RPT"), 2);
+	auto rpt_values = restored.get_values<std::vector<std::string>> ("RPT");
+	std::sort (rpt_values.begin (), rpt_values.end ());
+	EXPECT_EQ (rpt_values.size (), 2u);
+	EXPECT_EQ (rpt_values[0], "first");
+	EXPECT_EQ (rpt_values[1], "second");
+}
+
 TEST (ChunkMeta, modify_value)
 {
 	ChunkMeta meta;

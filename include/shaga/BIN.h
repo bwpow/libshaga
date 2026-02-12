@@ -13,58 +13,58 @@ All rights reserved.
 namespace shaga::BIN
 {
 	template <typename T>
-	HEDLEY_WARN_UNUSED_RESULT constexpr size_t _count_trailing_zeros_helper (const T x, const size_t pos, const size_t sze) {
+	HEDLEY_WARN_UNUSED_RESULT constexpr size_t _count_trailing_zeros_helper (const T x, const size_t pos, const size_t sze) noexcept {
 		return (pos >= sze || (x & (static_cast<T>(1) << pos)) != 0) ? pos : _count_trailing_zeros_helper (x, pos + 1, sze);
 	}
 
 	template <typename T>
-	HEDLEY_WARN_UNUSED_RESULT constexpr size_t count_trailing_zeros (const T x) {
+	HEDLEY_WARN_UNUSED_RESULT constexpr size_t count_trailing_zeros (const T x) noexcept {
 		return _count_trailing_zeros_helper (x, 0, sizeof (x) * CHAR_BIT);
 	}
 
 	template <typename T>
-	HEDLEY_WARN_UNUSED_RESULT constexpr size_t _count_zeros_helper (const T x, const size_t pos, const size_t sze) {
+	HEDLEY_WARN_UNUSED_RESULT constexpr size_t _count_zeros_helper (const T x, const size_t pos, const size_t sze) noexcept {
 		return (pos >= sze) ? 0 : (_count_zeros_helper (x, pos + 1, sze) + (((x & (static_cast<T>(1) << pos)) == 0) ? 1 : 0));
 	}
 
 	template <typename T>
-	HEDLEY_WARN_UNUSED_RESULT constexpr size_t count_zeros (const T x) {
+	HEDLEY_WARN_UNUSED_RESULT constexpr size_t count_zeros (const T x) noexcept {
 		return _count_zeros_helper (x, 0, sizeof (x) * CHAR_BIT);
 	}
 
 	template <typename T>
-	HEDLEY_WARN_UNUSED_RESULT constexpr size_t _count_trailing_ones_helper (const T x, const size_t pos, const size_t sze) {
+	HEDLEY_WARN_UNUSED_RESULT constexpr size_t _count_trailing_ones_helper (const T x, const size_t pos, const size_t sze) noexcept {
 		return (pos >= sze || (x & (static_cast<T>(1) << pos)) == 0) ? pos : _count_trailing_ones_helper (x, pos + 1, sze);
 	}
 
 	template <typename T>
-	HEDLEY_WARN_UNUSED_RESULT constexpr size_t count_trailing_ones (const T x) {
+	HEDLEY_WARN_UNUSED_RESULT constexpr size_t count_trailing_ones (const T x) noexcept {
 		return _count_trailing_ones_helper (x, 0, sizeof (x) * CHAR_BIT);
 	}
 
 	template <typename T>
-	HEDLEY_WARN_UNUSED_RESULT constexpr size_t _count_ones_helper (const T x, const size_t pos, const size_t sze) {
+	HEDLEY_WARN_UNUSED_RESULT constexpr size_t _count_ones_helper (const T x, const size_t pos, const size_t sze) noexcept {
 		return (pos >= sze) ? 0 : (_count_ones_helper (x, pos + 1, sze) + (((x & (static_cast<T>(1) << pos)) != 0) ? 1 : 0));
 	}
 
 	template <typename T>
-	HEDLEY_WARN_UNUSED_RESULT constexpr size_t count_ones (const T x) {
+	HEDLEY_WARN_UNUSED_RESULT constexpr size_t count_ones (const T x) noexcept {
 		return _count_ones_helper (x, 0, sizeof (x) * CHAR_BIT);
 	}
 
 	template <typename T>
-	HEDLEY_WARN_UNUSED_RESULT constexpr bool check_bit_coverage (const T x) {
+	HEDLEY_WARN_UNUSED_RESULT constexpr bool check_bit_coverage (const T x) noexcept {
 		return (x == 0);
 	}
 
 	template <typename T, typename S, typename ... Types>
-	HEDLEY_WARN_UNUSED_RESULT constexpr bool check_bit_coverage (const T x, const S y, Types&& ... rest) {
+	HEDLEY_WARN_UNUSED_RESULT constexpr bool check_bit_coverage (const T x, const S y, Types&& ... rest) noexcept {
 		return ((x | y) == x) && check_bit_coverage ((x & (~y)), rest...);
 	}
 
-	bool is_little_endian (void);
-	bool is_big_endian (void);
-	SHAGA_STRV std::string_view endian_to_string (void);
+	bool is_little_endian (void) noexcept;
+	bool is_big_endian (void) noexcept;
+	SHAGA_STRV std::string_view endian_to_string (void) noexcept;
 	std::string machine_type_to_string (void);
 
 	void OR (std::string &lhs, const std::string_view rhs);

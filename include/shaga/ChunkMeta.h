@@ -14,9 +14,9 @@ namespace shaga {
 	/* ChunkMeta is key-value structure with repeating key allowed.	Every key has to be three capital letters ('A' to 'Z'). */
 	class Chunk;
 
-	typedef std::unordered_multimap<uint_fast16_t, std::string> ChunkMetaData;
-	typedef std::set<std::pair<uint_fast16_t, std::string>> ChunkMetaDataSet;
-	typedef std::pair<ChunkMetaData::const_iterator, ChunkMetaData::const_iterator> ChunkMetaDataRange;
+	using ChunkMetaData = std::unordered_multimap<uint_fast16_t, std::string>;
+	using ChunkMetaDataSet = std::set<std::pair<uint_fast16_t, std::string>>;
+	using ChunkMetaDataRange = std::pair<ChunkMetaData::const_iterator, ChunkMetaData::const_iterator>;
 
 	static constexpr uint16_t _chunkmeta_key_to_bin_helper (const char str[4], const size_t pos)
 	{
@@ -49,8 +49,8 @@ namespace shaga {
 
 	class ChunkMeta {
 		public:
-			typedef std::function<bool(std::string&)> ValuesCallback;
-			typedef std::function<void(std::string&)> ValueCallback;
+			using ValuesCallback = std::function<bool(std::string&)>;
+			using ValueCallback = std::function<void(std::string&)>;
 
 			static const constexpr uint16_t key_type_min = ChMetaKEY ("AAA");
 			static const constexpr uint16_t key_type_max = ChMetaKEY ("___");
@@ -65,7 +65,7 @@ namespace shaga {
 		private:
 			ChunkMetaData _data;
 
-			bool should_continue (const std::string_view s, const size_t offset) const;
+			bool should_continue (const std::string_view s, const size_t offset) const noexcept;
 		public:
 			ChunkMeta ();
 			ChunkMeta (const uint16_t key);
@@ -75,17 +75,29 @@ namespace shaga {
 			ChunkMeta (const std::string_view key, const std::string_view value);
 			ChunkMeta (const std::string_view key, std::string &&value);
 
-			ChunkMetaData::const_iterator begin () const;
-			ChunkMetaData::const_iterator end () const;
+			template<typename T, SHAGA_TYPE_IS_SUPPORTED_xINT(T)>
+			ChunkMeta (const uint16_t key, const T value)
+			{
+				add_value (key, value);
+			}
 
-			ChunkMetaData::const_iterator cbegin () const;
-			ChunkMetaData::const_iterator cend () const;
+			template<typename T, SHAGA_TYPE_IS_SUPPORTED_xINT(T)>
+			ChunkMeta (const std::string_view key, const T value)
+			{
+				add_value (key, value);
+			}
+
+			ChunkMetaData::const_iterator begin () const noexcept;
+			ChunkMetaData::const_iterator end () const noexcept;
+
+			ChunkMetaData::const_iterator cbegin () const noexcept;
+			ChunkMetaData::const_iterator cend () const noexcept;
 
 			ChunkMetaData::const_iterator find (const std::string_view key) const;
-			ChunkMetaData::const_iterator find (const uint16_t key) const;
+			ChunkMetaData::const_iterator find (const uint16_t key) const noexcept;
 
-			void clear (void);
-			void reset (void);
+			void clear (void) noexcept;
+			void reset (void) noexcept;
 
 			void add_value (const uint16_t key);
 			void add_value (const std::string_view key);
@@ -96,11 +108,77 @@ namespace shaga {
 			void add_value (const uint16_t key, std::string &&value);
 			void add_value (const std::string_view key, std::string &&value);
 
+			template<typename T, SHAGA_TYPE_IS_SUPPORTED_xINT(T)>
+			void add_value (const uint16_t key, const T value)
+			{
+				using CleanT = std::remove_cv_t<std::remove_reference_t<T>>;
+				if constexpr (std::is_same_v<CleanT, uint8_t>) {
+					add_uint8 (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, int8_t>) {
+					add_int8 (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, uint16_t>) {
+					add_uint16 (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, int16_t>) {
+					add_int16 (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, uint32_t>) {
+					add_uint32 (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, int32_t>) {
+					add_int32 (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, uint64_t>) {
+					add_uint64 (key, value);
+				}
+				else {
+					add_int64 (key, value);
+				}
+			}
+
+			template<typename T, SHAGA_TYPE_IS_SUPPORTED_xINT(T)>
+			void add_value (const std::string_view key, const T value)
+			{
+				using CleanT = std::remove_cv_t<std::remove_reference_t<T>>;
+				if constexpr (std::is_same_v<CleanT, uint8_t>) {
+					add_uint8 (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, int8_t>) {
+					add_int8 (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, uint16_t>) {
+					add_uint16 (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, int16_t>) {
+					add_int16 (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, uint32_t>) {
+					add_uint32 (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, int32_t>) {
+					add_int32 (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, uint64_t>) {
+					add_uint64 (key, value);
+				}
+				else {
+					add_int64 (key, value);
+				}
+			}
+
 			void add_uint8 (const uint16_t key, const uint8_t value);
 			void add_uint8 (const std::string_view key, const uint8_t value);
 
+			void add_int8 (const uint16_t key, const int8_t value);
+			void add_int8 (const std::string_view key, const int8_t value);
+
 			void add_uint16 (const uint16_t key, const uint16_t value);
 			void add_uint16 (const std::string_view key, const uint16_t value);
+
+			void add_int16 (const uint16_t key, const int16_t value);
+			void add_int16 (const std::string_view key, const int16_t value);
 
 			void add_uint24 (const uint16_t key, const uint32_t value);
 			void add_uint24 (const std::string_view key, const uint32_t value);
@@ -108,15 +186,21 @@ namespace shaga {
 			void add_uint32 (const uint16_t key, const uint32_t value);
 			void add_uint32 (const std::string_view key, const uint32_t value);
 
+			void add_int32 (const uint16_t key, const int32_t value);
+			void add_int32 (const std::string_view key, const int32_t value);
+
 			void add_uint64 (const uint16_t key, const uint64_t value);
 			void add_uint64 (const std::string_view key, const uint64_t value);
 
-			size_t get_max_bytes (void) const;
+			void add_int64 (const uint16_t key, const int64_t value);
+			void add_int64 (const std::string_view key, const int64_t value);
 
-			size_t size (void) const;
+			size_t get_max_bytes (void) const noexcept;
+
+			size_t size (void) const noexcept;
 			size_t count (const std::string_view key) const;
-			size_t count (const uint16_t key) const;
-			bool empty (void) const;
+			size_t count (const uint16_t key) const noexcept;
+			bool empty (void) const noexcept;
 
 			size_t erase (const uint16_t key);
 			size_t erase (const std::string_view key);
@@ -127,7 +211,7 @@ namespace shaga {
 			void merge (ChunkMeta &&other);
 
 			ChunkMetaDataRange equal_range (const std::string_view key) const;
-			ChunkMetaDataRange equal_range (const uint16_t key) const;
+			ChunkMetaDataRange equal_range (const uint16_t key) const noexcept;
 
 			template<typename T = COMMON_LIST, SHAGA_TYPE_IS_ITERABLE(T)>
 			auto get_values (const std::string_view key) const -> T
@@ -169,20 +253,76 @@ namespace shaga {
 				return T(""sv);
 			}
 
+			template <typename T = std::string_view>
+			SHAGA_STRV std::optional<T> get_value_optional (const std::string_view key) const
+			{
+				return get_value_optional<T> (key_to_bin (key));
+			}
+
+			template <typename T = std::string_view>
+			SHAGA_STRV std::optional<T> get_value_optional (const uint16_t key) const
+			{
+				ChunkMetaData::const_iterator iter = _data.find (key);
+				if (iter != _data.cend ()) {
+					return iter->second;
+				}
+
+				return std::nullopt;
+			}
+
 			uint8_t get_uint8 (const std::string_view key, const uint8_t default_value) const;
-			uint8_t get_uint8 (const uint16_t key, const uint8_t default_value) const;
+			uint8_t get_uint8 (const uint16_t key, const uint8_t default_value) const noexcept;
+
+			int8_t get_int8 (const std::string_view key, const int8_t default_value) const;
+			int8_t get_int8 (const uint16_t key, const int8_t default_value) const noexcept;
 
 			uint16_t get_uint16 (const std::string_view key, const uint16_t default_value) const;
-			uint16_t get_uint16 (const uint16_t key, const uint16_t default_value) const;
+			uint16_t get_uint16 (const uint16_t key, const uint16_t default_value) const noexcept;
+
+			int16_t get_int16 (const std::string_view key, const int16_t default_value) const;
+			int16_t get_int16 (const uint16_t key, const int16_t default_value) const noexcept;
 
 			uint32_t get_uint24 (const std::string_view key, const uint32_t default_value) const;
-			uint32_t get_uint24 (const uint16_t key, const uint32_t default_value) const;
+			uint32_t get_uint24 (const uint16_t key, const uint32_t default_value) const noexcept;
 
 			uint32_t get_uint32 (const std::string_view key, const uint32_t default_value) const;
-			uint32_t get_uint32 (const uint16_t key, const uint32_t default_value) const;
+			uint32_t get_uint32 (const uint16_t key, const uint32_t default_value) const noexcept;
+
+			int32_t get_int32 (const std::string_view key, const int32_t default_value) const;
+			int32_t get_int32 (const uint16_t key, const int32_t default_value) const noexcept;
 
 			uint64_t get_uint64 (const std::string_view key, const uint64_t default_value) const;
-			uint64_t get_uint64 (const uint16_t key, const uint64_t default_value) const;
+			uint64_t get_uint64 (const uint16_t key, const uint64_t default_value) const noexcept;
+
+			int64_t get_int64 (const std::string_view key, const int64_t default_value) const;
+			int64_t get_int64 (const uint16_t key, const int64_t default_value) const noexcept;
+
+			std::optional<uint8_t> get_uint8_optional (const std::string_view key) const;
+			std::optional<uint8_t> get_uint8_optional (const uint16_t key) const noexcept;
+
+			std::optional<int8_t> get_int8_optional (const std::string_view key) const;
+			std::optional<int8_t> get_int8_optional (const uint16_t key) const noexcept;
+
+			std::optional<uint16_t> get_uint16_optional (const std::string_view key) const;
+			std::optional<uint16_t> get_uint16_optional (const uint16_t key) const noexcept;
+
+			std::optional<int16_t> get_int16_optional (const std::string_view key) const;
+			std::optional<int16_t> get_int16_optional (const uint16_t key) const noexcept;
+
+			std::optional<uint32_t> get_uint24_optional (const std::string_view key) const;
+			std::optional<uint32_t> get_uint24_optional (const uint16_t key) const noexcept;
+
+			std::optional<uint32_t> get_uint32_optional (const std::string_view key) const;
+			std::optional<uint32_t> get_uint32_optional (const uint16_t key) const noexcept;
+
+			std::optional<int32_t> get_int32_optional (const std::string_view key) const;
+			std::optional<int32_t> get_int32_optional (const uint16_t key) const noexcept;
+
+			std::optional<uint64_t> get_uint64_optional (const std::string_view key) const;
+			std::optional<uint64_t> get_uint64_optional (const uint16_t key) const noexcept;
+
+			std::optional<int64_t> get_int64_optional (const std::string_view key) const;
+			std::optional<int64_t> get_int64_optional (const uint16_t key) const noexcept;
 
 			void modify_value (const std::string_view key, ValueCallback callback);
 			void modify_value (const uint16_t key, ValueCallback callback);

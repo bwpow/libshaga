@@ -232,6 +232,34 @@ using namespace nlohmann::literals;
 /* Macro to enable a template function only if T is an integral type (according to std::is_integral) */
 #define SHAGA_TYPE_IS_INTEGRAL(T) std::enable_if_t<std::is_integral<T>::value, bool> = true
 
+/* Macro to enable a template function only if T is uint8/16/32/64 */
+#define SHAGA_TYPE_IS_SUPPORTED_UINT(T) std::enable_if_t< \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint8_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint16_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint32_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint64_t>, \
+	bool> = true
+
+/* Macro to enable a template function only if T is int8/16/32/64 */
+#define SHAGA_TYPE_IS_SUPPORTED_INT(T) std::enable_if_t< \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int8_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int16_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int32_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int64_t>, \
+	bool> = true
+
+/* Macro to enable a template function only if T is (u)int8/16/32/64 */
+#define SHAGA_TYPE_IS_SUPPORTED_xINT(T) std::enable_if_t< \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint8_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint16_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint32_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint64_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int8_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int16_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int32_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int64_t>, \
+	bool> = true
+
 /* Macro to enable a template function only if T is a floating-point type */
 #define SHAGA_TYPE_IS_FLOATING(T) std::enable_if_t<std::is_floating_point<T>::value, bool> = true
 
@@ -247,9 +275,9 @@ using namespace nlohmann::literals;
 	#define SHAGA_STRV
 #endif // SHAGA_STRV
 
-/* This is useful for conversion of enums to underlying types without too much typing */
-template <typename T, std::enable_if_t<std::is_enum<T>::value, bool> = true>
-constexpr auto operator+ (const T e) noexcept -> std::underlying_type_t<T>
+		 /* This is useful for conversion of enums to underlying types without too much typing */
+		 template <typename T, std::enable_if_t<std::is_enum<T>::value, bool> = true>
+		 constexpr auto operator+ (const T e) noexcept -> std::underlying_type_t<T>
 {
 	return static_cast<std::underlying_type_t<T>>(e);
 }

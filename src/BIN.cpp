@@ -27,7 +27,7 @@ namespace shaga {
 	//  Endian detection  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	bool BIN::is_little_endian (void)
+	bool BIN::is_little_endian (void) noexcept
 	{
 #if BYTE_ORDER == LITTLE_ENDIAN
 		return true;
@@ -36,7 +36,7 @@ namespace shaga {
 #endif	// BYTE_ORDER
 	}
 
-	bool BIN::is_big_endian (void)
+	bool BIN::is_big_endian (void) noexcept
 	{
 #if BYTE_ORDER == BIG_ENDIAN
 		return true;
@@ -45,7 +45,7 @@ namespace shaga {
 #endif	// BYTE_ORDER
 	}
 
-	SHAGA_STRV std::string_view BIN::endian_to_string (void)
+	SHAGA_STRV std::string_view BIN::endian_to_string (void) noexcept
 	{
 		if (is_little_endian ()) {
 			return "little endian"sv;

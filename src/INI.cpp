@@ -20,14 +20,14 @@ namespace shaga {
 		line (_line)
 	{ }
 
-	bool INI::INI_KEY::operator< (const INI_KEY &other) const
+	bool INI::INI_KEY::operator< (const INI_KEY &other) const noexcept
 	{
 		if (section < other.section) return true;
 		if (section > other.section) return false;
 		return line < other.line;
 	}
 
-	bool INI::INI_KEY::operator== (const INI_KEY &other) const
+	bool INI::INI_KEY::operator== (const INI_KEY &other) const noexcept
 	{
 		return (section == other.section) && (line == other.line);
 	}
@@ -89,7 +89,7 @@ namespace shaga {
 		return ini_map.lower_bound (INI_KEY {section, ""sv});
 	}
 
-	bool INI::is_same_section (const INI_KEY &key, const std::string_view section) const
+	bool INI::is_same_section (const INI_KEY &key, const std::string_view section) const noexcept
 	{
 		return (key.section == section);
 	}
@@ -297,7 +297,7 @@ namespace shaga {
 		_map = ini_map;
 	}
 
-	std::optional<std::string_view> INI::get_last_value (const INI_MAP &m, const INI_KEY &key) const
+	std::optional<std::string_view> INI::get_last_value (const INI_MAP &m, const INI_KEY &key) const noexcept
 	{
 		try {
 			const COMMON_LIST &lst = get_list_ref (m, key);
@@ -540,6 +540,20 @@ namespace shaga {
 		}
 	}
 
+	std::optional<float> INI::get_float_optional (const std::string_view section, const std::string_view key) const noexcept
+	{
+		if (auto val = get_last_value (_map, INI_KEY {section, key})) {
+			try {
+				return STR::to_float (*val);
+			}
+			catch (...) {
+				return std::nullopt;
+			}
+		}
+
+		return std::nullopt;
+	}
+
 	double INI::get_double (const std::string_view section, const std::string_view key, const double defvalue, const bool thr) const
 	{
 		try {
@@ -554,6 +568,20 @@ namespace shaga {
 				return defvalue;
 			}
 		}
+	}
+
+	std::optional<double> INI::get_double_optional (const std::string_view section, const std::string_view key) const noexcept
+	{
+		if (auto val = get_last_value (_map, INI_KEY {section, key})) {
+			try {
+				return STR::to_double (*val);
+			}
+			catch (...) {
+				return std::nullopt;
+			}
+		}
+
+		return std::nullopt;
 	}
 
 	long double INI::get_long_double (const std::string_view section, const std::string_view key, const long double defvalue, const bool thr) const
@@ -572,9 +600,28 @@ namespace shaga {
 		}
 	}
 
+	std::optional<long double> INI::get_long_double_optional (const std::string_view section, const std::string_view key) const noexcept
+	{
+		if (auto val = get_last_value (_map, INI_KEY {section, key})) {
+			try {
+				return STR::to_long_double (*val);
+			}
+			catch (...) {
+				return std::nullopt;
+			}
+		}
+
+		return std::nullopt;
+	}
+
 	bool INI::get_bool (const std::string_view section, const std::string_view key, const bool defvalue, const bool thr) const
 	{
 		return get_int<bool> (section, key, defvalue, thr);
+	}
+
+	std::optional<bool> INI::get_bool_optional (const std::string_view section, const std::string_view key) const noexcept
+	{
+		return get_int_optional<bool> (section, key);
 	}
 
 	uint8_t INI::get_uint8 (const std::string_view section, const std::string_view key, const uint8_t defvalue, const bool thr, const int base) const
@@ -582,9 +629,19 @@ namespace shaga {
 		return get_int<uint8_t> (section, key, defvalue, thr, base);
 	}
 
+	std::optional<uint8_t> INI::get_uint8_optional (const std::string_view section, const std::string_view key, const int base) const noexcept
+	{
+		return get_int_optional<uint8_t> (section, key, base);
+	}
+
 	uint16_t INI::get_uint16 (const std::string_view section, const std::string_view key, const uint16_t defvalue, const bool thr, const int base) const
 	{
 		return get_int<uint16_t> (section, key, defvalue, thr, base);
+	}
+
+	std::optional<uint16_t> INI::get_uint16_optional (const std::string_view section, const std::string_view key, const int base) const noexcept
+	{
+		return get_int_optional<uint16_t> (section, key, base);
 	}
 
 	uint32_t INI::get_uint32 (const std::string_view section, const std::string_view key, const uint32_t defvalue, const bool thr, const int base) const
@@ -592,9 +649,19 @@ namespace shaga {
 		return get_int<uint32_t> (section, key, defvalue, thr, base);
 	}
 
+	std::optional<uint32_t> INI::get_uint32_optional (const std::string_view section, const std::string_view key, const int base) const noexcept
+	{
+		return get_int_optional<uint32_t> (section, key, base);
+	}
+
 	uint64_t INI::get_uint64 (const std::string_view section, const std::string_view key, const uint64_t defvalue, const bool thr, const int base) const
 	{
 		return get_int<uint64_t> (section, key, defvalue, thr, base);
+	}
+
+	std::optional<uint64_t> INI::get_uint64_optional (const std::string_view section, const std::string_view key, const int base) const noexcept
+	{
+		return get_int_optional<uint64_t> (section, key, base);
 	}
 
 	int8_t INI::get_int8 (const std::string_view section, const std::string_view key, const int8_t defvalue, const bool thr, const int base) const
@@ -602,9 +669,19 @@ namespace shaga {
 		return get_int<int8_t> (section, key, defvalue, thr, base);
 	}
 
+	std::optional<int8_t> INI::get_int8_optional (const std::string_view section, const std::string_view key, const int base) const noexcept
+	{
+		return get_int_optional<int8_t> (section, key, base);
+	}
+
 	int16_t INI::get_int16 (const std::string_view section, const std::string_view key, const int16_t defvalue, const bool thr, const int base) const
 	{
 		return get_int<int16_t> (section, key, defvalue, thr, base);
+	}
+
+	std::optional<int16_t> INI::get_int16_optional (const std::string_view section, const std::string_view key, const int base) const noexcept
+	{
+		return get_int_optional<int16_t> (section, key, base);
 	}
 
 	int32_t INI::get_int32 (const std::string_view section, const std::string_view key, const int32_t defvalue, const bool thr, const int base) const
@@ -612,9 +689,19 @@ namespace shaga {
 		return get_int<int32_t> (section, key, defvalue, thr, base);
 	}
 
+	std::optional<int32_t> INI::get_int32_optional (const std::string_view section, const std::string_view key, const int base) const noexcept
+	{
+		return get_int_optional<int32_t> (section, key, base);
+	}
+
 	int64_t INI::get_int64 (const std::string_view section, const std::string_view key, const int64_t defvalue, const bool thr, const int base) const
 	{
 		return get_int<int64_t> (section, key, defvalue, thr, base);
+	}
+
+	std::optional<int64_t> INI::get_int64_optional (const std::string_view section, const std::string_view key, const int base) const noexcept
+	{
+		return get_int_optional<int64_t> (section, key, base);
 	}
 
 	void INI::set_string (const std::string_view section, const std::string_view key, const std::string_view val, const bool append)
@@ -655,7 +742,7 @@ namespace shaga {
 			return 0;
 		}
 
-		size_t erased = 0;
+		size_t erased {0};
 		for (auto it = _map.begin (); it != _map.end (); /* no increment */) {
 			const INI_KEY &k = it->first;
 

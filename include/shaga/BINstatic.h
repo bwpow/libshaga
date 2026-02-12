@@ -10,22 +10,24 @@ All rights reserved.
 
 #include "common.h"
 
+/* Warning! These functions don't check for anything, so can cause memory corruption. Make sure these is enough data/space available in the buffers! */
+
 namespace shaga::BIN {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Big endian static inline functions  /////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	static inline void _be_from_uint8 (const uint8_t val, void *const buf)
+	static inline void _be_from_uint8 (const uint8_t val, void *const buf) noexcept
 	{
 		::memcpy (reinterpret_cast<char *>(buf), &val, sizeof (uint8_t));
 	}
 
-	static inline void _be_from_uint8 (const uint8_t val, void *const buf, size_t &pos)
+	static inline void _be_from_uint8 (const uint8_t val, void *const buf, size_t &pos) noexcept
 	{
 		::memcpy (reinterpret_cast<char *>(buf) + pos, &val, sizeof (uint8_t));
 		pos += sizeof (uint8_t);
 	}
 
-	static inline void _be_from_uint16 (uint16_t val, void *const buf)
+	static inline void _be_from_uint16 (uint16_t val, void *const buf) noexcept
 	{
 		ENDIAN_IS_LITTLE
 		ENDIAN_BSWAP16 (val);
@@ -34,7 +36,7 @@ namespace shaga::BIN {
 		::memcpy (reinterpret_cast<char *>(buf), &val, sizeof (uint16_t));
 	}
 
-	static inline void _be_from_uint16 (uint16_t val, void *const buf, size_t &pos)
+	static inline void _be_from_uint16 (uint16_t val, void *const buf, size_t &pos) noexcept
 	{
 		ENDIAN_IS_LITTLE
 		ENDIAN_BSWAP16 (val);
@@ -44,7 +46,7 @@ namespace shaga::BIN {
 		pos += sizeof (uint16_t);
 	}
 
-	static inline void _be_from_uint32 (uint32_t val, void *const buf)
+	static inline void _be_from_uint32 (uint32_t val, void *const buf) noexcept
 	{
 		ENDIAN_IS_LITTLE
 		ENDIAN_BSWAP32 (val);
@@ -53,7 +55,7 @@ namespace shaga::BIN {
 		::memcpy (reinterpret_cast<char *>(buf), &val, sizeof (uint32_t));
 	}
 
-	static inline void _be_from_uint32 (uint32_t val, void *const buf, size_t &pos)
+	static inline void _be_from_uint32 (uint32_t val, void *const buf, size_t &pos) noexcept
 	{
 		ENDIAN_IS_LITTLE
 		ENDIAN_BSWAP32 (val);
@@ -63,7 +65,7 @@ namespace shaga::BIN {
 		pos += sizeof (uint32_t);
 	}
 
-	static inline void _be_from_uint64 (uint64_t val, void *const buf)
+	static inline void _be_from_uint64 (uint64_t val, void *const buf) noexcept
 	{
 		ENDIAN_IS_LITTLE
 		ENDIAN_BSWAP64 (val);
@@ -72,7 +74,7 @@ namespace shaga::BIN {
 		::memcpy (reinterpret_cast<char *>(buf), &val, sizeof (uint64_t));
 	}
 
-	static inline void _be_from_uint64 (uint64_t val, void *const buf, size_t &pos)
+	static inline void _be_from_uint64 (uint64_t val, void *const buf, size_t &pos) noexcept
 	{
 		ENDIAN_IS_LITTLE
 		ENDIAN_BSWAP64 (val);
@@ -82,13 +84,13 @@ namespace shaga::BIN {
 		pos += sizeof (uint64_t);
 	}
 
-	static inline void _be_to_uint8 (uint8_t &val, const void *const buf, size_t &pos)
+	static inline void _be_to_uint8 (uint8_t &val, const void *const buf, size_t &pos) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf) + pos, sizeof (uint8_t));
 		pos += sizeof (uint8_t);
 	}
 
-	static inline uint8_t _be_to_uint8 (const void *const buf, size_t &pos)
+	static inline uint8_t _be_to_uint8 (const void *const buf, size_t &pos) noexcept
 	{
 		uint8_t val;
 
@@ -98,12 +100,12 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _be_to_uint8 (uint8_t &val, const void *const buf)
+	static inline void _be_to_uint8 (uint8_t &val, const void *const buf) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf), sizeof (uint8_t));
 	}
 
-	static inline uint8_t _be_to_uint8 (const void *const buf)
+	static inline uint8_t _be_to_uint8 (const void *const buf) noexcept
 	{
 		uint8_t val;
 
@@ -112,7 +114,7 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _be_to_uint16 (uint16_t &val, const void *const buf, size_t &pos)
+	static inline void _be_to_uint16 (uint16_t &val, const void *const buf, size_t &pos) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf) + pos, sizeof (uint16_t));
 		pos += sizeof (uint16_t);
@@ -122,7 +124,7 @@ namespace shaga::BIN {
 		ENDIAN_END
 	}
 
-	static inline uint16_t _be_to_uint16 (const void *const buf, size_t &pos)
+	static inline uint16_t _be_to_uint16 (const void *const buf, size_t &pos) noexcept
 	{
 		uint16_t val;
 
@@ -136,7 +138,7 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _be_to_uint16 (uint16_t &val, const void *const buf)
+	static inline void _be_to_uint16 (uint16_t &val, const void *const buf) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf), sizeof (uint16_t));
 
@@ -145,7 +147,7 @@ namespace shaga::BIN {
 		ENDIAN_END
 	}
 
-	static inline uint16_t _be_to_uint16 (const void *const buf)
+	static inline uint16_t _be_to_uint16 (const void *const buf) noexcept
 	{
 		uint16_t val;
 
@@ -158,7 +160,7 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _be_to_uint32 (uint32_t &val, const void *const buf, size_t &pos)
+	static inline void _be_to_uint32 (uint32_t &val, const void *const buf, size_t &pos) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf) + pos, sizeof (uint32_t));
 		pos += sizeof (uint32_t);
@@ -168,7 +170,7 @@ namespace shaga::BIN {
 		ENDIAN_END
 	}
 
-	static inline uint32_t _be_to_uint32 (const void *const buf, size_t &pos)
+	static inline uint32_t _be_to_uint32 (const void *const buf, size_t &pos) noexcept
 	{
 		uint32_t val;
 
@@ -182,7 +184,7 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _be_to_uint32 (uint32_t &val, const void *const buf)
+	static inline void _be_to_uint32 (uint32_t &val, const void *const buf) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf), sizeof (uint32_t));
 
@@ -191,7 +193,7 @@ namespace shaga::BIN {
 		ENDIAN_END
 	}
 
-	static inline uint32_t _be_to_uint32 (const void *const buf)
+	static inline uint32_t _be_to_uint32 (const void *const buf) noexcept
 	{
 		uint32_t val;
 
@@ -204,7 +206,7 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _be_to_uint64 (uint64_t &val, const void *const buf, size_t &pos)
+	static inline void _be_to_uint64 (uint64_t &val, const void *const buf, size_t &pos) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf) + pos, sizeof (uint64_t));
 		pos += sizeof (uint64_t);
@@ -214,7 +216,7 @@ namespace shaga::BIN {
 		ENDIAN_END
 	}
 
-	static inline uint64_t _be_to_uint64 (const void *const buf, size_t &pos)
+	static inline uint64_t _be_to_uint64 (const void *const buf, size_t &pos) noexcept
 	{
 		uint64_t val;
 
@@ -228,7 +230,7 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _be_to_uint64 (uint64_t &val, const void *const buf)
+	static inline void _be_to_uint64 (uint64_t &val, const void *const buf) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf), sizeof (uint64_t));
 
@@ -237,7 +239,7 @@ namespace shaga::BIN {
 		ENDIAN_END
 	}
 
-	static inline uint64_t _be_to_uint64 (const void *const buf)
+	static inline uint64_t _be_to_uint64 (const void *const buf) noexcept
 	{
 		uint64_t val;
 
@@ -253,18 +255,18 @@ namespace shaga::BIN {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Little endian static inline functions  //////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	static inline void _from_uint8 (const uint8_t val, void *const buf)
+	static inline void _from_uint8 (const uint8_t val, void *const buf) noexcept
 	{
 		::memcpy (reinterpret_cast<char *>(buf), &val, sizeof (uint8_t));
 	}
 
-	static inline void _from_uint8 (const uint8_t val, void *const buf, size_t &pos)
+	static inline void _from_uint8 (const uint8_t val, void *const buf, size_t &pos) noexcept
 	{
 		::memcpy (reinterpret_cast<char *>(buf) + pos, &val, sizeof (uint8_t));
 		pos += sizeof (uint8_t);
 	}
 
-	static inline void _from_uint16 (uint16_t val, void *const buf)
+	static inline void _from_uint16 (uint16_t val, void *const buf) noexcept
 	{
 		ENDIAN_IS_BIG
 		ENDIAN_BSWAP16 (val);
@@ -273,7 +275,7 @@ namespace shaga::BIN {
 		::memcpy (reinterpret_cast<char *>(buf), &val, sizeof (uint16_t));
 	}
 
-	static inline void _from_uint16 (uint16_t val, void *const buf, size_t &pos)
+	static inline void _from_uint16 (uint16_t val, void *const buf, size_t &pos) noexcept
 	{
 		ENDIAN_IS_BIG
 		ENDIAN_BSWAP16 (val);
@@ -283,7 +285,7 @@ namespace shaga::BIN {
 		pos += sizeof (uint16_t);
 	}
 
-	static inline void _from_uint32 (uint32_t val, void *const buf)
+	static inline void _from_uint32 (uint32_t val, void *const buf) noexcept
 	{
 		ENDIAN_IS_BIG
 		ENDIAN_BSWAP32 (val);
@@ -292,7 +294,7 @@ namespace shaga::BIN {
 		::memcpy (reinterpret_cast<char *>(buf), &val, sizeof (uint32_t));
 	}
 
-	static inline void _from_uint32 (uint32_t val, void *const buf, size_t &pos)
+	static inline void _from_uint32 (uint32_t val, void *const buf, size_t &pos) noexcept
 	{
 		ENDIAN_IS_BIG
 		ENDIAN_BSWAP32 (val);
@@ -302,7 +304,7 @@ namespace shaga::BIN {
 		pos += sizeof (uint32_t);
 	}
 
-	static inline void _from_uint64 (uint64_t val, void *const buf)
+	static inline void _from_uint64 (uint64_t val, void *const buf) noexcept
 	{
 		ENDIAN_IS_BIG
 		ENDIAN_BSWAP64 (val);
@@ -311,7 +313,7 @@ namespace shaga::BIN {
 		::memcpy (reinterpret_cast<char *>(buf), &val, sizeof (uint64_t));
 	}
 
-	static inline void _from_uint64 (uint64_t val, void *const buf, size_t &pos)
+	static inline void _from_uint64 (uint64_t val, void *const buf, size_t &pos) noexcept
 	{
 		ENDIAN_IS_BIG
 		ENDIAN_BSWAP64 (val);
@@ -321,13 +323,13 @@ namespace shaga::BIN {
 		pos += sizeof (uint64_t);
 	}
 
-	static inline void _to_uint8 (uint8_t &val, const void *const buf, size_t &pos)
+	static inline void _to_uint8 (uint8_t &val, const void *const buf, size_t &pos) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf) + pos, sizeof (uint8_t));
 		pos += sizeof (uint8_t);
 	}
 
-	static inline uint8_t _to_uint8 (const void *const buf, size_t &pos)
+	static inline uint8_t _to_uint8 (const void *const buf, size_t &pos) noexcept
 	{
 		uint8_t val;
 
@@ -337,12 +339,12 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _to_uint8 (uint8_t &val, const void *const buf)
+	static inline void _to_uint8 (uint8_t &val, const void *const buf) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf), sizeof (uint8_t));
 	}
 
-	static inline uint8_t _to_uint8 (const void *const buf)
+	static inline uint8_t _to_uint8 (const void *const buf) noexcept
 	{
 		uint8_t val;
 
@@ -351,7 +353,7 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _to_uint16 (uint16_t &val, const void *const buf, size_t &pos)
+	static inline void _to_uint16 (uint16_t &val, const void *const buf, size_t &pos) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf) + pos, sizeof (uint16_t));
 		pos += sizeof (uint16_t);
@@ -361,7 +363,7 @@ namespace shaga::BIN {
 		ENDIAN_END
 	}
 
-	static inline uint16_t _to_uint16 (const void *const buf, size_t &pos)
+	static inline uint16_t _to_uint16 (const void *const buf, size_t &pos) noexcept
 	{
 		uint16_t val;
 
@@ -375,7 +377,7 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _to_uint16 (uint16_t &val, const void *const buf)
+	static inline void _to_uint16 (uint16_t &val, const void *const buf) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf), sizeof (uint16_t));
 
@@ -384,7 +386,7 @@ namespace shaga::BIN {
 		ENDIAN_END
 	}
 
-	static inline uint16_t _to_uint16 (const void *const buf)
+	static inline uint16_t _to_uint16 (const void *const buf) noexcept
 	{
 		uint16_t val;
 
@@ -397,7 +399,7 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _to_uint32 (uint32_t &val, const void *const buf, size_t &pos)
+	static inline void _to_uint32 (uint32_t &val, const void *const buf, size_t &pos) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf) + pos, sizeof (uint32_t));
 		pos += sizeof (uint32_t);
@@ -407,7 +409,7 @@ namespace shaga::BIN {
 		ENDIAN_END
 	}
 
-	static inline uint32_t _to_uint32 (const void *const buf, size_t &pos)
+	static inline uint32_t _to_uint32 (const void *const buf, size_t &pos) noexcept
 	{
 		uint32_t val;
 
@@ -421,7 +423,7 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _to_uint32 (uint32_t &val, const void *const buf)
+	static inline void _to_uint32 (uint32_t &val, const void *const buf) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf), sizeof (uint32_t));
 
@@ -430,7 +432,7 @@ namespace shaga::BIN {
 		ENDIAN_END
 	}
 
-	static inline uint32_t _to_uint32 (const void *const buf)
+	static inline uint32_t _to_uint32 (const void *const buf) noexcept
 	{
 		uint32_t val;
 
@@ -443,7 +445,7 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _to_uint64 (uint64_t &val, const void *const buf, size_t &pos)
+	static inline void _to_uint64 (uint64_t &val, const void *const buf, size_t &pos) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf) + pos, sizeof (uint64_t));
 		pos += sizeof (uint64_t);
@@ -453,7 +455,7 @@ namespace shaga::BIN {
 		ENDIAN_END
 	}
 
-	static inline uint64_t _to_uint64 (const void *const buf, size_t &pos)
+	static inline uint64_t _to_uint64 (const void *const buf, size_t &pos) noexcept
 	{
 		uint64_t val;
 
@@ -467,7 +469,7 @@ namespace shaga::BIN {
 		return val;
 	}
 
-	static inline void _to_uint64 (uint64_t &val, const void *const buf)
+	static inline void _to_uint64 (uint64_t &val, const void *const buf) noexcept
 	{
 		::memcpy (&val, reinterpret_cast<const char *>(buf), sizeof (uint64_t));
 
@@ -476,7 +478,7 @@ namespace shaga::BIN {
 		ENDIAN_END
 	}
 
-	static inline uint64_t _to_uint64 (const void *const buf)
+	static inline uint64_t _to_uint64 (const void *const buf) noexcept
 	{
 		uint64_t val;
 

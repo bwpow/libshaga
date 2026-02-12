@@ -19,8 +19,8 @@ namespace shaga {
 
 				INI_KEY (const std::string_view _section, const std::string_view _line);
 
-				bool operator< (const INI_KEY &other) const;
-				bool operator== (const INI_KEY &other) const;
+				bool operator< (const INI_KEY &other) const noexcept;
+				bool operator== (const INI_KEY &other) const noexcept;
 			};
 
 			using INI_MAP = std::map<INI_KEY, COMMON_LIST>;
@@ -35,7 +35,7 @@ namespace shaga {
 			const COMMON_LIST & get_list_ref (const INI_MAP &ini_map, const INI_KEY &key) const;
 			COMMON_LIST get_list_copy (const INI_MAP &ini_map, const INI_KEY &key) const;
 			INI_MAP::iterator begin_of_section (INI_MAP &ini_map, const std::string_view section) const;
-			bool is_same_section (const INI_KEY &key, const std::string_view section) const;
+			bool is_same_section (const INI_KEY &key, const std::string_view section) const noexcept;
 
 			void parse_line (INI_MAP &ini_map, const std::string_view line, std::string &active_section, const bool allow_include);
 
@@ -45,7 +45,7 @@ namespace shaga {
 			void parse_buffer (INI_MAP &ini_map, const std::string_view buf, const bool allow_include);
 			void parse_buffer (const std::string_view buf, const bool allow_include);
 
-			SHAGA_STRV std::optional<std::string_view> get_last_value (const INI_MAP &m, const INI_KEY &key) const;
+			SHAGA_STRV std::optional<std::string_view> get_last_value (const INI_MAP &m, const INI_KEY &key) const noexcept;
 
 		public:
 			INI ();
@@ -90,6 +90,21 @@ namespace shaga {
 				return defvalue;
 			}
 
+			template <typename T, SHAGA_TYPE_IS_INTEGRAL(T)>
+			auto get_int_optional (const std::string_view section, const std::string_view key, const int base = 10) const noexcept -> std::optional<T>
+			{
+				if (auto val = get_last_value (_map, INI_KEY {section, key})) {
+					try {
+						return STR::to_int<T> (*val, base);
+					}
+					catch (...) {
+						return std::nullopt;
+					}
+				}
+
+				return std::nullopt;
+			}
+
 			/* Please note: Use string_view only when you don't use any set_* methods. */
 			template <typename T = std::string_view, SHAGA_TYPE_IS_CLASS(T)>
 			SHAGA_STRV auto get_string (const std::string_view section, const std::string_view key, const std::string_view defvalue, const bool thr = false) const -> T
@@ -114,9 +129,23 @@ namespace shaga {
 				return T(""sv);
 			}
 
+			template <typename T = std::string_view, SHAGA_TYPE_IS_CLASS(T)>
+			SHAGA_STRV auto get_string_optional (const std::string_view section, const std::string_view key) const -> std::optional<T>
+			{
+				if (auto val = get_last_value (_map, {section, key})) {
+					return T (*val);
+				}
+
+				return std::nullopt;
+			}
+
 			float get_float (const std::string_view section, const std::string_view key, const float defvalue, const bool thr = false) const;
 			double get_double (const std::string_view section, const std::string_view key, const double defvalue, const bool thr = false) const;
 			long double get_long_double (const std::string_view section, const std::string_view key, const long double defvalue, const bool thr = false) const;
+
+			std::optional<float> get_float_optional (const std::string_view section, const std::string_view key) const noexcept;
+			std::optional<double> get_double_optional (const std::string_view section, const std::string_view key) const noexcept;
+			std::optional<long double> get_long_double_optional (const std::string_view section, const std::string_view key) const noexcept;
 
 			bool get_bool (const std::string_view section, const std::string_view key, const bool defvalue, const bool thr = false) const;
 			uint8_t get_uint8 (const std::string_view section, const std::string_view key, const uint8_t defvalue, const bool thr = false, const int base = 10) const;
@@ -127,6 +156,16 @@ namespace shaga {
 			int16_t get_int16 (const std::string_view section, const std::string_view key, const int16_t defvalue, const bool thr = false, const int base = 10) const;
 			int32_t get_int32 (const std::string_view section, const std::string_view key, const int32_t defvalue, const bool thr = false, const int base = 10) const;
 			int64_t get_int64 (const std::string_view section, const std::string_view key, const int64_t defvalue, const bool thr = false, const int base = 10) const;
+
+			std::optional<bool> get_bool_optional (const std::string_view section, const std::string_view key) const noexcept;
+			std::optional<uint8_t> get_uint8_optional (const std::string_view section, const std::string_view key, const int base = 10) const noexcept;
+			std::optional<uint16_t> get_uint16_optional (const std::string_view section, const std::string_view key, const int base = 10) const noexcept;
+			std::optional<uint32_t> get_uint32_optional (const std::string_view section, const std::string_view key, const int base = 10) const noexcept;
+			std::optional<uint64_t> get_uint64_optional (const std::string_view section, const std::string_view key, const int base = 10) const noexcept;
+			std::optional<int8_t> get_int8_optional (const std::string_view section, const std::string_view key, const int base = 10) const noexcept;
+			std::optional<int16_t> get_int16_optional (const std::string_view section, const std::string_view key, const int base = 10) const noexcept;
+			std::optional<int32_t> get_int32_optional (const std::string_view section, const std::string_view key, const int base = 10) const noexcept;
+			std::optional<int64_t> get_int64_optional (const std::string_view section, const std::string_view key, const int base = 10) const noexcept;
 
 			template <typename T, SHAGA_TYPE_IS_INTEGRAL(T)>
 			void set_int (const std::string_view section, const std::string_view key, const T val, const bool append = false, const int base = 10)

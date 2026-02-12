@@ -75,7 +75,7 @@ namespace shaga {
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	bool ChunkMeta::should_continue (const std::string_view s, const size_t offset) const
+	bool ChunkMeta::should_continue (const std::string_view s, const size_t offset) const noexcept
 	{
 		if (offset >= s.size ()) {
 			return false;
@@ -94,52 +94,52 @@ namespace shaga {
 	ChunkMeta::ChunkMeta (const uint16_t key)
 	{
 		_check_key_validity (key, nullptr);
-		_data.insert (std::make_pair (key, std::string ()));
+		_data.emplace (key, std::string ());
 	}
 
 	ChunkMeta::ChunkMeta (const uint16_t key, const std::string_view value)
 	{
 		_check_key_validity (key, nullptr);
-		_data.insert (std::make_pair (key, value));
+		_data.emplace (key, value);
 	}
 
 	ChunkMeta::ChunkMeta (const uint16_t key, std::string &&value)
 	{
 		_check_key_validity (key, nullptr);
-		_data.insert (std::make_pair (key, std::move (value)));
+		_data.emplace (key, std::move (value));
 	}
 
 	ChunkMeta::ChunkMeta (const std::string_view key)
 	{
-		_data.insert (std::make_pair (key_to_bin (key), std::string ()));
+		_data.emplace (key_to_bin (key), std::string ());
 	}
 
 	ChunkMeta::ChunkMeta (const std::string_view key, const std::string_view value)
 	{
-		_data.insert (std::make_pair (key_to_bin (key), value));
+		_data.emplace (key_to_bin (key), value);
 	}
 
 	ChunkMeta::ChunkMeta (const std::string_view key, std::string &&value)
 	{
-		_data.insert (std::make_pair (key_to_bin (key), std::move (value)));
+		_data.emplace (key_to_bin (key), std::move (value));
 	}
 
-	ChunkMetaData::const_iterator ChunkMeta::begin () const
+	ChunkMetaData::const_iterator ChunkMeta::begin () const noexcept
 	{
 		return _data.cbegin ();
 	}
 
-	ChunkMetaData::const_iterator ChunkMeta::end () const
+	ChunkMetaData::const_iterator ChunkMeta::end () const noexcept
 	{
 		return _data.cend ();
 	}
 
-	ChunkMetaData::const_iterator ChunkMeta::cbegin () const
+	ChunkMetaData::const_iterator ChunkMeta::cbegin () const noexcept
 	{
 		return _data.cbegin ();
 	}
 
-	ChunkMetaData::const_iterator ChunkMeta::cend () const
+	ChunkMetaData::const_iterator ChunkMeta::cend () const noexcept
 	{
 		return _data.cend ();
 	}
@@ -149,17 +149,17 @@ namespace shaga {
 		return _data.find (key_to_bin (key));
 	}
 
-	ChunkMetaData::const_iterator ChunkMeta::find (const uint16_t key) const
+	ChunkMetaData::const_iterator ChunkMeta::find (const uint16_t key) const noexcept
 	{
 		return _data.find (key);
 	}
 
-	void ChunkMeta::clear (void)
+	void ChunkMeta::clear (void) noexcept
 	{
 		_data.clear ();
 	}
 
-	void ChunkMeta::reset (void)
+	void ChunkMeta::reset (void) noexcept
 	{
 		_data.clear ();
 	}
@@ -167,34 +167,34 @@ namespace shaga {
 	void ChunkMeta::add_value (const uint16_t key)
 	{
 		_check_key_validity (key, nullptr);
-		_data.insert (std::make_pair (key, std::string ()));
+		_data.emplace (key, std::string ());
 	}
 
 	void ChunkMeta::add_value (const std::string_view key)
 	{
-		_data.insert (std::make_pair (key_to_bin (key), std::string ()));
+		_data.emplace (key_to_bin (key), std::string ());
 	}
 
 	void ChunkMeta::add_value (const uint16_t key, const std::string_view value)
 	{
 		_check_key_validity (key, nullptr);
-		_data.insert (std::make_pair (key, value));
+		_data.emplace (key, value);
 	}
 
 	void ChunkMeta::add_value (const std::string_view key, const std::string_view value)
 	{
-		_data.insert (std::make_pair (key_to_bin (key), value));
+		_data.emplace (key_to_bin (key), value);
 	}
 
 	void ChunkMeta::add_value (const uint16_t key, std::string &&value)
 	{
 		_check_key_validity (key, nullptr);
-		_data.insert (std::make_pair (key, std::move (value)));
+		_data.emplace (key, std::move (value));
 	}
 
 	void ChunkMeta::add_value (const std::string_view key, std::string &&value)
 	{
-		_data.insert (std::make_pair (key_to_bin (key), std::move (value)));
+		_data.emplace (key_to_bin (key), std::move (value));
 	}
 
 	void ChunkMeta::add_uint8 (const uint16_t key, const uint8_t value)
@@ -209,6 +209,18 @@ namespace shaga {
 		add_value (key, std::move (str));
 	}
 
+	void ChunkMeta::add_int8 (const uint16_t key, const int8_t value)
+	{
+		auto str = BIN::from_int8 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_int8 (const std::string_view key, const int8_t value)
+	{
+		auto str = BIN::from_int8 (value);
+		add_value (key, std::move (str));
+	}
+
 	void ChunkMeta::add_uint16 (const uint16_t key, const uint16_t value)
 	{
 		auto str = BIN::from_uint16 (value);
@@ -218,6 +230,18 @@ namespace shaga {
 	void ChunkMeta::add_uint16 (const std::string_view key, const uint16_t value)
 	{
 		auto str = BIN::from_uint16 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_int16 (const uint16_t key, const int16_t value)
+	{
+		auto str = BIN::from_int16 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_int16 (const std::string_view key, const int16_t value)
+	{
+		auto str = BIN::from_int16 (value);
 		add_value (key, std::move (str));
 	}
 
@@ -245,6 +269,18 @@ namespace shaga {
 		add_value (key, std::move (str));
 	}
 
+	void ChunkMeta::add_int32 (const uint16_t key, const int32_t value)
+	{
+		auto str = BIN::from_int32 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_int32 (const std::string_view key, const int32_t value)
+	{
+		auto str = BIN::from_int32 (value);
+		add_value (key, std::move (str));
+	}
+
 	void ChunkMeta::add_uint64 (const uint16_t key, const uint64_t value)
 	{
 		auto str = BIN::from_uint64 (value);
@@ -257,7 +293,19 @@ namespace shaga {
 		add_value (key, std::move (str));
 	}
 
-	size_t ChunkMeta::get_max_bytes (void) const
+	void ChunkMeta::add_int64 (const uint16_t key, const int64_t value)
+	{
+		auto str = BIN::from_int64 (value);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_int64 (const std::string_view key, const int64_t value)
+	{
+		auto str = BIN::from_int64 (value);
+		add_value (key, std::move (str));
+	}
+
+	size_t ChunkMeta::get_max_bytes (void) const noexcept
 	{
 		size_t len {0};
 
@@ -269,7 +317,7 @@ namespace shaga {
 		return len;
 	}
 
-	size_t ChunkMeta::size (void) const
+	size_t ChunkMeta::size (void) const noexcept
 	{
 		return _data.size ();
 	}
@@ -279,12 +327,12 @@ namespace shaga {
 		return _data.count (key_to_bin (key));
 	}
 
-	size_t ChunkMeta::count (const uint16_t key) const
+	size_t ChunkMeta::count (const uint16_t key) const noexcept
 	{
 		return _data.count (key);
 	}
 
-	bool ChunkMeta::empty (void) const
+	bool ChunkMeta::empty (void) const noexcept
 	{
 		return _data.empty ();
 	}
@@ -334,7 +382,7 @@ namespace shaga {
 		return _data.equal_range (key_to_bin (key));
 	}
 
-	ChunkMetaDataRange ChunkMeta::equal_range (const uint16_t key) const
+	ChunkMetaDataRange ChunkMeta::equal_range (const uint16_t key) const noexcept
 	{
 		return _data.equal_range (key);
 	}
@@ -352,7 +400,7 @@ namespace shaga {
 			/* No entries, add a new one */
 			std::string str;
 			callback (str);
-			_data.insert (std::make_pair (key, std::move (str)));
+			_data.emplace (key, std::move (str));
 		}
 		else {
 			for (auto iter = i_begin; iter != i_end; ++iter) {
@@ -370,27 +418,47 @@ namespace shaga {
 		return default_value; \
 	} \
 	else { \
-		return BIN::type (val); \
+		return BIN::type (val.data ()); \
 	}
 
 	uint8_t ChunkMeta::get_uint8 (const std::string_view key, const uint8_t default_value) const
 	{
-		get_uint_helper (to_uint8, 1)
+		get_uint_helper (_to_uint8, 1)
 	}
 
-	uint8_t ChunkMeta::get_uint8 (const uint16_t key, const uint8_t default_value) const
+	uint8_t ChunkMeta::get_uint8 (const uint16_t key, const uint8_t default_value) const noexcept
 	{
-		get_uint_helper (to_uint8, 1)
+		get_uint_helper (_to_uint8, 1)
+	}
+
+	int8_t ChunkMeta::get_int8 (const std::string_view key, const int8_t default_value) const
+	{
+		get_uint_helper (to_int8, 1)
+	}
+
+	int8_t ChunkMeta::get_int8 (const uint16_t key, const int8_t default_value) const noexcept
+	{
+		get_uint_helper (to_int8, 1)
 	}
 
 	uint16_t ChunkMeta::get_uint16 (const std::string_view key, const uint16_t default_value) const
 	{
-		get_uint_helper (to_uint16, 2)
+		get_uint_helper (_to_uint16, 2)
 	}
 
-	uint16_t ChunkMeta::get_uint16 (const uint16_t key, const uint16_t default_value) const
+	uint16_t ChunkMeta::get_uint16 (const uint16_t key, const uint16_t default_value) const noexcept
 	{
-		get_uint_helper (to_uint16, 2)
+		get_uint_helper (_to_uint16, 2)
+	}
+
+	int16_t ChunkMeta::get_int16 (const std::string_view key, const int16_t default_value) const
+	{
+		get_uint_helper (to_int16, 2)
+	}
+
+	int16_t ChunkMeta::get_int16 (const uint16_t key, const int16_t default_value) const noexcept
+	{
+		get_uint_helper (to_int16, 2)
 	}
 
 	uint32_t ChunkMeta::get_uint24 (const std::string_view key, const uint32_t default_value) const
@@ -398,31 +466,144 @@ namespace shaga {
 		get_uint_helper (to_uint24, 3)
 	}
 
-	uint32_t ChunkMeta::get_uint24 (const uint16_t key, const uint32_t default_value) const
+	uint32_t ChunkMeta::get_uint24 (const uint16_t key, const uint32_t default_value) const noexcept
 	{
 		get_uint_helper (to_uint24, 3)
 	}
 
 	uint32_t ChunkMeta::get_uint32 (const std::string_view key, const uint32_t default_value) const
 	{
-		get_uint_helper (to_uint32, 4)
+		get_uint_helper (_to_uint32, 4)
 	}
 
-	uint32_t ChunkMeta::get_uint32 (const uint16_t key, const uint32_t default_value) const
+	uint32_t ChunkMeta::get_uint32 (const uint16_t key, const uint32_t default_value) const noexcept
 	{
-		get_uint_helper (to_uint32, 4)
+		get_uint_helper (_to_uint32, 4)
+	}
+
+	int32_t ChunkMeta::get_int32 (const std::string_view key, const int32_t default_value) const
+	{
+		get_uint_helper (to_int32, 4)
+	}
+
+	int32_t ChunkMeta::get_int32 (const uint16_t key, const int32_t default_value) const noexcept
+	{
+		get_uint_helper (to_int32, 4)
 	}
 
 	uint64_t ChunkMeta::get_uint64 (const std::string_view key, const uint64_t default_value) const
 	{
-		get_uint_helper (to_uint64, 8)
+		get_uint_helper (_to_uint64, 8)
 	}
 
-	uint64_t ChunkMeta::get_uint64 (const uint16_t key, const uint64_t default_value) const
+	uint64_t ChunkMeta::get_uint64 (const uint16_t key, const uint64_t default_value) const noexcept
 	{
-		get_uint_helper (to_uint64, 8)
+		get_uint_helper (_to_uint64, 8)
 	}
 
+	int64_t ChunkMeta::get_int64 (const std::string_view key, const int64_t default_value) const
+	{
+		get_uint_helper (to_int64, 8)
+	}
+
+	int64_t ChunkMeta::get_int64 (const uint16_t key, const int64_t default_value) const noexcept
+	{
+		get_uint_helper (to_int64, 8)
+	}
+
+#define default_value std::nullopt
+
+	std::optional<uint8_t> ChunkMeta::get_uint8_optional (const std::string_view key) const
+	{
+		get_uint_helper (_to_uint8, 1)
+	}
+
+	std::optional<uint8_t> ChunkMeta::get_uint8_optional (const uint16_t key) const noexcept
+	{
+		get_uint_helper (_to_uint8, 1)
+	}
+
+	std::optional<int8_t> ChunkMeta::get_int8_optional (const std::string_view key) const
+	{
+		get_uint_helper (to_int8, 1)
+	}
+
+	std::optional<int8_t> ChunkMeta::get_int8_optional (const uint16_t key) const noexcept
+	{
+		get_uint_helper (to_int8, 1)
+	}
+
+	std::optional<uint16_t> ChunkMeta::get_uint16_optional (const std::string_view key) const
+	{
+		get_uint_helper (_to_uint16, 2)
+	}
+
+	std::optional<uint16_t> ChunkMeta::get_uint16_optional (const uint16_t key) const noexcept
+	{
+		get_uint_helper (_to_uint16, 2)
+	}
+
+	std::optional<int16_t> ChunkMeta::get_int16_optional (const std::string_view key) const
+	{
+		get_uint_helper (to_int16, 2)
+	}
+
+	std::optional<int16_t> ChunkMeta::get_int16_optional (const uint16_t key) const noexcept
+	{
+		get_uint_helper (to_int16, 2)
+	}
+
+	std::optional<uint32_t> ChunkMeta::get_uint24_optional (const std::string_view key) const
+	{
+		get_uint_helper (to_uint24, 3)
+	}
+
+	std::optional<uint32_t> ChunkMeta::get_uint24_optional (const uint16_t key) const noexcept
+	{
+		get_uint_helper (to_uint24, 3)
+	}
+
+	std::optional<uint32_t> ChunkMeta::get_uint32_optional (const std::string_view key) const
+	{
+		get_uint_helper (_to_uint32, 4)
+	}
+
+	std::optional<uint32_t> ChunkMeta::get_uint32_optional (const uint16_t key) const noexcept
+	{
+		get_uint_helper (_to_uint32, 4)
+	}
+
+	std::optional<int32_t> ChunkMeta::get_int32_optional (const std::string_view key) const
+	{
+		get_uint_helper (to_int32, 4)
+	}
+
+	std::optional<int32_t> ChunkMeta::get_int32_optional (const uint16_t key) const noexcept
+	{
+		get_uint_helper (to_int32, 4)
+	}
+
+	std::optional<uint64_t> ChunkMeta::get_uint64_optional (const std::string_view key) const
+	{
+		get_uint_helper (_to_uint64, 8)
+	}
+
+	std::optional<uint64_t> ChunkMeta::get_uint64_optional (const uint16_t key) const noexcept
+	{
+		get_uint_helper (_to_uint64, 8)
+	}
+
+	std::optional<int64_t> ChunkMeta::get_int64_optional (const std::string_view key) const
+	{
+		get_uint_helper (to_int64, 8)
+	}
+
+	std::optional<int64_t> ChunkMeta::get_int64_optional (const uint16_t key) const noexcept
+	{
+		get_uint_helper (to_int64, 8)
+	}
+
+#undef default_value
 #undef get_uint_helper
 
 	void ChunkMeta::modify_value (const std::string_view key, ValueCallback callback)
@@ -439,7 +620,7 @@ namespace shaga {
 		else {
 			std::string str;
 			callback (str);
-			_data.insert (std::make_pair (key, std::move (str)));
+			_data.emplace (key, std::move (str));
 		}
 	}
 
@@ -491,7 +672,7 @@ namespace shaga {
 			_check_key_validity (next_key);
 
 			const size_t len = BIN::to_size (s, offset);
-			_data.insert (std::make_pair (next_key, s.substr (offset, len)));
+			_data.emplace (next_key, s.substr (offset, len));
 			offset += len;
 			if (offset > s.size ()) {
 				cThrow ("Not enough data in buffer"sv);
