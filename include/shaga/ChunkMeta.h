@@ -108,11 +108,14 @@ namespace shaga {
 			void add_value (const uint16_t key, std::string &&value);
 			void add_value (const std::string_view key, std::string &&value);
 
-			template<typename T, SHAGA_TYPE_IS_SUPPORTED_xINT(T)>
+			template<typename T, SHAGA_TYPE_IS_SUPPORTED_xINTBOOL(T)>
 			void add_value (const uint16_t key, const T value)
 			{
 				using CleanT = std::remove_cv_t<std::remove_reference_t<T>>;
-				if constexpr (std::is_same_v<CleanT, uint8_t>) {
+				if constexpr (std::is_same_v<CleanT, bool>) {
+					add_bool (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, uint8_t>) {
 					add_uint8 (key, value);
 				}
 				else if constexpr (std::is_same_v<CleanT, int8_t>) {
@@ -138,11 +141,14 @@ namespace shaga {
 				}
 			}
 
-			template<typename T, SHAGA_TYPE_IS_SUPPORTED_xINT(T)>
+			template<typename T, SHAGA_TYPE_IS_SUPPORTED_xINTBOOL(T)>
 			void add_value (const std::string_view key, const T value)
 			{
 				using CleanT = std::remove_cv_t<std::remove_reference_t<T>>;
-				if constexpr (std::is_same_v<CleanT, uint8_t>) {
+				if constexpr (std::is_same_v<CleanT, bool>) {
+					add_bool (key, value);
+				}
+				else if constexpr (std::is_same_v<CleanT, uint8_t>) {
 					add_uint8 (key, value);
 				}
 				else if constexpr (std::is_same_v<CleanT, int8_t>) {
@@ -167,6 +173,9 @@ namespace shaga {
 					add_int64 (key, value);
 				}
 			}
+
+			void add_bool (const uint16_t key, const bool value);
+			void add_bool (const std::string_view key, const bool value);
 
 			void add_uint8 (const uint16_t key, const uint8_t value);
 			void add_uint8 (const std::string_view key, const uint8_t value);
@@ -270,6 +279,9 @@ namespace shaga {
 				return std::nullopt;
 			}
 
+			bool get_bool (const std::string_view key, const bool default_value) const;
+			bool get_bool (const uint16_t key, const bool default_value) const noexcept;
+
 			uint8_t get_uint8 (const std::string_view key, const uint8_t default_value) const;
 			uint8_t get_uint8 (const uint16_t key, const uint8_t default_value) const noexcept;
 
@@ -296,6 +308,9 @@ namespace shaga {
 
 			int64_t get_int64 (const std::string_view key, const int64_t default_value) const;
 			int64_t get_int64 (const uint16_t key, const int64_t default_value) const noexcept;
+
+			std::optional<bool> get_bool_optional (const std::string_view key) const;
+			std::optional<bool> get_bool_optional (const uint16_t key) const noexcept;
 
 			std::optional<uint8_t> get_uint8_optional (const std::string_view key) const;
 			std::optional<uint8_t> get_uint8_optional (const uint16_t key) const noexcept;

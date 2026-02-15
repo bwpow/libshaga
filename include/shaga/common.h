@@ -260,6 +260,19 @@ using namespace nlohmann::literals;
 	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int64_t>, \
 	bool> = true
 
+/* Macro to enable a template function only if T is (u)int8/16/32/64 or bool */
+#define SHAGA_TYPE_IS_SUPPORTED_xINTBOOL(T) std::enable_if_t< \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, bool> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint8_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint16_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint32_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint64_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int8_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int16_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int32_t> || \
+	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int64_t>, \
+	bool> = true
+
 /* Macro to enable a template function only if T is a floating-point type */
 #define SHAGA_TYPE_IS_FLOATING(T) std::enable_if_t<std::is_floating_point<T>::value, bool> = true
 

@@ -111,6 +111,68 @@ TEST (ChunkMeta, get_defaults_optional)
 	EXPECT_EQ (opt.value (), -12);
 }
 
+TEST (ChunkMeta, get_bool_optional)
+{
+	ChunkMeta meta;
+
+	const uint16_t key_false = ChunkMeta::key_to_bin ("BFA");
+	const uint16_t key_true = ChunkMeta::key_to_bin ("BTA");
+	const uint16_t key_nonzero = ChunkMeta::key_to_bin ("BNZ");
+
+	EXPECT_FALSE (meta.get_bool_optional ("MIS").has_value ());
+	EXPECT_FALSE (meta.get_bool_optional (ChunkMeta::key_to_bin ("MIS")).has_value ());
+
+	EXPECT_NO_THROW (meta.add_bool (key_false, false));
+	EXPECT_NO_THROW (meta.add_bool ("BTA", true));
+	EXPECT_NO_THROW (meta.add_uint8 (key_nonzero, static_cast<uint8_t>(2)));
+
+	const auto opt_false_sv = meta.get_bool_optional ("BFA");
+	const auto opt_false_u16 = meta.get_bool_optional (key_false);
+	EXPECT_TRUE (opt_false_sv.has_value ());
+	EXPECT_TRUE (opt_false_u16.has_value ());
+	EXPECT_FALSE (opt_false_sv.value ());
+	EXPECT_FALSE (opt_false_u16.value ());
+
+	const auto opt_true_sv = meta.get_bool_optional ("BTA");
+	const auto opt_true_u16 = meta.get_bool_optional (key_true);
+	EXPECT_TRUE (opt_true_sv.has_value ());
+	EXPECT_TRUE (opt_true_u16.has_value ());
+	EXPECT_TRUE (opt_true_sv.value ());
+	EXPECT_TRUE (opt_true_u16.value ());
+
+	const auto opt_nonzero_sv = meta.get_bool_optional ("BNZ");
+	const auto opt_nonzero_u16 = meta.get_bool_optional (key_nonzero);
+	EXPECT_TRUE (opt_nonzero_sv.has_value ());
+	EXPECT_TRUE (opt_nonzero_u16.has_value ());
+	EXPECT_TRUE (opt_nonzero_sv.value ());
+	EXPECT_TRUE (opt_nonzero_u16.value ());
+}
+
+TEST (ChunkMeta, get_bool)
+{
+	ChunkMeta meta;
+
+	const uint16_t key_false = ChunkMeta::key_to_bin ("NFA");
+	const uint16_t key_true = ChunkMeta::key_to_bin ("NTA");
+	const uint16_t key_nonzero = ChunkMeta::key_to_bin ("NNZ");
+
+	EXPECT_TRUE (meta.get_bool ("MIS", true));
+	EXPECT_FALSE (meta.get_bool (ChunkMeta::key_to_bin ("MIS"), false));
+
+	EXPECT_NO_THROW (meta.add_bool (key_false, false));
+	EXPECT_NO_THROW (meta.add_bool ("NTA", true));
+	EXPECT_NO_THROW (meta.add_uint8 (key_nonzero, static_cast<uint8_t>(7)));
+
+	EXPECT_FALSE (meta.get_bool ("NFA", true));
+	EXPECT_FALSE (meta.get_bool (key_false, true));
+
+	EXPECT_TRUE (meta.get_bool ("NTA", false));
+	EXPECT_TRUE (meta.get_bool (key_true, false));
+
+	EXPECT_TRUE (meta.get_bool ("NNZ", false));
+	EXPECT_TRUE (meta.get_bool (key_nonzero, false));
+}
+
 TEST (ChunkMeta, modify_value_missing)
 {
 	ChunkMeta meta;

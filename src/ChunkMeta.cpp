@@ -197,6 +197,18 @@ namespace shaga {
 		_data.emplace (key_to_bin (key), std::move (value));
 	}
 
+	void ChunkMeta::add_bool (const uint16_t key, const bool value)
+	{
+		auto str = BIN::from_uint8 (value ? 1 : 0);
+		add_value (key, std::move (str));
+	}
+
+	void ChunkMeta::add_bool (const std::string_view key, const bool value)
+	{
+		auto str = BIN::from_uint8 (value ? 1 : 0);
+		add_value (key, std::move (str));
+	}
+
 	void ChunkMeta::add_uint8 (const uint16_t key, const uint8_t value)
 	{
 		auto str = BIN::from_uint8 (value);
@@ -421,6 +433,24 @@ namespace shaga {
 		return BIN::type (val.data ()); \
 	}
 
+	bool ChunkMeta::get_bool (const std::string_view key, const bool default_value) const
+	{
+		auto fn = [this, &key, default_value]() -> uint8_t {
+			get_uint_helper (_to_uint8, 1)
+		};
+
+		return (0 != fn ());
+	}
+
+	bool ChunkMeta::get_bool (const uint16_t key, const bool default_value) const noexcept
+	{
+		auto fn = [this, &key, default_value]() -> uint8_t {
+			get_uint_helper (_to_uint8, 1)
+		};
+
+		return (0 != fn ());
+	}
+
 	uint8_t ChunkMeta::get_uint8 (const std::string_view key, const uint8_t default_value) const
 	{
 		get_uint_helper (_to_uint8, 1)
@@ -509,6 +539,26 @@ namespace shaga {
 	int64_t ChunkMeta::get_int64 (const uint16_t key, const int64_t default_value) const noexcept
 	{
 		get_uint_helper (to_int64, 8)
+	}
+
+	std::optional<bool> ChunkMeta::get_bool_optional (const std::string_view key) const
+	{
+		const auto val = get_value (key);
+		if (val.size () < 1) {
+			return std::nullopt;
+		}
+
+		return (0 != BIN::_to_uint8 (val.data ()));
+	}
+
+	std::optional<bool> ChunkMeta::get_bool_optional (const uint16_t key) const noexcept
+	{
+		const auto val = get_value (key);
+		if (val.size () < 1) {
+			return std::nullopt;
+		}
+
+		return (0 != BIN::_to_uint8 (val.data ()));
 	}
 
 #define default_value std::nullopt
