@@ -763,6 +763,8 @@ namespace shaga {
 			cThrow ("Filename is not set"sv);
 		}
 
+		const std::string_view target_filename = ((is_opened () == false) && (has_rename_on_close () == true)) ? std::string_view (_rename_on_close_filename) : std::string_view (_filename);
+
 		int flags {O_WRONLY | O_CREAT};
 #ifdef O_NONBLOCK
 		flags |= O_NONBLOCK;
@@ -771,16 +773,16 @@ namespace shaga {
 		flags |= O_NOCTTY;
 #endif // O_NOCTTY
 
-		int fd = ::open (_filename.c_str (), flags, _mask);
+		int fd = ::open (std::string (target_filename).c_str (), flags, _mask);
 		if (fd < 0) {
-			cThrow ("Touch failed: {}"sv, strerror (errno));
+			cThrow ("Touch failed for '{}': {}"sv, target_filename, strerror (errno));
 		}
 
 #ifndef OS_WIN
 		const int ret = ::futimens (fd, nullptr);
 		if (ret < 0) {
 			::close (fd);
-			cThrow ("Touch failed: {}"sv, strerror (errno));
+			cThrow ("Touch failed for '{}': {}"sv, target_filename, strerror (errno));
 		}
 #endif // OS_WIN
 
@@ -792,6 +794,8 @@ namespace shaga {
 		if (has_file_name () == false) {
 			cThrow ("Filename is not set"sv);
 		}
+
+		const std::string_view target_filename = ((is_opened () == false) && (has_rename_on_close () == true)) ? std::string_view (_rename_on_close_filename) : std::string_view (_filename);
 
 #ifdef OS_WIN
 		const __time64_t atime64 = static_cast<__time64_t> (atime);
@@ -811,8 +815,8 @@ namespace shaga {
 			times.actime = atime64;
 			times.modtime = mtime64;
 
-			if (::_utime64 (_filename.c_str (), &times) != 0) {
-				cThrow ("Set mtime failed in file '{}': {}"sv, _filename, strerror (errno));
+			if (::_utime64 (std::string (target_filename).c_str (), &times) != 0) {
+				cThrow ("Set mtime failed in file '{}': {}"sv, target_filename, strerror (errno));
 			}
 		}
 #else
@@ -828,8 +832,8 @@ namespace shaga {
 			}
 		}
 		else {
-			if (::utimensat (AT_FDCWD, _filename.c_str (), times, 0) != 0) {
-				cThrow ("Set mtime failed in file '{}': {}"sv, _filename, strerror (errno));
+			if (::utimensat (AT_FDCWD, std::string (target_filename).c_str (), times, 0) != 0) {
+				cThrow ("Set mtime failed in file '{}': {}"sv, target_filename, strerror (errno));
 			}
 		}
 #endif // OS_WIN
@@ -853,8 +857,11 @@ namespace shaga {
 			if (_filename.empty () == true) {
 				cThrow ("Filename is not set"sv);
 			}
-			if (::stat (_filename.c_str (), &ret) == -1) {
-				cThrow ("Stat error in file '{}': {}"sv, _filename, strerror (errno));
+
+			const std::string_view target_filename = (has_rename_on_close () == true) ? std::string_view (_rename_on_close_filename) : std::string_view (_filename);
+
+			if (::stat (std::string (target_filename).c_str (), &ret) == -1) {
+				cThrow ("Stat error in file '{}': {}"sv, target_filename, strerror (errno));
 			}
 		}
 
