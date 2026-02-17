@@ -9,6 +9,14 @@ All rights reserved.
 
 #include <fcntl.h>
 
+#ifdef OS_WIN
+	#include <io.h>
+	#include <sys/utime.h>
+#else
+	#include <sys/file.h>
+	#include <utime.h>
+#endif // OS_WIN
+
 namespace shaga {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -170,6 +178,7 @@ namespace shaga {
 	{
 		/* Disarm destruct */
 		_unlink_on_destruct = false;
+		_lock_owned = false;
 		try {
 			if (_fd >= 0) {
 				P::debug_print ("ShFile {}: CLOSE"sv, _filename);
@@ -215,12 +224,28 @@ namespace shaga {
 
 	void ShFile::write (const std::string_view data, const size_t len)
 	{
-		const ssize_t ret = ::write (_fd, data.data (), std::min (len, data.size()));
-		if (ret < 0) {
-			cThrow ("Error writing to file '{}': {}"sv, _filename, strerror (errno));
-		}
-		if (static_cast<size_t> (ret) != std::min (len, data.size ())) {
-			cThrow ("Error writing to file '{}': Not all bytes written"sv, _filename);
+		const size_t to_write = std::min (len, data.size());
+		size_t written = 0;
+
+		while (written < to_write) {
+			#ifdef OS_WIN
+				const unsigned int chunk = static_cast<unsigned int> (std::min<size_t> (to_write - written, UINT_MAX));
+				const int ret = ::write (_fd, data.data () + written, chunk);
+			#else
+				const ssize_t ret = ::write (_fd, data.data () + written, to_write - written);
+			#endif // OS_WIN
+
+			if (ret < 0) {
+				if (errno == EINTR) {
+					continue;
+				}
+				cThrow ("Error writing to file '{}': {}"sv, _filename, strerror (errno));
+			}
+			if (ret == 0) {
+				cThrow ("Error writing to file '{}': Not all bytes written"sv, _filename);
+			}
+
+			written += static_cast<size_t> (ret);
 		}
 	}
 
@@ -231,12 +256,27 @@ namespace shaga {
 
 	void ShFile::write (const void *const buf, const size_t len)
 	{
-		const ssize_t ret = ::write (_fd, buf, len);
-		if (ret < 0) {
-			cThrow ("Error writing to file '{}': {}"sv, _filename, strerror (errno));
-		}
-		if (static_cast<size_t> (ret) != len) {
-			cThrow ("Error writing to file '{}': Not all bytes were written"sv, _filename);
+		size_t written = 0;
+
+		while (written < len) {
+			#ifdef OS_WIN
+				const unsigned int chunk = static_cast<unsigned int> (std::min<size_t> (len - written, UINT_MAX));
+				const int ret = ::write (_fd, reinterpret_cast<const uint8_t *> (buf) + written, chunk);
+			#else
+				const ssize_t ret = ::write (_fd, reinterpret_cast<const uint8_t *> (buf) + written, len - written);
+			#endif // OS_WIN
+
+			if (ret < 0) {
+				if (errno == EINTR) {
+					continue;
+				}
+				cThrow ("Error writing to file '{}': {}"sv, _filename, strerror (errno));
+			}
+			if (ret == 0) {
+				cThrow ("Error writing to file '{}': Not all bytes were written"sv, _filename);
+			}
+
+			written += static_cast<size_t> (ret);
 		}
 	}
 
@@ -269,24 +309,34 @@ namespace shaga {
 
 		/* Note: Since C++11, std::string::data memory must be continuous */
 		/* Note: Since C++17, std::string::data memory isn't const */
-		#ifdef OS_WIN
-			const int ret = ::read (_fd, data.data (), static_cast<unsigned int> (len));
-		#else
-			const ssize_t ret = ::read (_fd, data.data (), len);
-		#endif // OS_WIN
-		if (ret < 0) {
-			cThrow ("Error reading from file '{}': {}"sv, _filename, strerror (errno));
-		}
-		else if (0 == ret) {
-			/* EOF */
-			if (true == thr_eof) {
-				cThrow ("Error reading from file '{}': EOF"sv, _filename);
+		size_t read_total = 0;
+
+		while (read_total < len) {
+			#ifdef OS_WIN
+				const unsigned int chunk = static_cast<unsigned int> (std::min<size_t> (len - read_total, UINT_MAX));
+				const int ret = ::read (_fd, data.data () + read_total, chunk);
+			#else
+				const ssize_t ret = ::read (_fd, data.data () + read_total, len - read_total);
+			#endif // OS_WIN
+
+			if (ret < 0) {
+				if (errno == EINTR) {
+					continue;
+				}
+				cThrow ("Error reading from file '{}': {}"sv, _filename, strerror (errno));
 			}
-			data.resize (0);
-			return false;
-		}
-		else if (static_cast<size_t>(ret) != len) {
-			cThrow ("Error reading from file '{}': Not enough bytes, requested = {}, read = {}"sv, _filename, len, ret);
+			else if (0 == ret) {
+				if (0 == read_total && false == thr_eof) {
+					data.resize (0);
+					return false;
+				}
+				if (0 == read_total) {
+					cThrow ("Error reading from file '{}': EOF"sv, _filename);
+				}
+				cThrow ("Error reading from file '{}': Not enough bytes, requested = {}, read = {}"sv, _filename, len, read_total);
+			}
+
+			read_total += static_cast<size_t> (ret);
 		}
 
 		return true;
@@ -305,23 +355,33 @@ namespace shaga {
 			cThrow ("Error reading from file '{}': Too many bytes requested"sv, _filename);
 		}
 
-		#ifdef OS_WIN
-			const int ret = ::read (_fd, buf, static_cast<unsigned int> (len));
-		#else
-			const ssize_t ret = ::read (_fd, buf, len);
-		#endif // OS_WIN
-		if (ret < 0) {
-			cThrow ("Error reading from file '{}': {}"sv, _filename, strerror (errno));
-		}
-		else if (0 == ret) {
-			/* EOF */
-			if (true == thr_eof) {
-				cThrow ("Error reading from file '{}': EOF"sv, _filename);
+		size_t read_total = 0;
+
+		while (read_total < len) {
+			#ifdef OS_WIN
+				const unsigned int chunk = static_cast<unsigned int> (std::min<size_t> (len - read_total, UINT_MAX));
+				const int ret = ::read (_fd, reinterpret_cast<uint8_t *> (buf) + read_total, chunk);
+			#else
+				const ssize_t ret = ::read (_fd, reinterpret_cast<uint8_t *> (buf) + read_total, len - read_total);
+			#endif // OS_WIN
+
+			if (ret < 0) {
+				if (errno == EINTR) {
+					continue;
+				}
+				cThrow ("Error reading from file '{}': {}"sv, _filename, strerror (errno));
 			}
-			return false;
-		}
-		else if (static_cast<size_t>(ret) != len) {
-			cThrow ("Error reading from file '{}': Not enough bytes, requested = {}, read = {}"sv, _filename, len, ret);
+			else if (0 == ret) {
+				if (0 == read_total && false == thr_eof) {
+					return false;
+				}
+				if (0 == read_total) {
+					cThrow ("Error reading from file '{}': EOF"sv, _filename);
+				}
+				cThrow ("Error reading from file '{}': Not enough bytes, requested = {}, read = {}"sv, _filename, len, read_total);
+			}
+
+			read_total += static_cast<size_t> (ret);
 		}
 
 		return true;
@@ -601,6 +661,102 @@ namespace shaga {
 		}
 	}
 
+	void ShFile::lock (void)
+	{
+		if (is_opened () == false) {
+			cThrow ("File is not opened"sv);
+		}
+		if (true == _lock_owned) {
+			return;
+		}
+
+#ifdef OS_WIN
+		HANDLE hfile = reinterpret_cast<HANDLE> (_get_osfhandle (_fd));
+		if (hfile == INVALID_HANDLE_VALUE) {
+			cThrow ("Lock failed in file '{}': {}"sv, _filename, strerror (errno));
+		}
+
+		OVERLAPPED ovl {};
+		const BOOL ret = ::LockFileEx (hfile, LOCKFILE_EXCLUSIVE_LOCK, 0, MAXDWORD, MAXDWORD, &ovl);
+		if (ret == FALSE) {
+			cThrow ("Lock failed in file '{}': {}"sv, _filename, static_cast<int> (::GetLastError ()));
+		}
+#else
+		if (::flock (_fd, LOCK_EX) != 0) {
+			cThrow ("Lock failed in file '{}': {}"sv, _filename, strerror (errno));
+		}
+#endif // OS_WIN
+
+		_lock_owned = true;
+	}
+
+	bool ShFile::try_lock (void)
+	{
+		if (is_opened () == false) {
+			cThrow ("File is not opened"sv);
+		}
+		if (true == _lock_owned) {
+			return true;
+		}
+
+#ifdef OS_WIN
+		HANDLE hfile = reinterpret_cast<HANDLE> (_get_osfhandle (_fd));
+		if (hfile == INVALID_HANDLE_VALUE) {
+			cThrow ("Try-lock failed in file '{}': {}"sv, _filename, strerror (errno));
+		}
+
+		OVERLAPPED ovl {};
+		const BOOL ret = ::LockFileEx (hfile, LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY, 0, MAXDWORD, MAXDWORD, &ovl);
+		if (ret == FALSE) {
+			const DWORD err = ::GetLastError ();
+			if (err == ERROR_LOCK_VIOLATION || err == ERROR_IO_PENDING) {
+				return false;
+			}
+			cThrow ("Try-lock failed in file '{}': {}"sv, _filename, static_cast<int> (err));
+		}
+		_lock_owned = true;
+		return true;
+#else
+		if (::flock (_fd, LOCK_EX | LOCK_NB) != 0) {
+			if (errno == EWOULDBLOCK) {
+				return false;
+			}
+			cThrow ("Try-lock failed in file '{}': {}"sv, _filename, strerror (errno));
+		}
+		_lock_owned = true;
+		return true;
+#endif // OS_WIN
+	}
+
+	void ShFile::unlock (void)
+	{
+		if (is_opened () == false) {
+			return;
+		}
+		if (false == _lock_owned) {
+			return;
+		}
+
+#ifdef OS_WIN
+		HANDLE hfile = reinterpret_cast<HANDLE> (_get_osfhandle (_fd));
+		if (hfile == INVALID_HANDLE_VALUE) {
+			cThrow ("Unlock failed in file '{}': {}"sv, _filename, strerror (errno));
+		}
+
+		OVERLAPPED ovl {};
+		const BOOL ret = ::UnlockFileEx (hfile, 0, MAXDWORD, MAXDWORD, &ovl);
+		if (ret == FALSE) {
+			cThrow ("Unlock failed in file '{}': {}"sv, _filename, static_cast<int> (::GetLastError ()));
+		}
+#else
+		if (::flock (_fd, LOCK_UN) != 0) {
+			cThrow ("Unlock failed in file '{}': {}"sv, _filename, strerror (errno));
+		}
+#endif // OS_WIN
+
+		_lock_owned = false;
+	}
+
 	void ShFile::touch (void)
 	{
 		if (has_file_name () == false) {
@@ -629,6 +785,59 @@ namespace shaga {
 #endif // OS_WIN
 
 		::close (fd);
+	}
+
+	void ShFile::set_file_times (const time_t atime, const time_t mtime)
+	{
+		if (has_file_name () == false) {
+			cThrow ("Filename is not set"sv);
+		}
+
+#ifdef OS_WIN
+		const __time64_t atime64 = static_cast<__time64_t> (atime);
+		const __time64_t mtime64 = static_cast<__time64_t> (mtime);
+
+		if (is_opened () == true) {
+			struct __utimbuf64 times;
+			times.actime = atime64;
+			times.modtime = mtime64;
+
+			if (::_futime64 (_fd, &times) != 0) {
+				cThrow ("Set mtime failed in file '{}': {}"sv, _filename, strerror (errno));
+			}
+		}
+		else {
+			struct __utimbuf64 times;
+			times.actime = atime64;
+			times.modtime = mtime64;
+
+			if (::_utime64 (_filename.c_str (), &times) != 0) {
+				cThrow ("Set mtime failed in file '{}': {}"sv, _filename, strerror (errno));
+			}
+		}
+#else
+		timespec times[2];
+		times[0].tv_sec = atime;
+		times[0].tv_nsec = 0;
+		times[1].tv_sec = mtime;
+		times[1].tv_nsec = 0;
+
+		if (is_opened () == true) {
+			if (::futimens (_fd, times) != 0) {
+				cThrow ("Set mtime failed in file '{}': {}"sv, _filename, strerror (errno));
+			}
+		}
+		else {
+			if (::utimensat (AT_FDCWD, _filename.c_str (), times, 0) != 0) {
+				cThrow ("Set mtime failed in file '{}': {}"sv, _filename, strerror (errno));
+			}
+		}
+#endif // OS_WIN
+	}
+
+	void ShFile::set_file_mtime (const time_t mtime)
+	{
+		set_file_times (mtime, mtime);
 	}
 
 	struct stat ShFile::get_stat (void) const

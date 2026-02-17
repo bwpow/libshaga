@@ -13,6 +13,94 @@ All rights reserved.
 namespace shaga {
 	class ShFile {
 		public:
+			class UnlockGuard {
+				private:
+					ShFile *_file {nullptr};
+					bool _active {true};
+
+				public:
+					explicit UnlockGuard (ShFile &file) :
+						_file (&file)
+					{ }
+
+					~UnlockGuard ()
+					{
+						if (true == _active && nullptr != _file) {
+							try {
+								_file->unlock ();
+							}
+							catch (...) { }
+						}
+					}
+
+					UnlockGuard (const UnlockGuard &) = delete;
+					UnlockGuard& operator= (const UnlockGuard &) = delete;
+
+					void dismiss (void) noexcept
+					{
+						_active = false;
+					}
+			};
+
+			class CloseGuard {
+				private:
+					ShFile *_file {nullptr};
+					bool _ignore_rename_on_close {false};
+					bool _active {true};
+
+				public:
+					explicit CloseGuard (ShFile &file, const bool ignore_rename_on_close = false) :
+						_file (&file),
+						_ignore_rename_on_close (ignore_rename_on_close)
+					{ }
+
+					~CloseGuard ()
+					{
+						if (true == _active && nullptr != _file) {
+							_file->close (_ignore_rename_on_close);
+						}
+					}
+
+					CloseGuard (const CloseGuard &) = delete;
+					CloseGuard& operator= (const CloseGuard &) = delete;
+
+					void dismiss (void) noexcept
+					{
+						_active = false;
+					}
+			};
+
+			class UnlinkGuard {
+				private:
+					ShFile *_file {nullptr};
+					bool _also_rename_on_close_file {false};
+					bool _active {true};
+
+				public:
+					explicit UnlinkGuard (ShFile &file, const bool also_rename_on_close_file = false) :
+						_file (&file),
+						_also_rename_on_close_file (also_rename_on_close_file)
+					{ }
+
+					~UnlinkGuard ()
+					{
+						if (true == _active && nullptr != _file) {
+							try {
+								_file->unlink (_also_rename_on_close_file);
+							}
+							catch (...) { }
+						}
+					}
+
+					UnlinkGuard (const UnlinkGuard &) = delete;
+					UnlinkGuard& operator= (const UnlinkGuard &) = delete;
+
+					void dismiss (void) noexcept
+					{
+						_active = false;
+					}
+			};
+
 			enum class CallbackAction {
 				OPEN,			/* Right after file is opened */
 				CLOSE,			/* Right before file is closed */
@@ -52,6 +140,7 @@ namespace shaga {
 			int _fd {-1};
 			mode_t _mask {mask644};
 			bool _unlink_on_destruct {false};
+			bool _lock_owned {false};
 			std::string _rename_on_close_filename;
 
 			ShFileCallback _callback {nullptr};
@@ -60,6 +149,36 @@ namespace shaga {
 			ShFile (const std::string_view filename, const uint8_t mode = mREAD, const mode_t mask = mask644, const bool do_open = true);
 			ShFile ();
 			~ShFile ();
+
+			std::unique_ptr<UnlockGuard> create_unlock_guard (void)
+			{
+				return std::unique_ptr<UnlockGuard> (new UnlockGuard (*this));
+			}
+
+			std::unique_ptr<UnlockGuard> get_unlock_guard (void)
+			{
+				return create_unlock_guard ();
+			}
+
+			std::unique_ptr<CloseGuard> create_close_guard (const bool ignore_rename_on_close = false)
+			{
+				return std::unique_ptr<CloseGuard> (new CloseGuard (*this, ignore_rename_on_close));
+			}
+
+			std::unique_ptr<CloseGuard> get_close_guard (const bool ignore_rename_on_close = false)
+			{
+				return create_close_guard (ignore_rename_on_close);
+			}
+
+			std::unique_ptr<UnlinkGuard> create_unlink_guard (const bool also_rename_on_close_file = false)
+			{
+				return std::unique_ptr<UnlinkGuard> (new UnlinkGuard (*this, also_rename_on_close_file));
+			}
+
+			std::unique_ptr<UnlinkGuard> get_unlink_guard (const bool also_rename_on_close_file = false)
+			{
+				return create_unlink_guard (also_rename_on_close_file);
+			}
 
 			/* Disable copy and assignment */
 			ShFile (const ShFile &) = delete;
@@ -159,7 +278,12 @@ namespace shaga {
 			void rewind (void);
 
 			void unlink (const bool also_rename_on_close_file = false);
+			void lock (void);
+			bool try_lock (void);
+			void unlock (void);
 			void touch (void);
+			void set_file_times (const time_t atime, const time_t mtime);
+			void set_file_mtime (const time_t mtime);
 
 			struct stat get_stat (void) const;
 			off64_t get_file_size (void) const;
