@@ -6,6 +6,9 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 All rights reserved.
 *******************************************************************************/
 #include <gtest/gtest.h>
+#ifndef OS_WIN
+	#include <sys/stat.h>
+#endif // OS_WIN
 
 using namespace shaga;
 
@@ -106,3 +109,49 @@ TEST (ShFile, SetFileTimes)
 	EXPECT_GE (got_mtime, mtime - 2);
 	EXPECT_LE (got_mtime, mtime + 2);
 }
+
+TEST (ShFile, RenameOnCloseAppliesMask)
+{
+	TempFileGuard tmp (make_temp_path ());
+	TempFileGuard final (tmp.path () + ".final");
+
+	{
+		ShFile f;
+		f.set_mask (ShFile::mask600);
+		f.set_file_name (tmp.path (), ShFile::mWRITE | ShFile::mTRUNC);
+		f.set_rename_on_close_file_name (final.path ());
+		f.open ();
+		f.write ("abc"sv);
+	}
+
+	ShFile chk (final.path (), ShFile::mREAD);
+	const struct stat st = chk.get_stat ();
+	EXPECT_EQ (st.st_mode & 0777, static_cast<mode_t> (0600));
+}
+
+#ifndef OS_WIN
+TEST (ShFile, NewFileRespectsMaskEvenWithUmask)
+{
+	TempFileGuard tmp (make_temp_path ());
+
+	const mode_t old_umask = ::umask (0022);
+	try {
+		{
+			ShFile f;
+			f.set_mask (ShFile::mask666);
+			f.set_file_name (tmp.path (), ShFile::mWRITE | ShFile::mTRUNC);
+			f.open ();
+			f.write ("x"sv);
+		}
+
+		ShFile chk (tmp.path (), ShFile::mREAD);
+		const struct stat st = chk.get_stat ();
+		EXPECT_EQ (st.st_mode & 0777, static_cast<mode_t> (0666));
+	}
+	catch (...) {
+		::umask (old_umask);
+		throw;
+	}
+	::umask (old_umask);
+}
+#endif // OS_WIN

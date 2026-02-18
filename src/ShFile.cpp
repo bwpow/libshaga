@@ -150,8 +150,10 @@ namespace shaga {
 			cThrow ("Flags mNOCREAT and mEXCL cannot be used together"sv);
 		}
 
+		const bool file_existed_before = FS::is_file (_filename);
+
 		if ((nullptr != _callback) && (_mode & mWRITE) != 0 && (_mode & mEXCL) == 0 && (_mode & mAPPEND) == 0) {
-			if (FS::is_file (_filename) && _callback (*this, CallbackAction::OVERWRITE) == false) {
+			if (true == file_existed_before && _callback (*this, CallbackAction::OVERWRITE) == false) {
 				cThrow ("Error opening file '{}': File already exists and overwriting is not allowed"sv, _filename);
 			}
 		}
@@ -159,6 +161,22 @@ namespace shaga {
 		_fd = ::open (_filename.c_str (), flags, _mask);
 		if (_fd < 0) {
 			cThrow ("Error opening file '{}': {}"sv, _filename, strerror (errno));
+		}
+
+		if ((_mode & mWRITE) != 0 && false == file_existed_before) {
+			#ifdef OS_WIN
+				if (::_chmod (_filename.c_str (), _mask) != 0) {
+					::close (_fd);
+					_fd = -1;
+					cThrow ("Unable to set file mode for '{}': {}"sv, _filename, strerror (errno));
+				}
+			#else
+				if (::fchmod (_fd, _mask) != 0) {
+					::close (_fd);
+					_fd = -1;
+					cThrow ("Unable to set file mode for '{}': {}"sv, _filename, strerror (errno));
+				}
+			#endif // OS_WIN
 		}
 
 		if (_mode & mAPPEND) {
@@ -196,6 +214,7 @@ namespace shaga {
 						}
 					}
 					else {
+						::chmod (_rename_on_close_filename.c_str (), _mask);
 						if (nullptr != _callback) {
 							_callback (*this, CallbackAction::RENAME);
 						}
@@ -764,6 +783,8 @@ namespace shaga {
 		}
 
 		const std::string_view target_filename = ((is_opened () == false) && (has_rename_on_close () == true)) ? std::string_view (_rename_on_close_filename) : std::string_view (_filename);
+		const std::string target_filename_str (target_filename);
+		const bool file_existed_before = FS::is_file (target_filename);
 
 		int flags {O_WRONLY | O_CREAT};
 #ifdef O_NONBLOCK
@@ -773,9 +794,23 @@ namespace shaga {
 		flags |= O_NOCTTY;
 #endif // O_NOCTTY
 
-		int fd = ::open (std::string (target_filename).c_str (), flags, _mask);
+		int fd = ::open (target_filename_str.c_str (), flags, _mask);
 		if (fd < 0) {
 			cThrow ("Touch failed for '{}': {}"sv, target_filename, strerror (errno));
+		}
+
+		if (false == file_existed_before) {
+			#ifdef OS_WIN
+				if (::_chmod (target_filename_str.c_str (), _mask) != 0) {
+					::close (fd);
+					cThrow ("Touch failed for '{}': {}"sv, target_filename, strerror (errno));
+				}
+			#else
+				if (::fchmod (fd, _mask) != 0) {
+					::close (fd);
+					cThrow ("Touch failed for '{}': {}"sv, target_filename, strerror (errno));
+				}
+			#endif // OS_WIN
 		}
 
 #ifndef OS_WIN
