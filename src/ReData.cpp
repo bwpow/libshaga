@@ -151,13 +151,27 @@ namespace shaga {
 				_conf.decode (msg, offset);
 			}
 
-			if (0 == _conf.get_digest_result_size () && false == _conf.has_mac ()) {
+			if (HEDLEY_UNLIKELY (0 == _conf.get_digest_result_size () && false == _conf.has_mac ())) {
 				cThrow ("Unable to decode message with no digest and no MAC"sv);
 			}
 
 			if (nullptr != check_callback) {
 				if (check_callback (_conf) == false) {
 					cThrow ("Checker callback function refused message parameters"sv);
+				}
+			}
+
+			const size_t len = std::max (_hmac_keys.size (), _crypto_keys.size ());
+			if (HEDLEY_UNLIKELY (_key_id >= len)) {
+				cThrow ("Current key id out of range"sv);
+			}
+
+			if (true == _use_key_ident) {
+				if (HEDLEY_UNLIKELY (_key_idents.empty ())) {
+					cThrow ("Key ident is enabled, but no key idents are configured"sv);
+				}
+				if (HEDLEY_UNLIKELY (_key_idents.size () != len)) {
+					cThrow ("Key idents count does not match keys count"sv);
 				}
 			}
 
@@ -169,7 +183,7 @@ namespace shaga {
 					if (ident != _last_key_ident) {
 						/* We don't, so we need to find it in map */
 						auto res = _key_ident_map.find (ident);
-						if (res == _key_ident_map.end ()) {
+						if (HEDLEY_UNLIKELY (res == _key_ident_map.end ())) {
 							cThrow ("Key ident not found"sv);
 						}
 
@@ -188,18 +202,18 @@ namespace shaga {
 				}
 				else {
 					/* We don't know the key_id, so check all stored keys, starting with the last successfull key_id */
-					const size_t len = std::max (_hmac_keys.size (), _crypto_keys.size ());
-					for (size_t i = 0; i < len; ++i) {
+					const size_t keys_len = std::max (_hmac_keys.size (), _crypto_keys.size ());
+					for (size_t i = 0; i < keys_len; ++i) {
 						try {
 							cMute;
-							decode_message (msg, offset, out, (i + _key_id) % len, use_mixed);
+							decode_message (msg, offset, out, (i + _key_id) % keys_len, use_mixed);
 							/* If it didn't throw exception, decode is successfull */
 							_last_decode_was_mixed = use_mixed;
-							_key_id = (i + _key_id) % len;
+							_key_id = (i + _key_id) % keys_len;
 							break;
 						}
 						catch (...) {
-							if ((i + 1) >= len) {
+							if ((i + 1) >= keys_len) {
 								/* This is the last possible key, so rethrow away */
 								throw;
 							}
@@ -277,13 +291,27 @@ namespace shaga {
 
 	void ReData::encode (const std::string_view plain, std::string &out, const bool use_mixed)
 	{
-		if (0 == _conf.get_digest_result_size () && false == _conf.has_mac ()) {
+		if (HEDLEY_UNLIKELY (0 == _conf.get_digest_result_size () && false == _conf.has_mac ())) {
 			cThrow ("Unable to encode message with no digest and no MAC"sv);
+		}
+
+		const size_t len = std::max (_hmac_keys.size (), _crypto_keys.size ());
+		if (HEDLEY_UNLIKELY (_key_id >= len)) {
+			cThrow ("Current key id out of range"sv);
+		}
+
+		if (true == _use_key_ident) {
+			if (HEDLEY_UNLIKELY (_key_idents.empty ())) {
+				cThrow ("Key ident is enabled, but no key idents are configured"sv);
+			}
+			if (HEDLEY_UNLIKELY (_key_idents.size () != len)) {
+				cThrow ("Key idents count does not match keys count"sv);
+			}
 		}
 
 		const size_t original_size = out.size ();
 		try {
-			if (true == use_mixed && false == _mix_key_enabled) {
+			if (HEDLEY_UNLIKELY (true == use_mixed && false == _mix_key_enabled)) {
 				cThrow ("Mix key is not set"sv);
 			}
 			if (true == _use_config_header) {
@@ -357,6 +385,10 @@ namespace shaga {
 		}
 
 		if (SIZE_MAX != key_id) {
+			const size_t len = std::max (_hmac_keys.size (), _crypto_keys.size ());
+			if (key_id >= len) {
+				cThrow ("Provided key id is out of range"sv);
+			}
 			_key_id = key_id;
 			_last_key_ident = UINT_FAST16_MAX;
 		}
@@ -372,6 +404,10 @@ namespace shaga {
 		}
 
 		if (SIZE_MAX != key_id) {
+			const size_t len = std::max (_hmac_keys.size (), _crypto_keys.size ());
+			if (key_id >= len) {
+				cThrow ("Provided key id is out of range"sv);
+			}
 			_key_id = key_id;
 			_last_key_ident = UINT_FAST16_MAX;
 		}
@@ -397,6 +433,15 @@ namespace shaga {
 		}
 
 		if (SIZE_MAX != key_id) {
+			if (key_id >= _key_idents.size ()) {
+				cThrow ("Provided key id is out of range"sv);
+			}
+
+			const size_t len = std::max (_hmac_keys.size (), _crypto_keys.size ());
+			if (key_id >= len) {
+				cThrow ("Provided key id is out of range"sv);
+			}
+
 			_key_id = key_id;
 			_last_key_ident = UINT_FAST16_MAX;
 		}

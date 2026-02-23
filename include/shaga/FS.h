@@ -20,7 +20,7 @@ namespace shaga::FS {
 	struct stat file_stat (const std::string_view fname);
 
 	off64_t file_size (const std::string_view fname);
-	std::optional<off64_t> file_size_optional (const char *const fname);
+	std::optional<off64_t> file_size_optional (const std::string_view fname);
 
 	time_t file_mtime (const std::string_view fname);
 	std::optional<time_t> file_mtime_optional (const std::string_view fname);

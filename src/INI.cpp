@@ -264,7 +264,15 @@ namespace shaga {
 		}
 		else {
 			FS::read_file (fname, [&](const std::string_view line) -> void {
-				parse_line (ini_map, line, active_section, allow_include);
+				try {
+					parse_line (ini_map, line, active_section, allow_include);
+				}
+				catch (const std::exception &e) {
+					if (false == _ignore_broken_lines) {
+						throw;
+					}
+					P::debug_print ("INI: Ignoring malformed line in '{}': {}"sv, fname, e.what ());
+				}
 			});
 		}
 
@@ -285,7 +293,15 @@ namespace shaga {
 		active_section.clear ();
 
 		STR::split (buf, "\n\r"sv, [&](const std::string_view line) -> void {
-			parse_line (ini_map, line, active_section, allow_include);
+			try {
+				parse_line (ini_map, line, active_section, allow_include);
+			}
+			catch (const std::exception &e) {
+				if (false == _ignore_broken_lines) {
+					throw;
+				}
+				P::debug_print ("INI: Ignoring malformed line from buffer: {}"sv, e.what ());
+			}
 		});
 	}
 
@@ -321,11 +337,11 @@ namespace shaga {
 		reset ();
 	}
 
-	INI::INI (const INI &other) : _map (other._map)
+	INI::INI (const INI &other) : _map (other._map), _ignore_broken_lines (other._ignore_broken_lines)
 	{
 	}
 
-	INI::INI (INI &&other) : _map (std::move (other._map))
+	INI::INI (INI &&other) : _map (std::move (other._map)), _ignore_broken_lines (other._ignore_broken_lines)
 	{
 	}
 
@@ -333,6 +349,7 @@ namespace shaga {
 	{
 		if (this != &other) {
 			_map = other._map;
+			_ignore_broken_lines = other._ignore_broken_lines;
 		}
 		return *this;
 	}
@@ -341,12 +358,14 @@ namespace shaga {
 	{
 		if (this != &other) {
 			_map = std::move (other._map);
+			_ignore_broken_lines = other._ignore_broken_lines;
 		}
 		return *this;
 	}
 
-	INI::INI (const std::string_view fname, const bool allow_include)
+	INI::INI (const std::string_view fname, const bool allow_include, const bool ignore_broken_lines)
 	{
+		_ignore_broken_lines = ignore_broken_lines;
 		reset ();
 		parse_file (fname, allow_include, false);
 	}
@@ -356,12 +375,22 @@ namespace shaga {
 		_map.clear ();
 	}
 
-	void INI::load_file (const std::string_view fname, const bool append, const bool allow_include)
+	void INI::load_file (const std::string_view fname, const bool append, const bool allow_include, const bool ignore_broken_lines)
 	{
 		if (append == false) {
 			reset ();
 		}
-		parse_file (fname, allow_include, false);
+
+		const bool old_ignore_broken_lines = _ignore_broken_lines;
+		_ignore_broken_lines = ignore_broken_lines;
+		try {
+			parse_file (fname, allow_include, false);
+			_ignore_broken_lines = old_ignore_broken_lines;
+		}
+		catch (...) {
+			_ignore_broken_lines = old_ignore_broken_lines;
+			throw;
+		}
 	}
 
 	void INI::save_to_file (ShFile &file) const
@@ -412,12 +441,22 @@ namespace shaga {
 		save_to_file (file);
 	}
 
-	void INI::load_buffer (const std::string_view buf, const bool append, const bool allow_include)
+	void INI::load_buffer (const std::string_view buf, const bool append, const bool allow_include, const bool ignore_broken_lines)
 	{
 		if (append == false) {
 			reset ();
 		}
-		parse_buffer (buf, allow_include);
+
+		const bool old_ignore_broken_lines = _ignore_broken_lines;
+		_ignore_broken_lines = ignore_broken_lines;
+		try {
+			parse_buffer (buf, allow_include);
+			_ignore_broken_lines = old_ignore_broken_lines;
+		}
+		catch (...) {
+			_ignore_broken_lines = old_ignore_broken_lines;
+			throw;
+		}
 	}
 
 	void INI::save_to_buffer (std::string &out) const
@@ -451,6 +490,44 @@ namespace shaga {
 	{
 		std::string out;
 		save_to_buffer (out);
+		return out;
+	}
+
+	void INI::save_to_json (nlohmann::json &out) const
+	{
+		out = nlohmann::json::object ();
+
+		for (INI_MAP::const_iterator iter = _map.cbegin (); iter != _map.cend (); ++iter) {
+			const INI_KEY &key = iter->first;
+			const COMMON_LIST &v = iter->second;
+
+			nlohmann::json &section = out[key.section];
+			if (false == section.is_object ()) {
+				section = nlohmann::json::object ();
+			}
+
+			if (v.size () <= 1) {
+				if (v.empty () == true) {
+					section[key.line] = nlohmann::json::array ();
+				}
+				else {
+					section[key.line] = v.front ();
+				}
+			}
+			else {
+				nlohmann::json arr = nlohmann::json::array ();
+				for (const auto &entry : v) {
+					arr.push_back (entry);
+				}
+				section[key.line] = std::move (arr);
+			}
+		}
+	}
+
+	nlohmann::json INI::save_to_json (void) const
+	{
+		nlohmann::json out;
+		save_to_json (out);
 		return out;
 	}
 

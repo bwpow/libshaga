@@ -56,7 +56,7 @@ namespace shaga {
 		return st.st_size;
 	}
 
-	std::optional<off64_t> FS::file_size_optional (const char *const fname)
+	std::optional<off64_t> FS::file_size_optional (const std::string_view fname)
 	{
 		struct stat st;
 		if (::stat (s_c_str (fname), &st) != 0) {
@@ -114,11 +114,16 @@ namespace shaga {
 		}
 #ifdef OS_WIN
 		if (::mkdir (s_c_str (dname)) != 0) {
+			if (errno == EEXIST && is_dir (dname)) {
+				return true;
+			}
 			return false;
 		}
 #else
-		::umask (0);
 		if (::mkdir (s_c_str (dname), 0755) != 0) {
+			if (errno == EEXIST && is_dir (dname)) {
+				return true;
+			}
 			return false;
 		}
 #endif // OS_WIN
@@ -176,7 +181,7 @@ namespace shaga {
 	void FS::glob_interruptable ([[maybe_unused]] const std::string_view pattern, [[maybe_unused]] GLOB_CALLBACK_RETURN callback)
 	{
 #ifndef OS_WIN
-		glob_t glob_result;
+		glob_t glob_result {};
 		try {
 			glob_result.gl_offs = 0;
 			const int ret = ::glob (s_c_str (pattern), GLOB_BRACE | GLOB_DOOFFS, NULL, &glob_result);
@@ -227,15 +232,11 @@ namespace shaga {
 		}
 
 		std::string line;
-		while (true) {
-			std::getline (infile, line);
-			if (infile.good () == false) {
-				break;
-			}
+		while (std::getline (infile, line)) {
 			callback (line);
 		}
 
-		if (infile.fail () == true && infile.eof () == false) {
+		if (infile.bad () == true) {
 			cThrow ("Error reading from file '{}'"sv, fname);
 		}
 	}
@@ -258,6 +259,9 @@ namespace shaga {
 
 		infile.seekg (0);
 		infile.read (output.data(), sze);
+		if (infile.gcount () != sze) {
+			cThrow ("Short read from file '{}'"sv, fname);
+		}
 
 		if (infile.fail () == true && infile.eof () == false) {
 			cThrow ("Error reading from file '{}'"sv, fname);

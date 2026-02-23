@@ -368,3 +368,63 @@ TEST (ReData, random_iv)
 		EXPECT_TRUE (res.second);
 	}
 }
+
+TEST (ReData, fail_early_invalid_key_id_in_setters)
+{
+	ReData rd;
+
+	COMMON_VECTOR hmac_keys;
+	hmac_keys.push_back (""s);
+	hmac_keys.push_back (""s);
+	EXPECT_THROW (rd.set_hmac_keys (hmac_keys, 2), CommonException);
+
+	COMMON_VECTOR crypto_keys;
+	crypto_keys.push_back (""s);
+	crypto_keys.push_back (""s);
+	EXPECT_THROW (rd.set_crypto_keys (crypto_keys, 2), CommonException);
+
+	ReData::KEY_IDENT_VECTOR idents;
+	idents.push_back (0);
+	EXPECT_THROW (rd.set_key_idents (idents, 1), CommonException);
+}
+
+TEST (ReData, fail_early_key_ident_not_configured)
+{
+	ReData sender;
+	sender.use_config_header (false);
+
+	std::string msg;
+	ASSERT_NO_THROW (sender.encode ("hello"sv, msg));
+
+	ReData receiver;
+	receiver.use_config_header (false);
+	receiver.use_key_ident (true);
+
+	std::string out;
+	EXPECT_THROW (receiver.decode (msg, out), CommonException);
+	EXPECT_THROW (receiver.encode ("hello"sv, out), CommonException);
+}
+
+TEST (ReData, fail_early_key_ident_count_mismatch)
+{
+	ReData rd;
+	rd.use_config_header (false);
+	rd.use_key_ident (true);
+
+	COMMON_VECTOR hmac_keys;
+	hmac_keys.push_back (""s);
+	hmac_keys.push_back (""s);
+	rd.set_hmac_keys (hmac_keys);
+
+	COMMON_VECTOR crypto_keys;
+	crypto_keys.push_back (""s);
+	crypto_keys.push_back (""s);
+	rd.set_crypto_keys (crypto_keys);
+
+	ReData::KEY_IDENT_VECTOR idents;
+	idents.push_back (7);
+	rd.set_key_idents (idents);
+
+	std::string msg;
+	EXPECT_THROW (rd.encode ("hello"sv, msg), CommonException);
+}

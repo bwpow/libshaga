@@ -28,6 +28,7 @@ namespace shaga {
 			INI_MAP _map;
 			COMMON_DEQUE _nested_parse_file;
 			const size_t _max_nested_files {8};
+			bool _ignore_broken_lines {false};
 
 			std::string get_last_nested_realpath (void) const;
 
@@ -55,17 +56,20 @@ namespace shaga {
 			INI& operator= (const INI &other);
 			INI& operator= (INI &&other);
 
-			INI (const std::string_view fname, const bool allow_include = false);
+			INI (const std::string_view fname, const bool allow_include = false, const bool ignore_broken_lines = false);
 
 			void reset (void);
 
-			void load_file (const std::string_view fname, const bool append = false, const bool allow_include = false);
+			void load_file (const std::string_view fname, const bool append = false, const bool allow_include = false, const bool ignore_broken_lines = false);
 			void save_to_file (ShFile &file) const;
 			void save_to_file (const std::string_view fname) const;
 
-			void load_buffer (const std::string_view buf, const bool append = false, const bool allow_include = false);
+			void load_buffer (const std::string_view buf, const bool append = false, const bool allow_include = false, const bool ignore_broken_lines = false);
 			void save_to_buffer (std::string &out) const;
 			std::string save_to_buffer (void) const;
+
+			void save_to_json (nlohmann::json &out) const;
+			nlohmann::json save_to_json (void) const;
 
 			COMMON_LIST get_section_list (void) const;
 

@@ -6,8 +6,39 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 All rights reserved.
 *******************************************************************************/
 #include <gtest/gtest.h>
+#include <filesystem>
 
 using namespace shaga;
+
+namespace {
+	std::string make_temp_ini_path (void)
+	{
+		static uint64_t seq = 0;
+		++seq;
+		return fmt::format ("./test/.tmp_ini_{}_{}"sv, static_cast<uint64_t> (std::time (nullptr)), seq);
+	}
+
+	class TempIniFile {
+		private:
+			std::string _path;
+
+		public:
+			explicit TempIniFile (std::string path)
+				: _path (std::move (path))
+			{ }
+
+			~TempIniFile ()
+			{
+				std::error_code ec;
+				std::filesystem::remove (_path, ec);
+			}
+
+			const std::string &path (void) const
+			{
+				return _path;
+			}
+	};
+}
 
 TEST (INI, load_buffer_basic)
 {
@@ -100,4 +131,92 @@ TEST (INI, save_roundtrip)
 	EXPECT_EQ (lst.size (), 2u);
 	EXPECT_EQ (lst.front (), "a");
 	EXPECT_EQ (lst.back (), "b");
+}
+
+TEST (INI, constructor_ignore_broken_lines)
+{
+	TempIniFile tmp (make_temp_ini_path ());
+
+	{
+		ShFile out (tmp.path (), ShFile::mW);
+		out.write ("[main]\n"sv);
+		out.write ("valid=ok\n"sv);
+		out.write ("broken_line\n"sv);
+		out.write ("next=42\n"sv);
+	}
+
+	EXPECT_THROW ((INI (tmp.path (), false, false)), CommonException);
+
+	INI ini;
+	EXPECT_NO_THROW ((ini = INI (tmp.path (), false, true)));
+	EXPECT_EQ (ini.get_string ("main", "valid", ""sv), "ok"sv);
+	EXPECT_EQ (ini.get_uint32 ("main", "next", 0), 42u);
+}
+
+TEST (INI, load_buffer_ignore_broken_lines)
+{
+	const std::string buf =
+		"[main]\n"
+		"ok=one\n"
+		"broken_line\n"
+		"ok2=two\n";
+
+	INI ini;
+	EXPECT_THROW (ini.load_buffer (buf, false, false, false), CommonException);
+
+	EXPECT_NO_THROW (ini.load_buffer (buf, false, false, true));
+	EXPECT_EQ (ini.get_string ("main", "ok", ""sv), "one"sv);
+	EXPECT_EQ (ini.get_string ("main", "ok2", ""sv), "two"sv);
+
+	EXPECT_THROW (ini.load_buffer (buf, false, false), CommonException);
+}
+
+TEST (INI, load_file_ignore_broken_lines)
+{
+	TempIniFile tmp (make_temp_ini_path ());
+
+	{
+		ShFile out (tmp.path (), ShFile::mW);
+		out.write ("[main]\n"sv);
+		out.write ("a=1\n"sv);
+		out.write ("broken_line\n"sv);
+		out.write ("b=2\n"sv);
+	}
+
+	INI ini;
+	EXPECT_THROW (ini.load_file (tmp.path (), false, false, false), CommonException);
+
+	EXPECT_NO_THROW (ini.load_file (tmp.path (), false, false, true));
+	EXPECT_EQ (ini.get_uint32 ("main", "a", 0), 1u);
+	EXPECT_EQ (ini.get_uint32 ("main", "b", 0), 2u);
+
+	EXPECT_THROW (ini.load_file (tmp.path (), false, false), CommonException);
+}
+
+TEST (INI, save_to_json_shape)
+{
+	INI ini;
+	ini.set_string ("main", "name", "alpha"sv, false);
+	ini.set_string ("main", "list", "x"sv, false);
+	ini.set_string ("main", "list", "y"sv, true);
+
+	nlohmann::json out;
+	EXPECT_NO_THROW (ini.save_to_json (out));
+
+	ASSERT_TRUE (out.is_object ());
+	ASSERT_TRUE (out.contains ("main"));
+	ASSERT_TRUE (out["main"].is_object ());
+	ASSERT_TRUE (out["main"].contains ("name"));
+	ASSERT_TRUE (out["main"].contains ("list"));
+
+	EXPECT_TRUE (out["main"]["name"].is_string ());
+	EXPECT_EQ (out["main"]["name"].get<std::string> (), "alpha");
+
+	EXPECT_TRUE (out["main"]["list"].is_array ());
+	ASSERT_EQ (out["main"]["list"].size (), 2u);
+	EXPECT_EQ (out["main"]["list"][0].get<std::string> (), "x");
+	EXPECT_EQ (out["main"]["list"][1].get<std::string> (), "y");
+
+	const nlohmann::json out2 = ini.save_to_json ();
+	EXPECT_EQ (out2.dump (), out.dump ());
 }
