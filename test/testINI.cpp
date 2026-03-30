@@ -220,3 +220,155 @@ TEST (INI, save_to_json_shape)
 	const nlohmann::json out2 = ini.save_to_json ();
 	EXPECT_EQ (out2.dump (), out.dump ());
 }
+
+TEST (INI, array_bracket_single_entry_preserved)
+{
+	const std::string buf =
+		"[sys101]\n"
+		"hwid[]=DD110001\n";
+
+	INI ini;
+	ini.load_buffer (buf, false, false);
+
+	const std::string out = ini.save_to_buffer ();
+	EXPECT_NE (out.find ("hwid[]=DD110001"), std::string::npos);
+	EXPECT_EQ (out.find ("hwid=DD110001"), std::string::npos);
+}
+
+TEST (INI, array_bracket_multiple_entries)
+{
+	const std::string buf =
+		"[sys1]\n"
+		"hwid[]=C6110002\n"
+		"hwid[]=C6110029\n"
+		"hwid[]=C6110001\n";
+
+	INI ini;
+	ini.load_buffer (buf, false, false);
+
+	const std::string out = ini.save_to_buffer ();
+	EXPECT_NE (out.find ("hwid[]=C6110002"), std::string::npos);
+	EXPECT_NE (out.find ("hwid[]=C6110029"), std::string::npos);
+	EXPECT_NE (out.find ("hwid[]=C6110001"), std::string::npos);
+	EXPECT_EQ (out.find ("hwid=C6110002"), std::string::npos);
+}
+
+TEST (INI, plain_single_entry_no_brackets)
+{
+	const std::string buf =
+		"[main]\n"
+		"name=alpha\n";
+
+	INI ini;
+	ini.load_buffer (buf, false, false);
+
+	const std::string out = ini.save_to_buffer ();
+	EXPECT_NE (out.find ("name=alpha"), std::string::npos);
+	EXPECT_EQ (out.find ("name[]=alpha"), std::string::npos);
+}
+
+TEST (INI, set_string_append_marks_array)
+{
+	INI ini;
+	ini.set_string ("sec", "item", "only_value"sv, true);
+
+	const std::string out = ini.save_to_buffer ();
+	EXPECT_NE (out.find ("item[]=only_value"), std::string::npos);
+	EXPECT_EQ (out.find ("item=only_value"), std::string::npos);
+}
+
+TEST (INI, set_string_no_append_no_brackets)
+{
+	INI ini;
+	ini.set_string ("sec", "item", "val"sv, false);
+
+	const std::string out = ini.save_to_buffer ();
+	EXPECT_NE (out.find ("item=val"), std::string::npos);
+	EXPECT_EQ (out.find ("item[]=val"), std::string::npos);
+}
+
+TEST (INI, array_bracket_roundtrip)
+{
+	const std::string buf =
+		"[sys102]\n"
+		"hwid[]=DD110002\n"
+		"dxir[]=F1110016\n"
+		"dxir[]=F1110017\n"
+		"refdxmd[]=F0110014\n"
+		"dxmd[]=F011005E\n"
+		"\n"
+		"[sys106]\n"
+		"hwid[]=DD110006\n"
+		"dxmd[]=F011006C\n";
+
+	INI ini;
+	ini.load_buffer (buf, false, false);
+
+	const std::string out1 = ini.save_to_buffer ();
+
+	/* Single-entry arrays must use [] */
+	EXPECT_NE (out1.find ("hwid[]=DD110002"), std::string::npos);
+	EXPECT_NE (out1.find ("hwid[]=DD110006"), std::string::npos);
+	EXPECT_NE (out1.find ("dxmd[]=F011005E"), std::string::npos);
+	EXPECT_NE (out1.find ("dxmd[]=F011006C"), std::string::npos);
+	EXPECT_NE (out1.find ("refdxmd[]=F0110014"), std::string::npos);
+
+	/* Multi-entry arrays must use [] */
+	EXPECT_NE (out1.find ("dxir[]=F1110016"), std::string::npos);
+	EXPECT_NE (out1.find ("dxir[]=F1110017"), std::string::npos);
+
+	/* Reload and re-save — brackets must survive */
+	INI ini2;
+	ini2.load_buffer (out1, false, false);
+	const std::string out2 = ini2.save_to_buffer ();
+	EXPECT_EQ (out1, out2);
+}
+
+TEST (INI, mixed_plain_and_array_keys)
+{
+	const std::string buf =
+		"[main]\n"
+		"name=alpha\n"
+		"count=42\n"
+		"list[]=a\n"
+		"list[]=b\n"
+		"single[]=only\n";
+
+	INI ini;
+	ini.load_buffer (buf, false, false);
+
+	const std::string out = ini.save_to_buffer ();
+
+	/* Plain keys stay plain */
+	EXPECT_NE (out.find ("name=alpha"), std::string::npos);
+	EXPECT_EQ (out.find ("name[]="), std::string::npos);
+	EXPECT_NE (out.find ("count=42"), std::string::npos);
+	EXPECT_EQ (out.find ("count[]="), std::string::npos);
+
+	/* Array keys stay array */
+	EXPECT_NE (out.find ("list[]=a"), std::string::npos);
+	EXPECT_NE (out.find ("list[]=b"), std::string::npos);
+	EXPECT_NE (out.find ("single[]=only"), std::string::npos);
+	EXPECT_EQ (out.find ("single=only"), std::string::npos);
+}
+
+TEST (INI, save_to_file_preserves_array_brackets)
+{
+	const std::string buf =
+		"[sys101]\n"
+		"hwid[]=DD110001\n"
+		"dxmd[]=F011005E\n";
+
+	INI ini;
+	ini.load_buffer (buf, false, false);
+
+	TempIniFile tmp (make_temp_ini_path ());
+	EXPECT_NO_THROW (ini.save_to_file (tmp.path ()));
+
+	INI restored;
+	EXPECT_NO_THROW (restored.load_file (tmp.path ()));
+
+	const std::string out = restored.save_to_buffer ();
+	EXPECT_NE (out.find ("hwid[]=DD110001"), std::string::npos);
+	EXPECT_NE (out.find ("dxmd[]=F011005E"), std::string::npos);
+}

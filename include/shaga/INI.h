@@ -16,6 +16,7 @@ namespace shaga {
 			struct INI_KEY {
 				const std::string section;
 				const std::string line;
+				mutable bool array {false};
 
 				INI_KEY (const std::string_view _section, const std::string_view _line);
 

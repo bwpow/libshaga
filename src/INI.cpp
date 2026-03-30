@@ -209,6 +209,13 @@ namespace shaga {
 
 		COMMON_LIST &vec = get_list_ref (ini_map, INI_KEY {active_section, line_key}, true);
 
+		if (true == append) {
+			auto it = ini_map.find (INI_KEY {active_section, line_key});
+			if (it != ini_map.end ()) {
+				it->first.array = true;
+			}
+		}
+
 		if (append == false) {
 			vec.clear ();
 		}
@@ -418,9 +425,9 @@ namespace shaga {
 					file.write ("]\n"sv);
 				}
 
-				const bool append = v.size () > 1;
+				const bool use_brackets = key.array || v.size () > 1;
 				for (COMMON_LIST::const_iterator vter = v.cbegin (); vter != v.cend (); ++vter) {
-					file.print ("{}{}={}\n", key.line, append ? "[]"sv : ""sv, (*vter));
+					file.print ("{}{}={}\n", key.line, use_brackets ? "[]"sv : ""sv, (*vter));
 				}
 
 				lines_written = true;
@@ -477,9 +484,9 @@ namespace shaga {
 				out.append ("["s + active_section + "]\n"s);
 			}
 
-			const bool append = v.size () > 1;
+			const bool use_brackets = key.array || v.size () > 1;
 			for (COMMON_LIST::const_iterator vter = v.cbegin (); vter != v.cend (); ++vter) {
-				STR::sprint (out, "{}{}={}\n"sv, key.line, append ? "[]"sv : ""sv, (*vter));
+				STR::sprint (out, "{}{}={}\n"sv, key.line, use_brackets ? "[]"sv : ""sv, (*vter));
 			}
 
 			lines_written = true;
@@ -787,6 +794,12 @@ namespace shaga {
 		if (append == false) {
 			v.clear ();
 		}
+		else {
+			auto it = _map.find (INI_KEY {section, key});
+			if (it != _map.end ()) {
+				it->first.array = true;
+			}
+		}
 		v.emplace_back (val);
 	}
 
@@ -796,6 +809,12 @@ namespace shaga {
 		if (false == append) {
 			v.clear ();
 		}
+		else {
+			auto it = _map.find (INI_KEY {section, key});
+			if (it != _map.end ()) {
+				it->first.array = true;
+			}
+		}
 		v.insert (v.end (), val.begin (), val.end ());
 	}
 
@@ -804,6 +823,12 @@ namespace shaga {
 		COMMON_LIST &v = get_list_ref (_map, INI_KEY {section, key}, true);
 		if (false == append) {
 			v.clear ();
+		}
+		else {
+			auto it = _map.find (INI_KEY {section, key});
+			if (it != _map.end ()) {
+				it->first.array = true;
+			}
 		}
 		v.insert (v.end (), val.begin (), val.end ());
 	}
