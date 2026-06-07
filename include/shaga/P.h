@@ -45,6 +45,7 @@ namespace shaga::P {
 
 	void rescan_available_directories (void);
 	void set_enabled (const bool enabled);
+	void set_copy_to_stdout (const bool enabled) noexcept;
 	void show_ms (const bool enabled) noexcept;
 	void use_gmt (const bool enabled) noexcept;
 	bool is_enabled (void) noexcept;

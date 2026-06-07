@@ -49,8 +49,22 @@ namespace shaga::P {
 		STDERR
 	} _dir_log_enum = _DirLogEnum::FILE;
 
+	static bool _also_copy_to_stdout {false};
+
 	static ShFile _printf_file;
 	static COMMON_DEQUE _printf_entries;
+
+#ifndef OS_WIN
+	static void _syslog_write (const int priority, const std::string_view message) noexcept
+	{
+		if (message.empty ()) {
+			::syslog (priority, "%s", "");
+		}
+		else {
+			::syslog (priority, "%.*s", static_cast<int> (std::min (message.size (), static_cast<size_t> (INT_MAX))), message.data ());
+		}
+	}
+#endif // OS_WIN
 
 	static uint64_t _p_cache_rt {UINT64_MAX};
 	static time_t _p_cache_theTime {-1};
@@ -172,8 +186,8 @@ namespace shaga
 			std::lock_guard<std::mutex> lock (_print_mutex);
 		#endif // SHAGA_THREADING
 
-		_limit_soft = static_cast<off64_t> (soft) * _bytes_per_mb;
-		_limit_hard = static_cast<off64_t> (hard) * _bytes_per_mb;
+		_limit_soft = static_cast<off64_t> (std::max (0, soft)) * _bytes_per_mb;
+		_limit_hard = static_cast<off64_t> (std::max (0, hard)) * _bytes_per_mb;
 		_soft_limit_reached = false;
 	}
 
@@ -221,6 +235,11 @@ namespace shaga
 		}
 		_enabled = enabled;
 		_p_clear_cache ();
+	}
+
+	void P::set_copy_to_stdout (const bool enabled) noexcept
+	{
+		_also_copy_to_stdout = enabled;
 	}
 
 	void P::show_ms (const bool enabled) noexcept
@@ -356,12 +375,12 @@ namespace shaga
 #ifndef OS_WIN
 		if (_DirLogEnum::SYSLOG == _dir_log_enum) {
 			::openlog (_name_log.c_str (), LOG_PID | LOG_CONS, LOG_USER);
-			::syslog (LOG_NOTICE, message.data (), message.size ());
+			_syslog_write (LOG_NOTICE, message);
 			::closelog ();
 		}
 #endif // OS_WIN
 
-		if (_DirLogEnum::STDOUT == _dir_log_enum && false == also_to_stderr) {
+		if ((_DirLogEnum::STDOUT == _dir_log_enum || true == _also_copy_to_stdout) && false == also_to_stderr) {
 			::fwrite (str_time.data (), 1, str_time.size (), stdout);
 			::fwrite (prefix.data (), 1, prefix.size (), stdout);
 			::fwrite (message.data (), 1, message.size (), stdout);
@@ -432,11 +451,11 @@ namespace shaga
 				::openlog (_name_log.c_str (), LOG_PID | LOG_CONS, LOG_USER);
 
 				if (false == dumped_message) {
-					::syslog (LOG_NOTICE, message.data (), message.size ());
+					_syslog_write (LOG_NOTICE, message);
 				}
 
 				for (const std::string &entry : _printf_entries) {
-					::syslog (LOG_ERR, entry.data (), entry.size ());
+					_syslog_write (LOG_ERR, entry);
 				}
 				::closelog ();
 #endif // OS_WIN
