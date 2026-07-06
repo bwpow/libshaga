@@ -72,7 +72,7 @@ namespace shaga {
 			} stage {Stage::START_SPACES};
 
 			for (auto iter = src.cbegin (); iter != src.cend (); ++iter) {
-				if (::isspace (*iter)) {
+				if (::isspace (static_cast<unsigned char> (*iter))) {
 					switch (stage) {
 						case Stage::START_SPACES:
 						case Stage::TRAILING_SPACES:
@@ -358,6 +358,8 @@ namespace shaga {
 			format_without_tz ();
 		}
 		else {
+			/* tm_zone may be nullptr if localtime_r/gmtime_r failed */
+			const char *const tz = (nullptr != t.tm_zone) ? t.tm_zone : "";
 			if (true == for_filename) {
 				STR::sprint (out, "{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}_{}"sv,
 					t.tm_year + 1900,
@@ -366,7 +368,7 @@ namespace shaga {
 					t.tm_hour,
 					t.tm_min,
 					t.tm_sec,
-					t.tm_zone);
+					tz);
 			}
 			else {
 				STR::sprint (out, "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d} {}"sv,
@@ -376,7 +378,7 @@ namespace shaga {
 					t.tm_hour,
 					t.tm_min,
 					t.tm_sec,
-					t.tm_zone);
+					tz);
 			}
 		}
 #else
@@ -429,6 +431,8 @@ namespace shaga {
 			return format_without_tz ();
 		}
 		else {
+			/* tm_zone may be nullptr if localtime_r/gmtime_r failed */
+			const char *const tz = (nullptr != t.tm_zone) ? t.tm_zone : "";
 			if (true == for_filename) {
 				return fmt::format ("{:04d}-{:02d}-{:02d}_{:02d}{:02d}{:02d}_{}"sv,
 					t.tm_year + 1900,
@@ -437,7 +441,7 @@ namespace shaga {
 					t.tm_hour,
 					t.tm_min,
 					t.tm_sec,
-					t.tm_zone);
+					tz);
 			}
 			else {
 				return fmt::format ("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d} {}"sv,
@@ -447,7 +451,7 @@ namespace shaga {
 					t.tm_hour,
 					t.tm_min,
 					t.tm_sec,
-					t.tm_zone);
+					tz);
 			}
 		}
 #else
@@ -539,7 +543,7 @@ namespace shaga {
 	{
 		return (str.size () >= suffix.size ()) && std::equal (suffix.rbegin (), suffix.rend (), str.rbegin (),
 			[](const auto a, const auto b) -> bool {
-				return std::tolower(a) == std::tolower(b);
+				return std::tolower(static_cast<unsigned char> (a)) == std::tolower(static_cast<unsigned char> (b));
 			});
 	}
 
@@ -552,7 +556,7 @@ namespace shaga {
 	{
 		return (str.size () >= prefix.size ()) && std::equal (prefix.begin (), prefix.end (), str.begin (),
 			[](const auto a, const auto b) -> bool {
-				return std::tolower(a) == std::tolower(b);
+				return std::tolower(static_cast<unsigned char> (a)) == std::tolower(static_cast<unsigned char> (b));
 			});
 	}
 
@@ -629,7 +633,7 @@ namespace shaga {
 	bool STR::icompare (const std::string_view a, const std::string_view b)
 	{
 		return std::equal (a.cbegin (), a.cend (), b.cbegin (), b.cend (), [](const auto _a, const auto _b) -> bool {
-			return std::tolower(_a) == std::tolower(_b);
+			return std::tolower(static_cast<unsigned char> (_a)) == std::tolower(static_cast<unsigned char> (_b));
 		});
 	}
 

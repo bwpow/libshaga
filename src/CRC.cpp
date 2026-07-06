@@ -609,7 +609,9 @@ namespace shaga {
 	{
 		uint_fast32_t val = startval;
 
-		#define UPDC32(octet,crc) crc=(_crc32_atmel_table[((crc >> 24) ^ (_bit_reverse_table[octet])) & 0xff] ^ (crc << 8))
+		/* Note: (octet) & 0xff mask is essential here, because char is signed on some platforms and sign extension
+		would produce an out-of-bounds index into _bit_reverse_table for bytes >= 0x80. */
+		#define UPDC32(octet,crc) crc=(_crc32_atmel_table[((crc >> 24) ^ (_bit_reverse_table[(octet) & 0xff])) & 0xff] ^ (crc << 8))
 		for (uint_fast32_t pos = 0; pos < len; ++pos) {
 			UPDC32 (static_cast<uint_fast32_t> (reinterpret_cast<const char *> (buf)[pos]), val);
 		}
@@ -779,7 +781,9 @@ namespace shaga {
 			cThrow ("CRC-16: String is too short"sv);
 		}
 		const uint16_t crc = crc16_ccitt_false (plain.data (), sze - sizeof (uint16_t), startval);
-		const uint16_t crc_check = BIN::to_uint16 (plain.data () + (sze - sizeof (uint16_t)));
+		/* Note: substr must be used here. Passing a raw pointer would construct std::string_view using strlen,
+		which can read out of bounds and fails when the CRC bytes contain 0x00. */
+		const uint16_t crc_check = BIN::to_uint16 (plain.substr (sze - sizeof (uint16_t)));
 		if (crc_check != crc) {
 			cThrow ("CRC-16: Signature does not match"sv);
 		}
@@ -793,7 +797,9 @@ namespace shaga {
 			cThrow ("CRC-16: String is too short"sv);
 		}
 		const uint16_t crc = crc16_ccitt_false (plain.data (), sze - sizeof (uint16_t), startval);
-		const uint16_t crc_check = BIN::to_uint16 (plain.data () + (sze - sizeof (uint16_t)));
+		/* Note: substr must be used here. Passing a raw pointer would construct std::string_view using strlen,
+		which can read out of bounds and fails when the CRC bytes contain 0x00. */
+		const uint16_t crc_check = BIN::to_uint16 (plain.substr (sze - sizeof (uint16_t)));
 		if (crc_check != crc) {
 			cThrow ("CRC-16: Signature does not match"sv);
 		}

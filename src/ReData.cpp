@@ -14,6 +14,21 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	#include "shaga/internal_shake256.h"
 
+	/* Constant-time comparison to avoid leaking digest contents through timing */
+	HEDLEY_WARN_UNUSED_RESULT static inline bool _ct_compare (const std::string_view a, const std::string_view b) noexcept
+	{
+		if (a.size () != b.size ()) {
+			return false;
+		}
+
+		uint_fast8_t diff = 0;
+		for (size_t i = 0; i < a.size (); ++i) {
+			diff |= static_cast<uint_fast8_t> (static_cast<uint8_t> (a[i]) ^ static_cast<uint8_t> (b[i]));
+		}
+
+		return (0 == diff);
+	}
+
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -37,8 +52,8 @@ namespace shaga {
 			/* Calculate digest from plain data */
 			_conf.calc_digest (msg.substr (digest_size), _work_msg2, (true == key_mixed) ? _hmac_keys_mixed.at (key_id) : _hmac_keys.at (key_id));
 
-			/* Compare digest from message with calculated digest */
-			if (msg.compare (0, digest_size, _work_msg2) != 0) {
+			/* Compare digest from message with calculated digest in constant time */
+			if (false == _ct_compare (msg.substr (0, digest_size), _work_msg2)) {
 				cThrow ("Digest check failed"sv);
 			}
 			_work_msg2.resize (0);

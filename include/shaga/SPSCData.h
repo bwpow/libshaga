@@ -190,6 +190,10 @@ namespace shaga {
 
 			virtual void alloc (const uint_fast32_t alloc_size) override
 			{
+				if (HEDLEY_UNLIKELY (alloc_size > _bufsize)) {
+					cThrow ("Requested alloc size larger than allowed buffer size"sv);
+				}
+
 				if (alloc_size != _real_bufsize) {
 					free ();
 

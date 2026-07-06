@@ -124,8 +124,7 @@ namespace shaga
 					return false;
 				}
 
-				new (&_data[now]) T();
-				_data[now] = std::move (entry);
+				new (&_data[now]) T(std::move (entry));
 
 				#ifdef SHAGA_THREADING
 					_pos_write.store (next, std::memory_order_release);

@@ -52,7 +52,8 @@ namespace shaga
 
 				for (uint_fast32_t now = 0; now < _size; ++now) {
 					try {
-						new (&_data[now]) T(std::forward<Args>(args)...);
+						/* Note: args must not be forwarded here, rvalues would be moved-from after the first iteration */
+						new (&_data[now]) T(args...);
 					}
 					catch (...) {
 						/* Clear all already created objects */
@@ -170,7 +171,9 @@ namespace shaga
 
 			void clear (void)
 			{
-				while (pop_front () == true);
+				while (false == empty ()) {
+					pop_front ();
+				}
 			}
 
 			bool empty (void) const

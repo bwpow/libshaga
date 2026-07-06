@@ -70,7 +70,8 @@ namespace shaga
 						cThrow ("{}: Ring full"sv, _name);
 					}
 
-					_pos_write.store (next, std::memory_order::memory_order_relaxed);
+					/* Release is required so the consumer sees fully written buffer contents */
+					_pos_write.store (next, std::memory_order::memory_order_release);
 					_stored_bytes.fetch_add (_curdata->size (), std::memory_order::memory_order_seq_cst);
 				#else
 					_SHAGA_SPSC_D_RING (next, _pos_write);
@@ -83,6 +84,8 @@ namespace shaga
 					_stored_bytes += _curdata->size ();
 				#endif // SHAGA_THREADING
 
+				_curdata = _data[next].get ();
+
 				#ifdef OS_LINUX
 					if (const ssize_t ret = ::write (this->_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)); ret < 0) {
 						cThrow ("{}: Error writing to eventfd: {}"sv, _name, strerror (errno));
@@ -91,8 +94,6 @@ namespace shaga
 						cThrow ("{}: Error writing to eventfd: Unknown error"sv, _name);
 					}
 				#endif // OS_LINUX
-
-				_curdata = _data[next].get ();
 			}
 
 			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) = 0;
@@ -227,18 +228,25 @@ namespace shaga
 					const uint_fast32_t now_write = this->_pos_write;
 				#endif // SHAGA_THREADING
 
+				uint_fast32_t freed_bytes {0};
+
 				while (now_read != now_write) {
+					freed_bytes += this->_data[now_read]->size ();
 					this->_data[now_read]->free ();
 					_SHAGA_SPSC_I_RING (now_read);
 				}
 
+				/* Bytes already consumed from the front packet were subtracted from _stored_bytes earlier */
+				freed_bytes -= _read_offset;
 				_read_offset = 0;
 				#ifdef SHAGA_THREADING
-					this->_pos_read.store (now_read, std::memory_order::memory_order_relaxed);
-					this->_stored_bytes.store (0, std::memory_order::memory_order_release);
+					/* Release is required so the producer sees the freed buffers before reusing the slots.
+					Subtract only what was freed here, the producer might have pushed new data concurrently. */
+					this->_pos_read.store (now_read, std::memory_order::memory_order_release);
+					this->_stored_bytes.fetch_sub (freed_bytes, std::memory_order::memory_order_seq_cst);
 				#else
 					this->_pos_read = now_read;
-					this->_stored_bytes = 0;
+					this->_stored_bytes -= freed_bytes;
 				#endif // SHAGA_THREADING
 			}
 
@@ -399,7 +407,8 @@ namespace shaga
 
 				_read_offset = read_offset;
 				#ifdef SHAGA_THREADING
-					this->_pos_read.store (now_read, std::memory_order::memory_order_relaxed);
+					/* Release is required so the producer sees the freed buffers before reusing the slots */
+					this->_pos_read.store (now_read, std::memory_order::memory_order_release);
 					this->_stored_bytes.fetch_sub (orig_len, std::memory_order::memory_order_seq_cst);
 				#else
 					this->_pos_read = now_read;
@@ -429,17 +438,22 @@ namespace shaga
 					const uint_fast32_t now_write = this->_pos_write;
 				#endif // SHAGA_THREADING
 
+				uint_fast32_t freed_bytes {0};
+
 				while (now_read != now_write) {
+					freed_bytes += this->_data[now_read]->size ();
 					this->_data[now_read]->free ();
 					_SHAGA_SPSC_I_RING (now_read);
 				}
 
 				#ifdef SHAGA_THREADING
-					this->_pos_read.store (now_read, std::memory_order::memory_order_relaxed);
-					this->_stored_bytes.store (0, std::memory_order::memory_order_release);
+					/* Release is required so the producer sees the freed buffers before reusing the slots.
+					Subtract only what was freed here, the producer might have pushed new data concurrently. */
+					this->_pos_read.store (now_read, std::memory_order::memory_order_release);
+					this->_stored_bytes.fetch_sub (freed_bytes, std::memory_order::memory_order_seq_cst);
 				#else
 					this->_pos_read = now_read;
-					this->_stored_bytes = 0;
+					this->_stored_bytes -= freed_bytes;
 				#endif // SHAGA_THREADING
 			}
 
@@ -536,7 +550,8 @@ namespace shaga
 				_SHAGA_SPSC_I_RING (now_read);
 
 				#ifdef SHAGA_THREADING
-					this->_pos_read.store (now_read, std::memory_order::memory_order_relaxed);
+					/* Release is required so the producer sees the freed buffer before reusing the slot */
+					this->_pos_read.store (now_read, std::memory_order::memory_order_release);
 					this->_stored_bytes.fetch_sub (len, std::memory_order::memory_order_seq_cst);
 				#else
 					this->_pos_read = now_read;
@@ -628,10 +643,19 @@ namespace shaga
 
 			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) override final
 			{
+				if (HEDLEY_UNLIKELY (offset > len)) {
+					cThrow ("{}: Offset larger than buffer length"sv, this->_name);
+				}
+
 				/* STX is not part of CRC-16 */
 				uint_fast16_t crc16_val = _crc16_startval;
 
 				const uint_fast32_t real_len = (len - offset) + (_has_crc16 ? 2 : 0);
+
+				if (HEDLEY_UNLIKELY ((real_len + 4) > this->_max_packet_size)) {
+					/* The 16-bit length field would overflow and the frame would not fit into the buffer */
+					cThrow ("{}: Buffer too long"sv, this->_name);
+				}
 
 				this->_curdata->zero_size ();
 				this->_curdata->alloc (real_len + 4);
@@ -709,11 +733,12 @@ namespace shaga
 
 			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) override final
 			{
-				const uint_fast32_t sze = len - offset;
-
-				if (0 == sze) {
+				if (offset >= len) {
+					/* Nothing to send, also guards against unsigned underflow below */
 					return;
 				}
+
+				const uint_fast32_t sze = len - offset;
 
 				header.resize (0);
 				header.append (_magic, sizeof (_magic));
@@ -748,6 +773,9 @@ namespace shaga
 			PacketEncodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets) :
 				ContStreamEncodeSPSC<T> (max_packet_size + 6, num_packets)
 			{
+				if (max_packet_size > 0xFF'FF'FF) {
+					cThrow ("Maximal packet size cannot exceed {} bytes"sv, 0xFF'FF'FF);
+				}
 				header.reserve (_header_size);
 			}
 	};
@@ -764,11 +792,12 @@ namespace shaga
 
 			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) override final
 			{
-				const uint_fast32_t sze = len - offset;
-
-				if (0 == sze) {
+				if (offset >= len) {
+					/* Nothing to send, also guards against unsigned underflow below */
 					return;
 				}
+
+				const uint_fast32_t sze = len - offset;
 
 				header.resize (0);
 				BIN::from_uint24 (sze, header);
@@ -795,6 +824,9 @@ namespace shaga
 			SeqPacketEncodeSPSC (const uint_fast32_t max_packet_size, const uint_fast32_t num_packets) :
 				SeqStreamEncodeSPSC<T> (max_packet_size + 3, num_packets)
 			{
+				if (max_packet_size > 0xFF'FF'FF) {
+					cThrow ("Maximal packet size cannot exceed {} bytes"sv, 0xFF'FF'FF);
+				}
 				header.reserve (_header_size);
 			}
 	};

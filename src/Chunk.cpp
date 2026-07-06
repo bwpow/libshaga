@@ -188,8 +188,8 @@ namespace shaga {
 
 		const size_t start_offset {offset};
 
-		/* Read high 16-bit first (big endian) */
-		const uint32_t val = BIN::be_to_uint16 (bin, offset) << 16;
+		/* Read high 16-bit first (big endian). Cast before shift to avoid signed integer promotion. */
+		const uint32_t val = static_cast<uint32_t> (BIN::be_to_uint16 (bin, offset)) << 16;
 
 		_prio = uint8_to_priority ((val & key_prio_mask) >> key_prio_shift);
 		_trust = uint8_to_trustlevel ((val & key_trust_mask) >> key_trust_shift);

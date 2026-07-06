@@ -35,6 +35,10 @@ namespace shaga {
 			{
 				std::lock_guard<std::mutex> lock (_mutex);
 				_count = static_cast<int_fast32_t> (n);
+				if (_count > 0) {
+					/* Wake up any threads already blocked in wait() */
+					_cv.notify_all();
+				}
 			}
 
 			void notify (void)

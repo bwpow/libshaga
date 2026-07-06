@@ -119,6 +119,8 @@ namespace shaga
 					_pos_write = next;
 				#endif // SHAGA_THREADING
 
+				_curdata = _data[next].get ();
+
 				#ifdef OS_LINUX
 				if (const ssize_t ret = ::write (this->_eventfd, &_eventfd_write_val, sizeof (_eventfd_write_val)); HEDLEY_UNLIKELY (ret < 0)) {
 					cThrow ("{}: Error writing to eventfd: {}"sv, _name, strerror (errno));
@@ -127,8 +129,6 @@ namespace shaga
 					cThrow ("{}: Error writing to eventfd: Unknown error"sv, _name);
 				}
 				#endif // OS_LINUX
-
-				_curdata = _data[next].get ();
 			}
 
 			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) = 0;
@@ -340,6 +340,7 @@ namespace shaga
 	{
 		private:
 			const bool _skip_empty_lines {true};
+			bool _overflow {false};
 
 			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) override final
 			{
@@ -348,15 +349,31 @@ namespace shaga
 						continue;
 					}
 					else if ('\n' == buffer[offset]) {
-						if (false == _skip_empty_lines || false == this->_curdata->empty ()) {
+						if (HEDLEY_UNLIKELY (true == _overflow)) {
+							/* This line was too long and is being discarded */
+							_overflow = false;
+							this->_curdata->zero_size ();
+							this->_curdata->alloc ();
+						}
+						else if (false == _skip_empty_lines || false == this->_curdata->empty ()) {
 							this->push ();
 
 							this->_curdata->zero_size ();
 							this->_curdata->alloc ();
 						}
 					}
+					else if (HEDLEY_UNLIKELY (true == _overflow)) {
+						/* Discard the rest of an oversized line */
+					}
 					else {
-						this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset];
+						try {
+							this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset];
+						}
+						catch (...) {
+							/* Line does not fit into the buffer, discard it and continue with the rest of the input */
+							_overflow = true;
+							this->nonfatal_error ("Line too long"sv);
+						}
 					}
 				}
 			}
@@ -390,16 +407,23 @@ namespace shaga
 
 			virtual bool check (void)
 			{
-				if (true == _has_crc8) {
-					this->_curdata->dec_size ();
-					if (_crc8_val != this->_curdata->buffer[this->_curdata->size ()]) {
-						/* CRC failed */
-						this->nonfatal_error ("CRC mismatch"sv);
-						return false;
+				try {
+					if (true == _has_crc8) {
+						this->_curdata->dec_size ();
+						if (_crc8_val != this->_curdata->buffer[this->_curdata->size ()]) {
+							/* CRC failed */
+							this->nonfatal_error ("CRC mismatch"sv);
+							return false;
+						}
 					}
-				}
 
-				return true;
+					return true;
+				}
+				catch (...) {
+					/* Packet too short to contain CRC */
+					this->nonfatal_error ("Check failed"sv);
+					return false;
+				}
 			}
 
 			virtual void _push_buffer (const uint8_t *const buffer, uint_fast32_t offset, const uint_fast32_t len) override final
@@ -443,12 +467,20 @@ namespace shaga
 							_crc8_val = CRC::_crc8_dallas_table[this->_curdata->buffer[this->_curdata->size () - 1] ^ _crc8_val];
 						}
 
-						if (true == _escape_next_char) {
-							_escape_next_char = false;
-							this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset] ^ 0x80;
+						try {
+							if (true == _escape_next_char) {
+								_escape_next_char = false;
+								this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset] ^ 0x80;
+							}
+							else {
+								this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset];
+							}
 						}
-						else {
-							this->_curdata->buffer[this->_curdata->inc_size ()] = buffer[offset];
+						catch (...) {
+							/* Frame does not fit into the buffer, discard it and wait for the next STX */
+							_got_stx = false;
+							_escape_next_char = false;
+							this->nonfatal_error ("Frame too long"sv);
 						}
 					}
 				}
@@ -534,6 +566,14 @@ namespace shaga
 					else if (1 == _got_stx) {
 						if (_stx[1] == buffer[offset]) {
 							_got_stx = 2;
+						}
+						else if (_stx[0] == buffer[offset]) {
+							/* This byte is not the second STX character, but it can be the first character of a new STX sequence */
+							#ifdef SHAGA_THREADING
+								_ignored_bytes.fetch_add (1, std::memory_order::memory_order_relaxed);
+							#else
+								_ignored_bytes += 1;
+							#endif // SHAGA_THREADING
 						}
 						else {
 							/* Expected second STX character, return to the beginning */
@@ -728,6 +768,13 @@ namespace shaga
 						_size_buf[2] = buffer[offset];
 
 						_remaining_data = BIN::to_uint24 (_size_buf);
+						if (HEDLEY_UNLIKELY (_remaining_data > this->_max_packet_size)) {
+							/* Untrusted length field is larger than the allocated buffer, skip this packet */
+							this->nonfatal_error ("Packet size larger than allocated size, skipping..."sv);
+							_remaining_data = 0;
+							_remaining_crc = 0;
+							continue;
+						}
 						this->_curdata->alloc (_remaining_data);
 						this->_curdata->zero_size ();
 					}
@@ -783,7 +830,9 @@ namespace shaga
 				this->_curdata->alloc (data_length);
 				this->_curdata->set_size (data_length);
 
-				::memcpy (this->_curdata->buffer, buffer + offset + 3, data_length);
+				if (data_length > 0) {
+					::memcpy (this->_curdata->buffer, buffer + offset + 3, data_length);
+				}
 
 				this->push ();
 			}
