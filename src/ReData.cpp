@@ -369,7 +369,7 @@ namespace shaga {
 		_conf = std::move (conf);
 	}
 
-	ReDataConfig& ReData::set_config (void)
+	ReDataConfig& ReData::set_config (void) noexcept
 	{
 		return _conf;
 	}
@@ -438,7 +438,7 @@ namespace shaga {
 
 		size_t i = 0;
 		for (const uint_fast8_t id : idents) {
-			const auto [iter, success] = _key_ident_map.insert (std::make_pair (id, i));
+			const auto [iter, success] = _key_ident_map.try_emplace (id, i);
 			(void) iter;
 
 			if (false == success) {
@@ -478,7 +478,7 @@ namespace shaga {
 		_crypto_keys_mixed.clear ();
 	}
 
-	bool ReData::get_last_decode_was_mixed (void) const
+	bool ReData::get_last_decode_was_mixed (void) const noexcept
 	{
 		return _last_decode_was_mixed;
 	}
@@ -493,7 +493,7 @@ namespace shaga {
 		return _crypto_keys_mixed;
 	}
 
-	size_t ReData::get_key_id (void) const
+	size_t ReData::get_key_id (void) const noexcept
 	{
 		return _key_id;
 	}
@@ -509,7 +509,7 @@ namespace shaga {
 		_last_key_ident = UINT_FAST16_MAX;
 	}
 
-	bool ReData::config_header_enabled (void) const
+	bool ReData::config_header_enabled (void) const noexcept
 	{
 		return _use_config_header;
 	}
@@ -519,7 +519,7 @@ namespace shaga {
 		_use_config_header = enabled;
 	}
 
-	bool ReData::key_ident_enabled (void) const
+	bool ReData::key_ident_enabled (void) const noexcept
 	{
 		return _use_key_ident;
 	}

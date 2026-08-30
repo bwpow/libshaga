@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_full_mt
-#define HEAD_shaga_full_mt
+#pragma once
 
 #ifdef SHAGA
 #error You must include only one shaga*.h
@@ -17,5 +16,3 @@ All rights reserved.
 #define SHAGA_MULTI_THREAD
 
 #include "shaga/common.h"
-
-#endif // HEAD_shaga_full_mt

@@ -171,7 +171,7 @@ namespace shaga {
 
 #define SIPHASH_DATA reinterpret_cast<const uint8_t *>(plain.data ())
 #define SIPHASH_DATA_SIZE plain.size ()
-#define SIPHASH_PARAMS const std::string_view plain, const ReDataConfig::DigestCache &cache
+#define SIPHASH_PARAMS const std::string_view plain, ReDataConfig::DigestCache &cache
 
 #define SIPHASH_BEGIN_KEYS \
 	uint64_t vv0 = 0x736f6d6570736575ULL ^ cache.siphash_k0;				\
@@ -189,7 +189,7 @@ namespace shaga {
 
 #define HALFSIPHASH_DATA reinterpret_cast<const uint8_t *>(plain.data ())
 #define HALFSIPHASH_DATA_SIZE plain.size ()
-#define HALFSIPHASH_PARAMS const std::string_view plain, const ReDataConfig::DigestCache &cache
+#define HALFSIPHASH_PARAMS const std::string_view plain, ReDataConfig::DigestCache &cache
 
 #define HALFSIPHASH_BEGIN_KEYS \
 	uint32_t vv0 = cache.halfsiphash_k0;				\
@@ -204,7 +204,7 @@ namespace shaga {
 #undef HALFSIPHASH_DATA_SIZE
 #undef HALFSIPHASH_DATA
 
-	typedef std::function<void(const std::string_view, ReDataConfig::DigestCache &, std::string &)> HASH_FUNC;
+	using HASH_FUNC = void (*)(const std::string_view, ReDataConfig::DigestCache &, std::string &);
 
 	HEDLEY_WARN_UNUSED_RESULT static inline HASH_FUNC _get_digest_calc_function (const ReDataConfig::DIGEST digest)
 	{

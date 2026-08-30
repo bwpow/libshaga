@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_BINstatic
-#define HEAD_shaga_BINstatic
+#pragma once
 
 #include "common.h"
 
@@ -491,5 +490,3 @@ namespace shaga::BIN {
 		return val;
 	}
 }
-
-#endif // HEAD_shaga_BINstatic

@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_Digest
-#define HEAD_shaga_Digest
+#pragma once
 
 #include "common.h"
 
@@ -125,5 +124,3 @@ namespace shaga::Digest {
 		return halfsiphash48_64s (plain.data (), plain.size (), key);
 	}
 }
-
-#endif // HEAD_shaga_Digest

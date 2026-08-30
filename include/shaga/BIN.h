@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_BIN
-#define HEAD_shaga_BIN
+#pragma once
 
 #include "common.h"
 
@@ -189,5 +188,3 @@ namespace shaga::BIN
 	void from_size_utf8 (const size_t sze, std::string &s);
 	std::string from_size_utf8 (const size_t sze);
 }
-
-#endif // HEAD_shaga_BIN

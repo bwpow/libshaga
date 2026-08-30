@@ -9,6 +9,19 @@ All rights reserved.
 
 using namespace shaga;
 
+static_assert (noexcept (std::declval<const ChunkMeta &> ().get_value_optional<> ("KEY"sv)));
+static_assert (noexcept (std::declval<const ChunkMeta &> ().get_value_optional<> (uint16_t {})));
+static_assert (noexcept (std::declval<const ChunkMeta &> ().get_bool_optional ("KEY"sv)));
+static_assert (noexcept (std::declval<const ChunkMeta &> ().get_uint8_optional ("KEY"sv)));
+static_assert (noexcept (std::declval<const ChunkMeta &> ().get_int8_optional ("KEY"sv)));
+static_assert (noexcept (std::declval<const ChunkMeta &> ().get_uint16_optional ("KEY"sv)));
+static_assert (noexcept (std::declval<const ChunkMeta &> ().get_int16_optional ("KEY"sv)));
+static_assert (noexcept (std::declval<const ChunkMeta &> ().get_uint24_optional ("KEY"sv)));
+static_assert (noexcept (std::declval<const ChunkMeta &> ().get_uint32_optional ("KEY"sv)));
+static_assert (noexcept (std::declval<const ChunkMeta &> ().get_int32_optional ("KEY"sv)));
+static_assert (noexcept (std::declval<const ChunkMeta &> ().get_uint64_optional ("KEY"sv)));
+static_assert (noexcept (std::declval<const ChunkMeta &> ().get_int64_optional ("KEY"sv)));
+
 TEST (ChunkMeta, add_value)
 {
 	ChunkMeta meta;
@@ -109,6 +122,33 @@ TEST (ChunkMeta, get_defaults_optional)
 	const auto opt = meta.get_int16_optional ("OPT");
 	EXPECT_TRUE (opt.has_value ());
 	EXPECT_EQ (opt.value (), -12);
+}
+
+TEST (ChunkMeta, get_value_optional)
+{
+	ChunkMeta meta;
+	meta.add_value ("OPT", "value"sv);
+
+	EXPECT_EQ (meta.get_value_optional<> ("OPT"sv), "value"sv);
+	EXPECT_FALSE (meta.get_value_optional<> ("MIS"sv).has_value ());
+	EXPECT_FALSE (meta.get_value_optional<> ("invalid"sv).has_value ());
+}
+
+TEST (ChunkMeta, malformed_keys_optional)
+{
+	ChunkMeta meta;
+	const std::string_view malformed = "invalid"sv;
+
+	EXPECT_FALSE (meta.get_bool_optional (malformed).has_value ());
+	EXPECT_FALSE (meta.get_uint8_optional (malformed).has_value ());
+	EXPECT_FALSE (meta.get_int8_optional (malformed).has_value ());
+	EXPECT_FALSE (meta.get_uint16_optional (malformed).has_value ());
+	EXPECT_FALSE (meta.get_int16_optional (malformed).has_value ());
+	EXPECT_FALSE (meta.get_uint24_optional (malformed).has_value ());
+	EXPECT_FALSE (meta.get_uint32_optional (malformed).has_value ());
+	EXPECT_FALSE (meta.get_int32_optional (malformed).has_value ());
+	EXPECT_FALSE (meta.get_uint64_optional (malformed).has_value ());
+	EXPECT_FALSE (meta.get_int64_optional (malformed).has_value ());
 }
 
 TEST (ChunkMeta, get_bool_optional)

@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_EncodeSPSC
-#define HEAD_shaga_EncodeSPSC
+#pragma once
 
 #include "common.h"
 
@@ -831,5 +830,3 @@ namespace shaga
 			}
 	};
 }
-
-#endif // HEAD_shaga_EncodeSPSC

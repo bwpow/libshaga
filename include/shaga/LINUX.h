@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_LINUX
-#define HEAD_shaga_LINUX
+#pragma once
 
 #include "common.h"
 
@@ -43,5 +42,3 @@ namespace shaga::LINUX {
 }
 
 #endif // OS_LINUX
-
-#endif // HEAD_shaga_LINUX

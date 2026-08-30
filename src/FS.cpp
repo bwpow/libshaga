@@ -56,13 +56,18 @@ namespace shaga {
 		return st.st_size;
 	}
 
-	std::optional<off64_t> FS::file_size_optional (const std::string_view fname)
+	std::optional<off64_t> FS::file_size_optional (const std::string_view fname) noexcept
 	{
-		struct stat st;
-		if (::stat (s_c_str (fname), &st) != 0) {
+		try {
+			struct stat st;
+			if (::stat (s_c_str (fname), &st) != 0) {
+				return std::nullopt;
+			}
+			return st.st_size;
+		}
+		catch (...) {
 			return std::nullopt;
 		}
-		return st.st_size;
 	}
 
 	time_t FS::file_mtime (const std::string_view fname)
@@ -74,13 +79,18 @@ namespace shaga {
 		return st.st_mtime;
 	}
 
-	std::optional<time_t> FS::file_mtime_optional (const std::string_view fname)
+	std::optional<time_t> FS::file_mtime_optional (const std::string_view fname) noexcept
 	{
-		struct stat st;
-		if (::stat (s_c_str (fname), &st) != 0) {
+		try {
+			struct stat st;
+			if (::stat (s_c_str (fname), &st) != 0) {
+				return std::nullopt;
+			}
+			return st.st_mtime;
+		}
+		catch (...) {
 			return std::nullopt;
 		}
-		return st.st_mtime;
 	}
 
 	bool FS::is_dir (const std::string_view dname)

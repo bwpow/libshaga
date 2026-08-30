@@ -541,14 +541,14 @@ namespace shaga {
 		get_uint_helper (to_int64, 8)
 	}
 
-	std::optional<bool> ChunkMeta::get_bool_optional (const std::string_view key) const
+	std::optional<bool> ChunkMeta::get_bool_optional (const std::string_view key) const noexcept
 	{
-		const auto val = get_value (key);
-		if (val.size () < 1) {
+		try {
+			return get_bool_optional (key_to_bin (key));
+		}
+		catch (...) {
 			return std::nullopt;
 		}
-
-		return (0 != BIN::_to_uint8 (val.data ()));
 	}
 
 	std::optional<bool> ChunkMeta::get_bool_optional (const uint16_t key) const noexcept
@@ -563,9 +563,14 @@ namespace shaga {
 
 #define default_value std::nullopt
 
-	std::optional<uint8_t> ChunkMeta::get_uint8_optional (const std::string_view key) const
+	std::optional<uint8_t> ChunkMeta::get_uint8_optional (const std::string_view key) const noexcept
 	{
-		get_uint_helper (_to_uint8, 1)
+		try {
+			return get_uint8_optional (key_to_bin (key));
+		}
+		catch (...) {
+			return std::nullopt;
+		}
 	}
 
 	std::optional<uint8_t> ChunkMeta::get_uint8_optional (const uint16_t key) const noexcept
@@ -573,9 +578,14 @@ namespace shaga {
 		get_uint_helper (_to_uint8, 1)
 	}
 
-	std::optional<int8_t> ChunkMeta::get_int8_optional (const std::string_view key) const
+	std::optional<int8_t> ChunkMeta::get_int8_optional (const std::string_view key) const noexcept
 	{
-		get_uint_helper (to_int8, 1)
+		try {
+			return get_int8_optional (key_to_bin (key));
+		}
+		catch (...) {
+			return std::nullopt;
+		}
 	}
 
 	std::optional<int8_t> ChunkMeta::get_int8_optional (const uint16_t key) const noexcept
@@ -583,9 +593,14 @@ namespace shaga {
 		get_uint_helper (to_int8, 1)
 	}
 
-	std::optional<uint16_t> ChunkMeta::get_uint16_optional (const std::string_view key) const
+	std::optional<uint16_t> ChunkMeta::get_uint16_optional (const std::string_view key) const noexcept
 	{
-		get_uint_helper (_to_uint16, 2)
+		try {
+			return get_uint16_optional (key_to_bin (key));
+		}
+		catch (...) {
+			return std::nullopt;
+		}
 	}
 
 	std::optional<uint16_t> ChunkMeta::get_uint16_optional (const uint16_t key) const noexcept
@@ -593,9 +608,14 @@ namespace shaga {
 		get_uint_helper (_to_uint16, 2)
 	}
 
-	std::optional<int16_t> ChunkMeta::get_int16_optional (const std::string_view key) const
+	std::optional<int16_t> ChunkMeta::get_int16_optional (const std::string_view key) const noexcept
 	{
-		get_uint_helper (to_int16, 2)
+		try {
+			return get_int16_optional (key_to_bin (key));
+		}
+		catch (...) {
+			return std::nullopt;
+		}
 	}
 
 	std::optional<int16_t> ChunkMeta::get_int16_optional (const uint16_t key) const noexcept
@@ -603,9 +623,14 @@ namespace shaga {
 		get_uint_helper (to_int16, 2)
 	}
 
-	std::optional<uint32_t> ChunkMeta::get_uint24_optional (const std::string_view key) const
+	std::optional<uint32_t> ChunkMeta::get_uint24_optional (const std::string_view key) const noexcept
 	{
-		get_uint_helper (to_uint24, 3)
+		try {
+			return get_uint24_optional (key_to_bin (key));
+		}
+		catch (...) {
+			return std::nullopt;
+		}
 	}
 
 	std::optional<uint32_t> ChunkMeta::get_uint24_optional (const uint16_t key) const noexcept
@@ -613,9 +638,14 @@ namespace shaga {
 		get_uint_helper (to_uint24, 3)
 	}
 
-	std::optional<uint32_t> ChunkMeta::get_uint32_optional (const std::string_view key) const
+	std::optional<uint32_t> ChunkMeta::get_uint32_optional (const std::string_view key) const noexcept
 	{
-		get_uint_helper (_to_uint32, 4)
+		try {
+			return get_uint32_optional (key_to_bin (key));
+		}
+		catch (...) {
+			return std::nullopt;
+		}
 	}
 
 	std::optional<uint32_t> ChunkMeta::get_uint32_optional (const uint16_t key) const noexcept
@@ -623,9 +653,14 @@ namespace shaga {
 		get_uint_helper (_to_uint32, 4)
 	}
 
-	std::optional<int32_t> ChunkMeta::get_int32_optional (const std::string_view key) const
+	std::optional<int32_t> ChunkMeta::get_int32_optional (const std::string_view key) const noexcept
 	{
-		get_uint_helper (to_int32, 4)
+		try {
+			return get_int32_optional (key_to_bin (key));
+		}
+		catch (...) {
+			return std::nullopt;
+		}
 	}
 
 	std::optional<int32_t> ChunkMeta::get_int32_optional (const uint16_t key) const noexcept
@@ -633,9 +668,14 @@ namespace shaga {
 		get_uint_helper (to_int32, 4)
 	}
 
-	std::optional<uint64_t> ChunkMeta::get_uint64_optional (const std::string_view key) const
+	std::optional<uint64_t> ChunkMeta::get_uint64_optional (const std::string_view key) const noexcept
 	{
-		get_uint_helper (_to_uint64, 8)
+		try {
+			return get_uint64_optional (key_to_bin (key));
+		}
+		catch (...) {
+			return std::nullopt;
+		}
 	}
 
 	std::optional<uint64_t> ChunkMeta::get_uint64_optional (const uint16_t key) const noexcept
@@ -643,9 +683,14 @@ namespace shaga {
 		get_uint_helper (_to_uint64, 8)
 	}
 
-	std::optional<int64_t> ChunkMeta::get_int64_optional (const std::string_view key) const
+	std::optional<int64_t> ChunkMeta::get_int64_optional (const std::string_view key) const noexcept
 	{
-		get_uint_helper (to_int64, 8)
+		try {
+			return get_int64_optional (key_to_bin (key));
+		}
+		catch (...) {
+			return std::nullopt;
+		}
 	}
 
 	std::optional<int64_t> ChunkMeta::get_int64_optional (const uint16_t key) const noexcept

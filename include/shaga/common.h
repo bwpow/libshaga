@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_common
-#define HEAD_shaga_common
+#pragma once
 
 #if (!defined (__cplusplus)) || (__cplusplus < 201703L)
 	#error At least C++17 compiler required.
@@ -97,6 +96,7 @@ All rights reserved.
 #include "3rdparty/hedley.h"
 
 #include <new>
+#include <array>
 #include <vector>
 #include <string>
 #include <deque>
@@ -117,6 +117,7 @@ All rights reserved.
 #include <optional>
 #include <any>
 #include <variant>
+#include <charconv>
 
 #include <random>
 #include <chrono>
@@ -224,63 +225,34 @@ using namespace nlohmann::literals;
 #define _SHAGA_SPSC_I_RING(x) x = (x + 1) % this->_num_packets
 
 /* Macro to enable a template function only if T is an iterable type */
-#define SHAGA_TYPE_IS_ITERABLE(T) std::enable_if_t<shaga::is_iterable_v<T>, bool> = true
+#define SHAGA_TYPE_IS_ITERABLE(T) shaga::enable_if_shaga_type_is_iterable_t<T> = true
 
 /* Macro to enable a template function only if T is an integer type (according to std::numeric_limits) */
-#define SHAGA_TYPE_IS_INTEGER(T) std::enable_if_t<std::numeric_limits<T>::is_integer, bool> = true
+#define SHAGA_TYPE_IS_INTEGER(T) shaga::enable_if_shaga_type_is_integer_t<T> = true
 
 /* Macro to enable a template function only if T is an integral type (according to std::is_integral) */
-#define SHAGA_TYPE_IS_INTEGRAL(T) std::enable_if_t<std::is_integral<T>::value, bool> = true
+#define SHAGA_TYPE_IS_INTEGRAL(T) shaga::enable_if_shaga_type_is_integral_t<T> = true
 
 /* Macro to enable a template function only if T is uint8/16/32/64 */
-#define SHAGA_TYPE_IS_SUPPORTED_UINT(T) std::enable_if_t< \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint8_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint16_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint32_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint64_t>, \
-	bool> = true
+#define SHAGA_TYPE_IS_SUPPORTED_UINT(T) shaga::enable_if_shaga_type_is_supported_uint_t<T> = true
 
 /* Macro to enable a template function only if T is int8/16/32/64 */
-#define SHAGA_TYPE_IS_SUPPORTED_INT(T) std::enable_if_t< \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int8_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int16_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int32_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int64_t>, \
-	bool> = true
+#define SHAGA_TYPE_IS_SUPPORTED_INT(T) shaga::enable_if_shaga_type_is_supported_int_t<T> = true
 
 /* Macro to enable a template function only if T is (u)int8/16/32/64 */
-#define SHAGA_TYPE_IS_SUPPORTED_xINT(T) std::enable_if_t< \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint8_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint16_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint32_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint64_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int8_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int16_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int32_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int64_t>, \
-	bool> = true
+#define SHAGA_TYPE_IS_SUPPORTED_xINT(T) shaga::enable_if_shaga_type_is_supported_xint_t<T> = true
 
 /* Macro to enable a template function only if T is (u)int8/16/32/64 or bool */
-#define SHAGA_TYPE_IS_SUPPORTED_xINTBOOL(T) std::enable_if_t< \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, bool> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint8_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint16_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint32_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint64_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int8_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int16_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int32_t> || \
-	std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int64_t>, \
-	bool> = true
+#define SHAGA_TYPE_IS_SUPPORTED_xINTBOOL(T) shaga::enable_if_shaga_type_is_supported_xintbool_t<T> = true
 
 /* Macro to enable a template function only if T is a floating-point type */
-#define SHAGA_TYPE_IS_FLOATING(T) std::enable_if_t<std::is_floating_point<T>::value, bool> = true
+#define SHAGA_TYPE_IS_FLOATING(T) shaga::enable_if_shaga_type_is_floating_t<T> = true
 
 /* Macro to enable a template function only if T is a class type */
-#define SHAGA_TYPE_IS_CLASS(T) typename std::enable_if<std::is_class<T>::value, T>::type* = nullptr
+#define SHAGA_TYPE_IS_CLASS(T) shaga::enable_if_shaga_type_is_class_t<T> = nullptr
 
 /* Macro to enable a template function only if T is a numeric type (either integral or floating-point) */
-#define SHAGA_TYPE_IS_NUMBER(T) std::enable_if_t<std::is_arithmetic<T>::value, bool> = true
+#define SHAGA_TYPE_IS_NUMBER(T) shaga::enable_if_shaga_type_is_number_t<T> = true
 
 /* This macro is used to identify methods and functions that return std::string view */
 /* Useful for static analysis to point out potentially dangerous methods. */
@@ -305,6 +277,76 @@ namespace shaga
 
 	template <typename T>
 	constexpr bool is_iterable_v = is_iterable<T>::value;
+
+	template <typename T>
+	inline constexpr bool shaga_type_is_iterable_v = is_iterable_v<T>;
+
+	template <typename T>
+	inline constexpr bool shaga_type_is_integer_v = std::numeric_limits<T>::is_integer;
+
+	template <typename T>
+	inline constexpr bool shaga_type_is_integral_v = std::is_integral<T>::value;
+
+	template <typename T>
+	inline constexpr bool shaga_type_is_supported_uint_v =
+		std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint8_t> ||
+		std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint16_t> ||
+		std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint32_t> ||
+		std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, uint64_t>;
+
+	template <typename T>
+	inline constexpr bool shaga_type_is_supported_int_v =
+		std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int8_t> ||
+		std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int16_t> ||
+		std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int32_t> ||
+		std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, int64_t>;
+
+	template <typename T>
+	inline constexpr bool shaga_type_is_supported_xint_v =
+		shaga_type_is_supported_uint_v<T> || shaga_type_is_supported_int_v<T>;
+
+	template <typename T>
+	inline constexpr bool shaga_type_is_supported_xintbool_v =
+		std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, bool> || shaga_type_is_supported_xint_v<T>;
+
+	template <typename T>
+	inline constexpr bool shaga_type_is_floating_v = std::is_floating_point<T>::value;
+
+	template <typename T>
+	inline constexpr bool shaga_type_is_class_v = std::is_class<T>::value;
+
+	template <typename T>
+	inline constexpr bool shaga_type_is_number_v = std::is_arithmetic<T>::value;
+
+	template <typename T>
+	using enable_if_shaga_type_is_iterable_t = std::enable_if_t<shaga_type_is_iterable_v<T>, bool>;
+
+	template <typename T>
+	using enable_if_shaga_type_is_integer_t = std::enable_if_t<shaga_type_is_integer_v<T>, bool>;
+
+	template <typename T>
+	using enable_if_shaga_type_is_integral_t = std::enable_if_t<shaga_type_is_integral_v<T>, bool>;
+
+	template <typename T>
+	using enable_if_shaga_type_is_supported_uint_t = std::enable_if_t<shaga_type_is_supported_uint_v<T>, bool>;
+
+	template <typename T>
+	using enable_if_shaga_type_is_supported_int_t = std::enable_if_t<shaga_type_is_supported_int_v<T>, bool>;
+
+	template <typename T>
+	using enable_if_shaga_type_is_supported_xint_t = std::enable_if_t<shaga_type_is_supported_xint_v<T>, bool>;
+
+	template <typename T>
+	using enable_if_shaga_type_is_supported_xintbool_t = std::enable_if_t<shaga_type_is_supported_xintbool_v<T>, bool>;
+
+	template <typename T>
+	using enable_if_shaga_type_is_floating_t = std::enable_if_t<shaga_type_is_floating_v<T>, bool>;
+
+	template <typename T>
+	using enable_if_shaga_type_is_class_t = typename std::enable_if<shaga_type_is_class_v<T>, T>::type*;
+
+	template <typename T>
+	using enable_if_shaga_type_is_number_t = std::enable_if_t<shaga_type_is_number_v<T>, bool>;
 
 	template <typename... Args>
 	using all_convertible_to_string_view = std::conjunction<std::is_convertible<Args, std::string_view>...>;
@@ -691,5 +733,3 @@ namespace shaga
 	extern template class SeqPacketEncodeSPSC<SPSCDataDynAlloc>;
 	extern template class SeqPacketDecodeSPSC<SPSCDataDynAlloc>;
 }
-
-#endif // HEAD_shaga

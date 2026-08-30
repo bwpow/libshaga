@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_INI
-#define HEAD_shaga_INI
+#pragma once
 
 #include "common.h"
 
@@ -52,10 +51,10 @@ namespace shaga {
 		public:
 			INI ();
 			INI (const INI &other);
-			INI (INI &&other);
+			INI (INI &&other) noexcept;
 
 			INI& operator= (const INI &other);
-			INI& operator= (INI &&other);
+			INI& operator= (INI &&other) noexcept;
 
 			INI (const std::string_view fname, const bool allow_include = false, const bool ignore_broken_lines = false);
 
@@ -69,8 +68,8 @@ namespace shaga {
 			void save_to_buffer (std::string &out) const;
 			std::string save_to_buffer (void) const;
 
-			void save_to_json (nlohmann::json &out) const;
-			nlohmann::json save_to_json (void) const;
+			void save_to_json (nlohmann::json &out, const bool infer_json_types = false) const;
+			nlohmann::json save_to_json (const bool infer_json_types = false) const;
 
 			COMMON_LIST get_section_list (void) const;
 
@@ -200,5 +199,3 @@ namespace shaga {
 			size_t erase (EraseCallback should_delete);
 	};
 }
-
-#endif // HEAD_shaga_INI

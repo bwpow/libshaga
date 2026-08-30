@@ -10,6 +10,9 @@ All rights reserved.
 
 using namespace shaga;
 
+static_assert (std::is_nothrow_move_constructible<INI>::value);
+static_assert (std::is_nothrow_move_assignable<INI>::value);
+
 namespace {
 	std::string make_temp_ini_path (void)
 	{
@@ -219,6 +222,90 @@ TEST (INI, save_to_json_shape)
 
 	const nlohmann::json out2 = ini.save_to_json ();
 	EXPECT_EQ (out2.dump (), out.dump ());
+}
+
+TEST (INI, save_to_json_type_inference_disabled)
+{
+	INI ini;
+	ini.set_string ("main", "boolean", "true"sv, false);
+	ini.set_string ("main", "number", "42"sv, false);
+	ini.set_string ("main", "null", "null"sv, false);
+	ini.set_string ("main", "object", R"({"key":1})"sv, false);
+	ini.set_string ("main", "list", "1"sv, true);
+	ini.set_string ("main", "list", "false"sv, true);
+
+	const nlohmann::json default_out = ini.save_to_json ();
+	const nlohmann::json false_out = ini.save_to_json (false);
+	nlohmann::json overload_out;
+	ini.save_to_json (overload_out, false);
+
+	EXPECT_EQ (default_out, false_out);
+	EXPECT_EQ (default_out, overload_out);
+	EXPECT_TRUE (default_out["main"]["boolean"].is_string ());
+	EXPECT_TRUE (default_out["main"]["number"].is_string ());
+	EXPECT_TRUE (default_out["main"]["null"].is_string ());
+	EXPECT_TRUE (default_out["main"]["object"].is_string ());
+	ASSERT_TRUE (default_out["main"]["list"].is_array ());
+	EXPECT_TRUE (default_out["main"]["list"][0].is_string ());
+	EXPECT_TRUE (default_out["main"]["list"][1].is_string ());
+}
+
+TEST (INI, save_to_json_type_inference_enabled)
+{
+	INI ini;
+	ini.set_string ("types", "true", "true"sv, false);
+	ini.set_string ("types", "false", "false"sv, false);
+	ini.set_string ("types", "null", "null"sv, false);
+	ini.set_string ("types", "signed", "-9223372036854775808"sv, false);
+	ini.set_string ("types", "unsigned", "18446744073709551615"sv, false);
+	ini.set_string ("types", "float", "-1.25e+3"sv, false);
+	ini.set_string ("types", "array", R"([1,true,null,"x"])"sv, false);
+	ini.set_string ("types", "object", R"({"number":2,"boolean":false})"sv, false);
+	ini.set_string ("types", "quoted", R"("text")"sv, false);
+	ini.set_string ("types", "whitespace", "  42 \t"sv, false);
+
+	const nlohmann::json out = ini.save_to_json (true);
+
+	EXPECT_EQ (out["types"]["true"], true);
+	EXPECT_EQ (out["types"]["false"], false);
+	EXPECT_TRUE (out["types"]["null"].is_null ());
+	EXPECT_TRUE (out["types"]["signed"].is_number_integer ());
+	EXPECT_EQ (out["types"]["signed"].get<int64_t> (), std::numeric_limits<int64_t>::min ());
+	EXPECT_TRUE (out["types"]["unsigned"].is_number_unsigned ());
+	EXPECT_EQ (out["types"]["unsigned"].get<uint64_t> (), std::numeric_limits<uint64_t>::max ());
+	EXPECT_TRUE (out["types"]["float"].is_number_float ());
+	EXPECT_DOUBLE_EQ (out["types"]["float"].get<double> (), -1250.0);
+	EXPECT_EQ (out["types"]["array"], nlohmann::json::parse (R"([1,true,null,"x"])"));
+	EXPECT_EQ (out["types"]["object"], nlohmann::json::parse (R"({"number":2,"boolean":false})"));
+	EXPECT_EQ (out["types"]["quoted"], "text");
+	EXPECT_EQ (out["types"]["whitespace"], 42);
+}
+
+TEST (INI, save_to_json_type_inference_fallbacks_and_repeated_values)
+{
+	INI ini;
+	ini.set_string ("fallback", "empty", ""sv, false);
+	ini.set_string ("fallback", "leading_zero", "01"sv, false);
+	ini.set_string ("fallback", "trailing", "42 trailing"sv, false);
+	ini.set_string ("fallback", "above_unsigned", "18446744073709551616"sv, false);
+	ini.set_string ("fallback", "invalid_array", "[1,]"sv, false);
+	ini.set_string ("fallback", "repeated", "true"sv, true);
+	ini.set_string ("fallback", "repeated", "01"sv, true);
+	ini.set_string ("fallback", "repeated", R"({"x":1})"sv, true);
+
+	nlohmann::json out;
+	ini.save_to_json (out, true);
+
+	EXPECT_EQ (out["fallback"]["empty"], "");
+	EXPECT_EQ (out["fallback"]["leading_zero"], "01");
+	EXPECT_EQ (out["fallback"]["trailing"], "42 trailing");
+	EXPECT_TRUE (out["fallback"]["above_unsigned"].is_number_float ());
+	EXPECT_EQ (out["fallback"]["invalid_array"], "[1,]");
+	ASSERT_TRUE (out["fallback"]["repeated"].is_array ());
+	ASSERT_EQ (out["fallback"]["repeated"].size (), 3u);
+	EXPECT_EQ (out["fallback"]["repeated"][0], true);
+	EXPECT_EQ (out["fallback"]["repeated"][1], "01");
+	EXPECT_EQ (out["fallback"]["repeated"][2], nlohmann::json::parse (R"({"x":1})"));
 }
 
 TEST (INI, array_bracket_single_entry_preserved)

@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_ReData
-#define HEAD_shaga_ReData
+#pragma once
 
 #include "common.h"
 
@@ -17,12 +16,12 @@ All rights reserved.
 namespace shaga {
 	class ReDataConfig {
 		public:
-			static const constexpr uint8_t key_digest_mask   {0b0000'1111};
-			static const constexpr uint8_t key_crypto_mask   {0b0111'0000};
-			static const constexpr uint8_t key_highbit_mask  {0b1000'0000};
+			static constexpr uint8_t key_digest_mask   {0b0000'1111};
+			static constexpr uint8_t key_crypto_mask   {0b0111'0000};
+			static constexpr uint8_t key_highbit_mask  {0b1000'0000};
 
-			static const constexpr uint32_t key_digest_shift = BIN::count_trailing_zeros (key_digest_mask);
-			static const constexpr uint32_t key_crypto_shift = BIN::count_trailing_zeros (key_crypto_mask);
+			static constexpr uint32_t key_digest_shift = BIN::count_trailing_zeros (key_digest_mask);
+			static constexpr uint32_t key_crypto_shift = BIN::count_trailing_zeros (key_crypto_mask);
 
 			enum class DIGEST_HMAC_TYPE {
 				NONE,
@@ -130,9 +129,9 @@ namespace shaga {
 			ReDataConfig ();
 
 			ReDataConfig (const ReDataConfig &conf);
-			ReDataConfig (ReDataConfig &&conf);
+			ReDataConfig (ReDataConfig &&conf) noexcept;
 			ReDataConfig& operator= (const ReDataConfig &conf);
-			ReDataConfig& operator= (ReDataConfig &&conf);
+			ReDataConfig& operator= (ReDataConfig &&conf) noexcept;
 
 			void reset (void);
 
@@ -148,17 +147,17 @@ namespace shaga {
 			ReDataConfig& set_crypto (const ReDataConfig::CRYPTO v);
 			ReDataConfig& set_crypto (const std::string_view str);
 
-			HEDLEY_WARN_UNUSED_RESULT ReDataConfig::DIGEST get_digest (void) const;
-			HEDLEY_WARN_UNUSED_RESULT ReDataConfig::CRYPTO get_crypto (void) const;
+			HEDLEY_WARN_UNUSED_RESULT ReDataConfig::DIGEST get_digest (void) const noexcept;
+			HEDLEY_WARN_UNUSED_RESULT ReDataConfig::CRYPTO get_crypto (void) const noexcept;
 
 			SHAGA_STRV std::string_view get_digest_text (void) const;
 			SHAGA_STRV std::string_view get_crypto_text (void) const;
 
 			std::string describe (void) const;
 
-			HEDLEY_WARN_UNUSED_RESULT bool is_compatible_digest (const ReDataConfig &other) const;
-			HEDLEY_WARN_UNUSED_RESULT bool is_compatible_crypto (const ReDataConfig &other) const;
-			HEDLEY_WARN_UNUSED_RESULT bool is_compatible (const ReDataConfig &other) const;
+			HEDLEY_WARN_UNUSED_RESULT bool is_compatible_digest (const ReDataConfig &other) const noexcept;
+			HEDLEY_WARN_UNUSED_RESULT bool is_compatible_crypto (const ReDataConfig &other) const noexcept;
+			HEDLEY_WARN_UNUSED_RESULT bool is_compatible (const ReDataConfig &other) const noexcept;
 
 			/* ReDataConfigDigest.cpp */
 			void calc_digest (const std::string_view plain, std::string &out, const std::string_view key) const;
@@ -250,7 +249,7 @@ namespace shaga {
 			ReDataConfig get_config (void) const;
 			void set_config (const ReDataConfig &conf);
 			void set_config (ReDataConfig &&conf);
-			ReDataConfig& set_config (void);
+			ReDataConfig& set_config (void) noexcept;
 
 			void set_hmac_key (const std::string_view key);
 			void set_crypto_key (const std::string_view key);
@@ -266,25 +265,23 @@ namespace shaga {
 			/* Stop using mix key */
 			void clear_mix_key (void);
 			/* Returns true if last successfull decode was using mixed keys, false if normal keys */
-			bool get_last_decode_was_mixed (void) const;
+			bool get_last_decode_was_mixed (void) const noexcept;
 
 			/* Get vectors of mixed keys */
 			COMMON_VECTOR get_mixed_hmac_keys (void) const;
 			COMMON_VECTOR get_mixed_crypto_keys (void) const;
 
-			size_t get_key_id (void) const;
+			size_t get_key_id (void) const noexcept;
 			void set_key_id (const size_t id);
 
-			bool config_header_enabled (void) const;
+			bool config_header_enabled (void) const noexcept;
 			void use_config_header (const bool enabled);
 
 			/* Decode normally loops through all keys until it finds one that works.
 			But if you have a lot of keys or want to skip this, enable key ident and set
 			different key ident for every key. It adds one byte to the message, but uses only
 			one decryption/digest check. */
-			bool key_ident_enabled (void) const;
+			bool key_ident_enabled (void) const noexcept;
 			void use_key_ident (const bool enabled);
 	};
 }
-
-#endif // HEAD_shaga_ReData

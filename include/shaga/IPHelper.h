@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_IPHelper
-#define HEAD_shaga_IPHelper
+#pragma once
 
 #include "common.h"
 
@@ -51,20 +50,20 @@ namespace shaga {
 			IPHelper (const struct sockaddr_storage &addr_in);
 			IPHelper (const Type type, const void *buf, const size_t sze);
 
-			int get_af (void) const;
+			int get_af (void) const noexcept;
 			std::string get_af_string (void) const;
 
-			struct sockaddr_storage get_sockaddr_storage (void) const;
+			struct sockaddr_storage get_sockaddr_storage (void) const noexcept;
 
 			void set_port (const uint16_t port);
 			uint16_t get_port (void) const;
 
 			void set_mask (const int mask);
-			int get_mask (void) const;
+			int get_mask (void) const noexcept;
 			struct sockaddr_storage get_mask_struct (void) const;
 			std::string get_mask_string (void) const;
 
-			struct sockaddr_storage get_ip_struct (void) const;
+			struct sockaddr_storage get_ip_struct (void) const noexcept;
 			std::string get_ip_string (const bool append_mask = true) const;
 
 			struct sockaddr_storage get_subnet_struct (void) const;
@@ -86,5 +85,3 @@ namespace shaga {
 			friend bool operator< (const IPHelper &a, const IPHelper &b);
 	};
 }
-
-#endif // HEAD_shaga_IPHelper

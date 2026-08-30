@@ -545,7 +545,7 @@ namespace shaga {
 		return data;
 	}
 
-	bool ShFile::has_file_name (void) const
+	bool ShFile::has_file_name (void) const noexcept
 	{
 		return (_filename.empty () == false);
 	}
@@ -564,7 +564,7 @@ namespace shaga {
 		_filename.assign (filename);
 	}
 
-	bool ShFile::has_rename_on_close (void) const
+	bool ShFile::has_rename_on_close (void) const noexcept
 	{
 		return (_rename_on_close_filename.empty () == false);
 	}
@@ -597,7 +597,7 @@ namespace shaga {
 		set_mode (mWRITE);
 	}
 
-	uint8_t ShFile::get_mode (void) const
+	uint8_t ShFile::get_mode (void) const noexcept
 	{
 		return _mode;
 	}
@@ -610,7 +610,7 @@ namespace shaga {
 		_mask = mask;
 	}
 
-	mode_t ShFile::get_mask (void) const
+	mode_t ShFile::get_mask (void) const noexcept
 	{
 		return _mask;
 	}
@@ -915,12 +915,12 @@ namespace shaga {
 		return st.st_mtime;
 	}
 
-	int ShFile::get_file_descriptor (void) const
+	int ShFile::get_file_descriptor (void) const noexcept
 	{
 		return _fd;
 	}
 
-	bool ShFile::is_opened (void) const
+	bool ShFile::is_opened (void) const noexcept
 	{
 		return (_fd >= 0);
 	}

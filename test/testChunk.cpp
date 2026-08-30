@@ -9,6 +9,12 @@ All rights reserved.
 
 using namespace shaga;
 
+static_assert (noexcept (std::declval<const Chunk &> ().get_source_hwid ()));
+static_assert (noexcept (std::declval<const Chunk &> ().has_payload ()));
+static_assert (noexcept (std::declval<const Chunk &> ().compare (std::declval<const Chunk &> ())));
+static_assert (noexcept (std::declval<const HWIDMASK &> ().check (HWID {})));
+static_assert (noexcept (std::declval<const HWIDMASK &> () < std::declval<const HWIDMASK &> ()));
+
 TEST (Chunk, constructors)
 {
 	Chunk c1 (0, "AAAA");
@@ -141,6 +147,7 @@ TEST (Chunk, cbor)
 {
 	const auto data = "{ \"happy\": true, \"pi\": 3.141 }"_json;
 	auto cbor = nlohmann::json::to_cbor (data);
+	const auto expected_cbor = cbor;
 	std::string payload {"some payload"s};
 
 	std::vector<Chunk> cv;
@@ -184,7 +191,7 @@ TEST (Chunk, cbor)
 		}
 		else {
 			EXPECT_TRUE (cv[id].has_cbor ());
-			EXPECT_TRUE (cbor == cv[id].get_cbor ());
+			EXPECT_TRUE (expected_cbor == cv[id].get_cbor ());
 
 			const auto data2 = cv[id].get_json ();
 			EXPECT_TRUE (data == data2);

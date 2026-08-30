@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_ShSocket
-#define HEAD_shaga_ShSocket
+#pragma once
 
 #include "common.h"
 
@@ -50,5 +49,3 @@ namespace shaga {
 	bool operator< (const UNIQUE_SOCKET &a, const int b);
 	bool operator< (const int b, const UNIQUE_SOCKET &a);
 }
-
-#endif // HEAD_shaga_ShSocket

@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_ChunkTool
-#define HEAD_shaga_ChunkTool
+#pragma once
 
 #include "common.h"
 
@@ -118,5 +117,3 @@ namespace shaga {
 	bool channel_to_bool (const Chunk::Channel channel);
 	SHAGA_STRV std::string_view channel_to_string (const Chunk::Channel channel);
 }  // namespace shaga
-
-#endif	// HEAD_shaga_ChunkTool

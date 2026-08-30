@@ -9,6 +9,11 @@ All rights reserved.
 
 using namespace shaga;
 
+static_assert (std::is_nothrow_move_constructible<ReDataConfig>::value);
+static_assert (std::is_nothrow_move_assignable<ReDataConfig>::value);
+static_assert (noexcept (std::declval<const ReDataConfig &> ().is_compatible (std::declval<const ReDataConfig &> ())));
+static_assert (noexcept (std::declval<const ReData &> ().get_key_id ()));
+
 static const std::map <std::string, ReDataConfig::DIGEST> DIGEST_MAP {
 	{"none"s, ReDataConfig::DIGEST::NONE},
 

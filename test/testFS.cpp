@@ -10,6 +10,9 @@ All rights reserved.
 
 using namespace shaga;
 
+static_assert (noexcept (FS::file_size_optional ("file"sv)));
+static_assert (noexcept (FS::file_mtime_optional ("file"sv)));
+
 namespace {
 	std::string make_temp_path (void)
 	{
@@ -94,6 +97,16 @@ TEST (FS, file_size_optional)
 	EXPECT_GT (*existing, 0);
 
 	const auto missing = FS::file_size_optional ("./test/does_not_exist_123456"sv);
+	EXPECT_FALSE (missing.has_value ());
+}
+
+TEST (FS, file_mtime_optional)
+{
+	const auto existing = FS::file_mtime_optional ("./test/testFS.cpp"sv);
+	ASSERT_TRUE (existing.has_value ());
+	EXPECT_GT (*existing, 0);
+
+	const auto missing = FS::file_mtime_optional ("./test/does_not_exist_123456"sv);
 	EXPECT_FALSE (missing.has_value ());
 }
 

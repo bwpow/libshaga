@@ -399,7 +399,7 @@ namespace shaga {
 		test ();
 	}
 
-	int IPHelper::get_af (void) const
+	int IPHelper::get_af (void) const noexcept
 	{
 		return _af;
 	}
@@ -417,7 +417,7 @@ namespace shaga {
 		}
 	}
 
-	struct sockaddr_storage IPHelper::get_sockaddr_storage (void) const
+	struct sockaddr_storage IPHelper::get_sockaddr_storage (void) const noexcept
 	{
 		return _addr;
 	}
@@ -468,7 +468,7 @@ namespace shaga {
 		_mask = mask;
 	}
 
-	int IPHelper::get_mask (void) const
+	int IPHelper::get_mask (void) const noexcept
 	{
 		return _mask;
 	}
@@ -516,7 +516,7 @@ namespace shaga {
 		return get_ip_string (_af, get_mask_struct ());
 	}
 
-	struct sockaddr_storage IPHelper::get_ip_struct (void) const
+	struct sockaddr_storage IPHelper::get_ip_struct (void) const noexcept
 	{
 		return _addr;
 	}

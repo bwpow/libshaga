@@ -9,6 +9,9 @@ All rights reserved.
 
 using namespace shaga;
 
+static_assert (noexcept (std::declval<const IPHelper &> ().get_af ()));
+static_assert (noexcept (std::declval<const IPHelper &> ().get_sockaddr_storage ()));
+
 TEST (IPHelperTest, IPv4Basic)
 {
 	// Create IPv4 object with mask, check IP, subnet and broadcast strings.

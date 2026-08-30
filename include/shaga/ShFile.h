@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_ShFile
-#define HEAD_shaga_ShFile
+#pragma once
 
 #include "common.h"
 
@@ -113,26 +112,26 @@ namespace shaga {
 			/* Reference of calling ShFile and action */
 			using ShFileCallback = std::function<bool (ShFile&, const ShFile::CallbackAction)>;
 
-			static const uint8_t mREAD    { 0b00'00'00'01 };
-			static const uint8_t mWRITE   { 0b00'00'00'10 };
-			static const uint8_t mAPPEND  { 0b00'00'01'00 };
-			static const uint8_t mNOCREAT { 0b00'00'10'00 };
-			static const uint8_t mSYNC    { 0b00'01'00'00 };
-			static const uint8_t mTRUNC   { 0b00'10'00'00 };
-			static const uint8_t mEXCL    { 0b01'00'00'00 };
+			static constexpr uint8_t mREAD    { 0b00'00'00'01 };
+			static constexpr uint8_t mWRITE   { 0b00'00'00'10 };
+			static constexpr uint8_t mAPPEND  { 0b00'00'01'00 };
+			static constexpr uint8_t mNOCREAT { 0b00'00'10'00 };
+			static constexpr uint8_t mSYNC    { 0b00'01'00'00 };
+			static constexpr uint8_t mTRUNC   { 0b00'10'00'00 };
+			static constexpr uint8_t mEXCL    { 0b01'00'00'00 };
 
-			static const uint8_t mR {mREAD};
-			static const uint8_t mW {mWRITE | mTRUNC};
-			static const uint8_t mA {mWRITE | mAPPEND};
-			static const uint8_t mRW {mREAD | mWRITE};
-			static const uint8_t mBRANDNEW {mWRITE | mEXCL};
+			static constexpr uint8_t mR {mREAD};
+			static constexpr uint8_t mW {mWRITE | mTRUNC};
+			static constexpr uint8_t mA {mWRITE | mAPPEND};
+			static constexpr uint8_t mRW {mREAD | mWRITE};
+			static constexpr uint8_t mBRANDNEW {mWRITE | mEXCL};
 
 			enum class SEEK { SET, CUR, END	};
 
-			static const mode_t mask777 { S_IRWXU | S_IRWXG | S_IRWXO };
-			static const mode_t mask666 { S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH };
-			static const mode_t mask644 { S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH };
-			static const mode_t mask600 { S_IRUSR | S_IWUSR };
+			static constexpr mode_t mask777 { S_IRWXU | S_IRWXG | S_IRWXO };
+			static constexpr mode_t mask666 { S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH };
+			static constexpr mode_t mask644 { S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH };
+			static constexpr mode_t mask600 { S_IRUSR | S_IWUSR };
 
 		private:
 			std::string _filename;
@@ -244,7 +243,7 @@ namespace shaga {
 			void read_json (nlohmann::json &data, const bool from_file_start);
 			nlohmann::json read_json (const bool from_file_start);
 
-			bool has_file_name (void) const;
+			bool has_file_name (void) const noexcept;
 			void set_file_name (const std::string_view filename, const uint8_t mode);
 			void set_file_name (const std::string_view filename);
 
@@ -255,7 +254,7 @@ namespace shaga {
 			}
 
 			/* Rename file when closing. Useful for using temporary file during write and renaming only when finished. */
-			bool has_rename_on_close (void) const;
+			bool has_rename_on_close (void) const noexcept;
 			void set_rename_on_close_file_name (const std::string_view filename);
 			void disable_rename_on_close (void);
 
@@ -268,10 +267,10 @@ namespace shaga {
 			void set_mode (const uint8_t mode);
 			void set_mode_read (void);
 			void set_mode_write (void);
-			uint8_t get_mode (void) const;
+			uint8_t get_mode (void) const noexcept;
 
 			void set_mask (const mode_t mask);
-			mode_t get_mask (void) const;
+			mode_t get_mask (void) const noexcept;
 
 			off64_t seek (const off64_t offset, const SEEK whence = SEEK::SET);
 			off64_t tell (void);
@@ -288,10 +287,8 @@ namespace shaga {
 			struct stat get_stat (void) const;
 			off64_t get_file_size (void) const;
 			time_t get_file_mtime (void) const;
-			int get_file_descriptor (void) const;
+			int get_file_descriptor (void) const noexcept;
 
-			bool is_opened (void) const;
+			bool is_opened (void) const noexcept;
 	};
 }
-
-#endif // HEAD_shaga_ShFile

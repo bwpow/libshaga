@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_CRC
-#define HEAD_shaga_CRC
+#pragma once
 
 #include "common.h"
 
@@ -24,8 +23,8 @@ namespace shaga::CRC {
 	bool is_crc32c_hw_accelerated (void);
 
 	/*** CRC-64 Jones ***/
-	static const uint64_t crc64_magic {0};
-	static const uint64_t crc64_startval {0};
+	inline constexpr uint64_t crc64_magic {0};
+	inline constexpr uint64_t crc64_startval {0};
 
 	uint64_t crc64 (const void *const buf, const size_t len, const uint64_t startval = crc64_startval);
 
@@ -40,8 +39,8 @@ namespace shaga::CRC {
 	void crc64_append (std::string &plain, const uint64_t startval = crc64_startval);
 
 	/*** CRC-32 zlib compatible ***/
-	static const uint32_t crc32_zlib_magic {0x2144df1c};
-	static const uint32_t crc32_zlib_startval {0};
+	inline constexpr uint32_t crc32_zlib_magic {0x2144df1c};
+	inline constexpr uint32_t crc32_zlib_startval {0};
 
 	uint32_t crc32_zlib (const void *const buf, const size_t len, const uint32_t startval = crc32_zlib_startval);
 
@@ -56,7 +55,7 @@ namespace shaga::CRC {
 	void crc32_zlib_append (std::string &plain, const uint32_t startval = crc32_zlib_startval);
 
 	/*** CRC-32 Atmel CRCCU CCITT802.3 compatible ***/
-	static const uint32_t crc32_atmel_startval {UINT32_MAX};
+	inline constexpr uint32_t crc32_atmel_startval {UINT32_MAX};
 
 	uint32_t crc32_atmel (const void *const buf, const size_t len, const uint32_t startval = crc32_atmel_startval);
 
@@ -71,8 +70,8 @@ namespace shaga::CRC {
 	void crc32_atmel_append (std::string &plain, const uint32_t startval = crc32_atmel_startval);
 
 	/*** CRC-32-Castagnoli ***/
-	static const uint32_t crc32c_magic {0x48674bc7};
-	static const uint32_t crc32c_startval {0};
+	inline constexpr uint32_t crc32c_magic {0x48674bc7};
+	inline constexpr uint32_t crc32c_startval {0};
 
 	uint32_t crc32c (const void *const buf, const size_t len, const uint32_t startval = crc32c_startval);
 
@@ -87,8 +86,8 @@ namespace shaga::CRC {
 	void crc32c_append (std::string &plain, const uint32_t startval = crc32c_startval);
 
 	/*** CRC-16 Modbus compatible ***/
-	static const uint16_t crc16_modbus_magic {0};
-	static const uint16_t crc16_modbus_startval {UINT16_MAX};
+	inline constexpr uint16_t crc16_modbus_magic {0};
+	inline constexpr uint16_t crc16_modbus_startval {UINT16_MAX};
 
 	uint16_t crc16_modbus (const void *const buf, const size_t len, const uint16_t startval = crc16_modbus_startval);
 
@@ -103,7 +102,7 @@ namespace shaga::CRC {
 	void crc16_modbus_append (std::string &plain, const uint16_t startval = crc16_modbus_startval);
 
 	/*** CRC-16 CCITT-FALSE compatible ***/
-	static const uint16_t crc16_ccitt_false_startval {UINT16_MAX};
+	inline constexpr uint16_t crc16_ccitt_false_startval {UINT16_MAX};
 
 	uint16_t crc16_ccitt_false (const void *const buf, const size_t len, const uint16_t startval = crc16_ccitt_false_startval);
 
@@ -118,8 +117,8 @@ namespace shaga::CRC {
 	void crc16_ccitt_false_append (std::string &plain, const uint16_t startval = crc16_ccitt_false_startval);
 
 	/*** CRC-8 Dallas/Maxim ***/
-	static const uint8_t crc8_dallas_magic {0};
-	static const uint8_t crc8_dallas_startval {0};
+	inline constexpr uint8_t crc8_dallas_magic {0};
+	inline constexpr uint8_t crc8_dallas_startval {0};
 
 	uint8_t crc8_dallas (const void *const buf, const size_t len, const uint8_t startval = crc8_dallas_startval);
 
@@ -133,5 +132,3 @@ namespace shaga::CRC {
 	void crc8_dallas_check_and_trim (std::string_view &plain, const uint8_t startval = crc8_dallas_startval);
 	void crc8_dallas_append (std::string &plain, const uint8_t startval = crc8_dallas_startval);
 }
-
-#endif // HEAD_shaga_CRC

@@ -12,76 +12,59 @@ namespace shaga {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	static const std::map <std::string, ReDataConfig::DIGEST> DIGEST_MAP {
-		{"none"s, ReDataConfig::DIGEST::NONE},
+	using DIGEST_MAP_ENTRY = std::pair<std::string_view, ReDataConfig::DIGEST>;
+	static constexpr std::array<DIGEST_MAP_ENTRY, 33> DIGEST_MAP {{
+		{"crc-32"sv, ReDataConfig::DIGEST::CRC32},
+		{"crc-32c"sv, ReDataConfig::DIGEST::CRC32},
+		{"crc-64"sv, ReDataConfig::DIGEST::CRC64},
+		{"crc-8"sv, ReDataConfig::DIGEST::CRC8},
+		{"crc32"sv, ReDataConfig::DIGEST::CRC32},
+		{"crc32c"sv, ReDataConfig::DIGEST::CRC32},
+		{"crc64"sv, ReDataConfig::DIGEST::CRC64},
+		{"crc8"sv, ReDataConfig::DIGEST::CRC8},
+		{"halfsiphash-2-4-32"sv, ReDataConfig::DIGEST::HALFSIPHASH24_32},
+		{"halfsiphash-2-4-64"sv, ReDataConfig::DIGEST::HALFSIPHASH24_64},
+		{"halfsiphash-4-8-32"sv, ReDataConfig::DIGEST::HALFSIPHASH48_32},
+		{"halfsiphash-4-8-64"sv, ReDataConfig::DIGEST::HALFSIPHASH48_64},
+		{"halfsiphash24-32"sv, ReDataConfig::DIGEST::HALFSIPHASH24_32},
+		{"halfsiphash24-64"sv, ReDataConfig::DIGEST::HALFSIPHASH24_64},
+		{"halfsiphash48-32"sv, ReDataConfig::DIGEST::HALFSIPHASH48_32},
+		{"halfsiphash48-64"sv, ReDataConfig::DIGEST::HALFSIPHASH48_64},
+		{"hmac-sha-256"sv, ReDataConfig::DIGEST::HMAC_SHA256},
+		{"hmac-sha-512"sv, ReDataConfig::DIGEST::HMAC_SHA512},
+		{"hmac-sha256"sv, ReDataConfig::DIGEST::HMAC_SHA256},
+		{"hmac-sha512"sv, ReDataConfig::DIGEST::HMAC_SHA512},
+		{"none"sv, ReDataConfig::DIGEST::NONE},
+		{"sha-256"sv, ReDataConfig::DIGEST::SHA256},
+		{"sha-512"sv, ReDataConfig::DIGEST::SHA512},
+		{"sha256"sv, ReDataConfig::DIGEST::SHA256},
+		{"sha512"sv, ReDataConfig::DIGEST::SHA512},
+		{"siphash-2-4-128"sv, ReDataConfig::DIGEST::SIPHASH24_128},
+		{"siphash-2-4-64"sv, ReDataConfig::DIGEST::SIPHASH24_64},
+		{"siphash-4-8-128"sv, ReDataConfig::DIGEST::SIPHASH48_128},
+		{"siphash-4-8-64"sv, ReDataConfig::DIGEST::SIPHASH48_64},
+		{"siphash24-128"sv, ReDataConfig::DIGEST::SIPHASH24_128},
+		{"siphash24-64"sv, ReDataConfig::DIGEST::SIPHASH24_64},
+		{"siphash48-128"sv, ReDataConfig::DIGEST::SIPHASH48_128},
+		{"siphash48-64"sv, ReDataConfig::DIGEST::SIPHASH48_64},
+	}};
 
-		{"crc8"s, ReDataConfig::DIGEST::CRC8},
-		{"crc-8"s, ReDataConfig::DIGEST::CRC8},
-
-		{"crc32"s, ReDataConfig::DIGEST::CRC32},
-		{"crc-32"s, ReDataConfig::DIGEST::CRC32},
-		{"crc32c"s, ReDataConfig::DIGEST::CRC32},
-		{"crc-32c"s, ReDataConfig::DIGEST::CRC32},
-
-		{"crc64"s, ReDataConfig::DIGEST::CRC64},
-		{"crc-64"s, ReDataConfig::DIGEST::CRC64},
-
-		{"sha256"s, ReDataConfig::DIGEST::SHA256},
-		{"sha-256"s, ReDataConfig::DIGEST::SHA256},
-
-		{"sha512"s, ReDataConfig::DIGEST::SHA512},
-		{"sha-512"s, ReDataConfig::DIGEST::SHA512},
-
-		{"hmac-sha256"s, ReDataConfig::DIGEST::HMAC_SHA256},
-		{"hmac-sha-256"s, ReDataConfig::DIGEST::HMAC_SHA256},
-
-		{"hmac-sha512"s, ReDataConfig::DIGEST::HMAC_SHA512},
-		{"hmac-sha-512"s, ReDataConfig::DIGEST::HMAC_SHA512},
-
-		{"halfsiphash24-32"s, ReDataConfig::DIGEST::HALFSIPHASH24_32},
-		{"halfsiphash-2-4-32"s, ReDataConfig::DIGEST::HALFSIPHASH24_32},
-
-		{"halfsiphash24-64"s, ReDataConfig::DIGEST::HALFSIPHASH24_64},
-		{"halfsiphash-2-4-64"s, ReDataConfig::DIGEST::HALFSIPHASH24_64},
-
-		{"halfsiphash48-32"s, ReDataConfig::DIGEST::HALFSIPHASH48_32},
-		{"halfsiphash-4-8-32"s, ReDataConfig::DIGEST::HALFSIPHASH48_32},
-
-		{"halfsiphash48-64"s, ReDataConfig::DIGEST::HALFSIPHASH48_64},
-		{"halfsiphash-4-8-64"s, ReDataConfig::DIGEST::HALFSIPHASH48_64},
-
-		{"siphash24-64"s, ReDataConfig::DIGEST::SIPHASH24_64},
-		{"siphash-2-4-64"s, ReDataConfig::DIGEST::SIPHASH24_64},
-
-		{"siphash24-128"s, ReDataConfig::DIGEST::SIPHASH24_128},
-		{"siphash-2-4-128"s, ReDataConfig::DIGEST::SIPHASH24_128},
-
-		{"siphash48-64"s, ReDataConfig::DIGEST::SIPHASH48_64},
-		{"siphash-4-8-64"s, ReDataConfig::DIGEST::SIPHASH48_64},
-
-		{"siphash48-128"s, ReDataConfig::DIGEST::SIPHASH48_128},
-		{"siphash-4-8-128"s, ReDataConfig::DIGEST::SIPHASH48_128},
-	};
-
-	static const std::map <std::string, ReDataConfig::CRYPTO> CRYPTO_MAP {
-		{"none"s, ReDataConfig::CRYPTO::NONE},
-
-		{"aes"s, ReDataConfig::CRYPTO::AES_128_CBC},
-		{"aes128"s, ReDataConfig::CRYPTO::AES_128_CBC},
-		{"aes-128"s, ReDataConfig::CRYPTO::AES_128_CBC},
-		{"aes-128-cbc"s, ReDataConfig::CRYPTO::AES_128_CBC},
-
-		{"aes256"s, ReDataConfig::CRYPTO::AES_256_CBC},
-		{"aes-256"s, ReDataConfig::CRYPTO::AES_256_CBC},
-		{"aes-256-cbc"s, ReDataConfig::CRYPTO::AES_256_CBC},
-
-		{"chacha20"s, ReDataConfig::CRYPTO::CHACHA20},
-		{"chacha"s, ReDataConfig::CRYPTO::CHACHA20},
-
-		{"chacha20-poly1305"s, ReDataConfig::CRYPTO::CHACHA20_POLY1305},
-		{"chacha-poly"s, ReDataConfig::CRYPTO::CHACHA20_POLY1305},
-		{"chachapoly"s, ReDataConfig::CRYPTO::CHACHA20_POLY1305},
-	};
+	using CRYPTO_MAP_ENTRY = std::pair<std::string_view, ReDataConfig::CRYPTO>;
+	static constexpr std::array<CRYPTO_MAP_ENTRY, 13> CRYPTO_MAP {{
+		{"aes"sv, ReDataConfig::CRYPTO::AES_128_CBC},
+		{"aes-128"sv, ReDataConfig::CRYPTO::AES_128_CBC},
+		{"aes-128-cbc"sv, ReDataConfig::CRYPTO::AES_128_CBC},
+		{"aes-256"sv, ReDataConfig::CRYPTO::AES_256_CBC},
+		{"aes-256-cbc"sv, ReDataConfig::CRYPTO::AES_256_CBC},
+		{"aes128"sv, ReDataConfig::CRYPTO::AES_128_CBC},
+		{"aes256"sv, ReDataConfig::CRYPTO::AES_256_CBC},
+		{"chacha"sv, ReDataConfig::CRYPTO::CHACHA20},
+		{"chacha-poly"sv, ReDataConfig::CRYPTO::CHACHA20_POLY1305},
+		{"chacha20"sv, ReDataConfig::CRYPTO::CHACHA20},
+		{"chacha20-poly1305"sv, ReDataConfig::CRYPTO::CHACHA20_POLY1305},
+		{"chachapoly"sv, ReDataConfig::CRYPTO::CHACHA20_POLY1305},
+		{"none"sv, ReDataConfig::CRYPTO::NONE},
+	}};
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Private class methods  //////////////////////////////////////////////////////////////////////////////////////
@@ -108,16 +91,16 @@ namespace shaga {
 		_counter_iv_enabled = conf._counter_iv_enabled;
 	}
 
-	ReDataConfig::ReDataConfig (ReDataConfig &&conf)
+	ReDataConfig::ReDataConfig (ReDataConfig &&conf) noexcept
 	{
-		_used_crypto = std::move (conf._used_crypto);
-		_used_digest = std::move (conf._used_digest);
+		_used_crypto = conf._used_crypto;
+		_used_digest = conf._used_digest;
 
 		_user_iv = std::move (conf._user_iv);
-		_user_iv_enabled = std::move (conf._user_iv_enabled);
+		_user_iv_enabled = conf._user_iv_enabled;
 
-		_counter_iv = std::move (conf._counter_iv);
-		_counter_iv_enabled = std::move (conf._counter_iv_enabled);
+		_counter_iv = conf._counter_iv;
+		_counter_iv_enabled = conf._counter_iv_enabled;
 	}
 
 	ReDataConfig& ReDataConfig::operator= (const ReDataConfig &conf)
@@ -134,16 +117,16 @@ namespace shaga {
 		return *this;
 	}
 
-	ReDataConfig& ReDataConfig::operator= (ReDataConfig &&conf)
+	ReDataConfig& ReDataConfig::operator= (ReDataConfig &&conf) noexcept
 	{
-		_used_crypto = std::move (conf._used_crypto);
-		_used_digest = std::move (conf._used_digest);
+		_used_crypto = conf._used_crypto;
+		_used_digest = conf._used_digest;
 
 		_user_iv = std::move (conf._user_iv);
-		_user_iv_enabled = std::move (conf._user_iv_enabled);
+		_user_iv_enabled = conf._user_iv_enabled;
 
-		_counter_iv = std::move (conf._counter_iv);
-		_counter_iv_enabled = std::move (conf._counter_iv_enabled);
+		_counter_iv = conf._counter_iv;
+		_counter_iv_enabled = conf._counter_iv_enabled;
 
 		return *this;
 	}
@@ -221,7 +204,9 @@ namespace shaga {
 
 	ReDataConfig& ReDataConfig::set_digest (const std::string_view str)
 	{
-		const auto res = DIGEST_MAP.find (std::string (str));
+		const auto res = std::find_if (DIGEST_MAP.cbegin (), DIGEST_MAP.cend (), [str](const DIGEST_MAP_ENTRY &entry) {
+			return entry.first == str;
+		});
 		if (res == DIGEST_MAP.end ()) {
 			std::string vals;
 			for (const auto &v : DIGEST_MAP) {
@@ -252,7 +237,9 @@ namespace shaga {
 
 	ReDataConfig& ReDataConfig::set_crypto (const std::string_view str)
 	{
-		const auto res = CRYPTO_MAP.find (std::string (str));
+		const auto res = std::find_if (CRYPTO_MAP.cbegin (), CRYPTO_MAP.cend (), [str](const CRYPTO_MAP_ENTRY &entry) {
+			return entry.first == str;
+		});
 		if (res == CRYPTO_MAP.end ()) {
 			std::string vals;
 			for (const auto &v : CRYPTO_MAP) {
@@ -269,12 +256,12 @@ namespace shaga {
 		return *this;
 	}
 
-	HEDLEY_WARN_UNUSED_RESULT ReDataConfig::DIGEST ReDataConfig::get_digest (void) const
+	HEDLEY_WARN_UNUSED_RESULT ReDataConfig::DIGEST ReDataConfig::get_digest (void) const noexcept
 	{
 		return _used_digest;
 	}
 
-	HEDLEY_WARN_UNUSED_RESULT ReDataConfig::CRYPTO ReDataConfig::get_crypto (void) const
+	HEDLEY_WARN_UNUSED_RESULT ReDataConfig::CRYPTO ReDataConfig::get_crypto (void) const noexcept
 	{
 		return _used_crypto;
 	}
@@ -335,17 +322,17 @@ namespace shaga {
 		return out;
 	}
 
-	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::is_compatible_digest (const ReDataConfig &other) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::is_compatible_digest (const ReDataConfig &other) const noexcept
 	{
 		return (get_digest () == other.get_digest ());
 	}
 
-	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::is_compatible_crypto (const ReDataConfig &other) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::is_compatible_crypto (const ReDataConfig &other) const noexcept
 	{
 		return (get_crypto () == other.get_crypto ());
 	}
 
-	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::is_compatible (const ReDataConfig &other) const
+	HEDLEY_WARN_UNUSED_RESULT bool ReDataConfig::is_compatible (const ReDataConfig &other) const noexcept
 	{
 		return (is_compatible_digest (other) && is_compatible_crypto (other));
 	}

@@ -324,17 +324,17 @@ namespace shaga {
 		}
 	}
 
-	bool Chunk::is_primary_channel (void) const
+	bool Chunk::is_primary_channel (void) const noexcept
 	{
 		return (true == _channel);
 	}
 
-	bool Chunk::is_secondary_channel (void) const
+	bool Chunk::is_secondary_channel (void) const noexcept
 	{
 		return (false == _channel);
 	}
 
-	Chunk::Channel Chunk::get_channel (void) const
+	Chunk::Channel Chunk::get_channel (void) const noexcept
 	{
 		if (true == _channel) {
 			return Channel::PRIMARY;
@@ -344,22 +344,22 @@ namespace shaga {
 		}
 	}
 
-	uint_fast8_t Chunk::get_channel_bitmask (void) const
+	uint_fast8_t Chunk::get_channel_bitmask (void) const noexcept
 	{
 		return (true == _channel) ? channel_primary : channel_secondary;
 	}
 
-	HWID Chunk::get_source_hwid (void) const
+	HWID Chunk::get_source_hwid (void) const noexcept
 	{
 		return _hwid_source;
 	}
 
-	bool Chunk::is_for_destination (const HWID hwid) const
+	bool Chunk::is_for_destination (const HWID hwid) const noexcept
 	{
 		return _hwid_dest.check (hwid);
 	}
 
-	bool Chunk::is_for_destination (const HWID_LIST &lst) const
+	bool Chunk::is_for_destination (const HWID_LIST &lst) const noexcept
 	{
 		return std::any_of (lst.begin (), lst.end (), [this](const HWID hwid) {
 			return _hwid_dest.check (hwid);
@@ -371,12 +371,12 @@ namespace shaga {
 		return bin_to_key (_type);
 	}
 
-	uint32_t Chunk::get_num_type (void) const
+	uint32_t Chunk::get_num_type (void) const noexcept
 	{
 		return _type;
 	}
 
-	bool Chunk::has_payload (void) const
+	bool Chunk::has_payload (void) const noexcept
 	{
 		return (_payload.empty () == false);
 	}
@@ -405,7 +405,7 @@ namespace shaga {
 		invalidate_stored_binary_representation ();
 	}
 
-	bool Chunk::has_cbor (void) const
+	bool Chunk::has_cbor (void) const noexcept
 	{
 		return (_cbor.empty () == false);
 	}
@@ -445,7 +445,7 @@ namespace shaga {
 		return nlohmann::json::from_cbor (_cbor);
 	}
 
-	const std::vector<uint8_t>& Chunk::get_cbor (void) const
+	const std::vector<uint8_t>& Chunk::get_cbor (void) const noexcept
 	{
 		return _cbor;
 	}
@@ -455,7 +455,7 @@ namespace shaga {
 		_prio = prio;
 	}
 
-	Chunk::Priority Chunk::get_prio (void) const
+	Chunk::Priority Chunk::get_prio (void) const noexcept
 	{
 		return _prio;
 	}
@@ -477,7 +477,7 @@ namespace shaga {
 		_trust = trust;
 	}
 
-	Chunk::TrustLevel Chunk::get_trustlevel (void) const
+	Chunk::TrustLevel Chunk::get_trustlevel (void) const noexcept
 	{
 		return _trust;
 	}
@@ -487,7 +487,7 @@ namespace shaga {
 		return trustlevel_to_string (_trust);
 	}
 
-	bool Chunk::check_maximal_trustlevel (const Chunk::TrustLevel trust) const
+	bool Chunk::check_maximal_trustlevel (const Chunk::TrustLevel trust) const noexcept
 	{
 		return (_trust <= trust);
 	}
@@ -508,17 +508,17 @@ namespace shaga {
 		set_ttl (+ttl);
 	}
 
-	uint8_t Chunk::get_ttl (void) const
+	uint8_t Chunk::get_ttl (void) const noexcept
 	{
 		return _ttl;
 	}
 
-	bool Chunk::is_zero_ttl (void) const
+	bool Chunk::is_zero_ttl (void) const noexcept
 	{
 		return (_ttl == 0);
 	}
 
-	bool Chunk::hop_ttl (void)
+	bool Chunk::hop_ttl (void) noexcept
 	{
 		if (_ttl > 0) {
 			--_ttl;
@@ -548,12 +548,12 @@ namespace shaga {
 		return _tracert_hops;
 	}
 
-	size_t Chunk::tracert_hops_count (void) const
+	size_t Chunk::tracert_hops_count (void) const noexcept
 	{
 		return _tracert_hops.size ();
 	}
 
-	HWIDMASK Chunk::get_destination_hwidmask (void) const
+	HWIDMASK Chunk::get_destination_hwidmask (void) const noexcept
 	{
 		return _hwid_dest;
 	}
@@ -576,7 +576,7 @@ namespace shaga {
 		invalidate_stored_binary_representation ();
 	}
 
-	int Chunk::compare (const Chunk &c) const
+	int Chunk::compare (const Chunk &c) const noexcept
 	{
 		if (_prio < c._prio) return (-1);
 		if (_prio > c._prio) return 1;
@@ -647,7 +647,7 @@ namespace shaga {
 		_stored_header_size = 0;
 	}
 
-	SHAGA_STRV std::string_view Chunk::get_stored_binary_representation (void) const
+	SHAGA_STRV std::string_view Chunk::get_stored_binary_representation (void) const noexcept
 	{
 		if (true == _stored_binary.empty () || key_type_tracert == _type || 0 == _stored_header_size) {
 			return ""sv;
@@ -700,17 +700,17 @@ namespace shaga {
 		return out;
 	}
 
-	bool operator== (const Chunk &a, const Chunk &b)
+	bool operator== (const Chunk &a, const Chunk &b) noexcept
 	{
 		return a.compare (b) == 0;
 	}
 
-	bool operator!= (const Chunk &a, const Chunk &b)
+	bool operator!= (const Chunk &a, const Chunk &b) noexcept
 	{
 		return a.compare (b) != 0;
 	}
 
-	bool operator< (const Chunk &a, const Chunk &b)
+	bool operator< (const Chunk &a, const Chunk &b) noexcept
 	{
 		return a.compare (b) < 0;
 	}

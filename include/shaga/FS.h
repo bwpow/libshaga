@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_FS
-#define HEAD_shaga_FS
+#pragma once
 
 #include "common.h"
 
@@ -20,10 +19,10 @@ namespace shaga::FS {
 	struct stat file_stat (const std::string_view fname);
 
 	off64_t file_size (const std::string_view fname);
-	std::optional<off64_t> file_size_optional (const std::string_view fname);
+	std::optional<off64_t> file_size_optional (const std::string_view fname) noexcept;
 
 	time_t file_mtime (const std::string_view fname);
-	std::optional<time_t> file_mtime_optional (const std::string_view fname);
+	std::optional<time_t> file_mtime_optional (const std::string_view fname) noexcept;
 
 	bool is_dir (const std::string_view dname);
 
@@ -76,5 +75,3 @@ namespace shaga::FS {
 	void read_whole_file (const std::string_view fname, std::string &output);
 	std::string read_whole_file (const std::string_view fname);
 }
-
-#endif // HEAD_shaga_FS

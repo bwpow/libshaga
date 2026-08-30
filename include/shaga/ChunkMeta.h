@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_ChunkMeta
-#define HEAD_shaga_ChunkMeta
+#pragma once
 
 #include "common.h"
 
@@ -52,12 +51,12 @@ namespace shaga {
 			using ValuesCallback = std::function<bool(std::string&)>;
 			using ValueCallback = std::function<void(std::string&)>;
 
-			static const constexpr uint16_t key_type_min = ChMetaKEY ("AAA");
-			static const constexpr uint16_t key_type_max = ChMetaKEY ("___");
+			static constexpr uint16_t key_type_min = ChMetaKEY ("AAA");
+			static constexpr uint16_t key_type_max = ChMetaKEY ("___");
 
-			static const uint16_t key_type_mask   {0b0111'1111'1111'1111};
-			static const uint16_t key_repeat_mask {0b0111'1111'0000'0000};
-			static const uint8_t key_repeat_byte  {0b0111'1111};
+			static constexpr uint16_t key_type_mask   {0b0111'1111'1111'1111};
+			static constexpr uint16_t key_repeat_mask {0b0111'1111'0000'0000};
+			static constexpr uint8_t key_repeat_byte  {0b0111'1111};
 
 			static uint16_t key_to_bin (const std::string_view key);
 			static std::string bin_to_key (const uint16_t bkey);
@@ -263,20 +262,30 @@ namespace shaga {
 			}
 
 			template <typename T = std::string_view>
-			SHAGA_STRV std::optional<T> get_value_optional (const std::string_view key) const
+			SHAGA_STRV std::optional<T> get_value_optional (const std::string_view key) const noexcept
 			{
-				return get_value_optional<T> (key_to_bin (key));
+				try {
+					return get_value_optional<T> (key_to_bin (key));
+				}
+				catch (...) {
+					return std::nullopt;
+				}
 			}
 
 			template <typename T = std::string_view>
-			SHAGA_STRV std::optional<T> get_value_optional (const uint16_t key) const
+			SHAGA_STRV std::optional<T> get_value_optional (const uint16_t key) const noexcept
 			{
-				ChunkMetaData::const_iterator iter = _data.find (key);
-				if (iter != _data.cend ()) {
-					return iter->second;
-				}
+				try {
+					ChunkMetaData::const_iterator iter = _data.find (key);
+					if (iter != _data.cend ()) {
+						return iter->second;
+					}
 
-				return std::nullopt;
+					return std::nullopt;
+				}
+				catch (...) {
+					return std::nullopt;
+				}
 			}
 
 			bool get_bool (const std::string_view key, const bool default_value) const;
@@ -309,34 +318,34 @@ namespace shaga {
 			int64_t get_int64 (const std::string_view key, const int64_t default_value) const;
 			int64_t get_int64 (const uint16_t key, const int64_t default_value) const noexcept;
 
-			std::optional<bool> get_bool_optional (const std::string_view key) const;
+			std::optional<bool> get_bool_optional (const std::string_view key) const noexcept;
 			std::optional<bool> get_bool_optional (const uint16_t key) const noexcept;
 
-			std::optional<uint8_t> get_uint8_optional (const std::string_view key) const;
+			std::optional<uint8_t> get_uint8_optional (const std::string_view key) const noexcept;
 			std::optional<uint8_t> get_uint8_optional (const uint16_t key) const noexcept;
 
-			std::optional<int8_t> get_int8_optional (const std::string_view key) const;
+			std::optional<int8_t> get_int8_optional (const std::string_view key) const noexcept;
 			std::optional<int8_t> get_int8_optional (const uint16_t key) const noexcept;
 
-			std::optional<uint16_t> get_uint16_optional (const std::string_view key) const;
+			std::optional<uint16_t> get_uint16_optional (const std::string_view key) const noexcept;
 			std::optional<uint16_t> get_uint16_optional (const uint16_t key) const noexcept;
 
-			std::optional<int16_t> get_int16_optional (const std::string_view key) const;
+			std::optional<int16_t> get_int16_optional (const std::string_view key) const noexcept;
 			std::optional<int16_t> get_int16_optional (const uint16_t key) const noexcept;
 
-			std::optional<uint32_t> get_uint24_optional (const std::string_view key) const;
+			std::optional<uint32_t> get_uint24_optional (const std::string_view key) const noexcept;
 			std::optional<uint32_t> get_uint24_optional (const uint16_t key) const noexcept;
 
-			std::optional<uint32_t> get_uint32_optional (const std::string_view key) const;
+			std::optional<uint32_t> get_uint32_optional (const std::string_view key) const noexcept;
 			std::optional<uint32_t> get_uint32_optional (const uint16_t key) const noexcept;
 
-			std::optional<int32_t> get_int32_optional (const std::string_view key) const;
+			std::optional<int32_t> get_int32_optional (const std::string_view key) const noexcept;
 			std::optional<int32_t> get_int32_optional (const uint16_t key) const noexcept;
 
-			std::optional<uint64_t> get_uint64_optional (const std::string_view key) const;
+			std::optional<uint64_t> get_uint64_optional (const std::string_view key) const noexcept;
 			std::optional<uint64_t> get_uint64_optional (const uint16_t key) const noexcept;
 
-			std::optional<int64_t> get_int64_optional (const std::string_view key) const;
+			std::optional<int64_t> get_int64_optional (const std::string_view key) const noexcept;
 			std::optional<int64_t> get_int64_optional (const uint16_t key) const noexcept;
 
 			void modify_value (const std::string_view key, ValueCallback callback);
@@ -364,5 +373,3 @@ namespace shaga {
 			void from_bin (const std::string_view s, size_t &offset);
 	};
 }
-
-#endif // HEAD_shaga_ChunkMeta

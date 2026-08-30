@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_HWID
-#define HEAD_shaga_HWID
+#pragma once
 
 #include "common.h"
 
@@ -43,12 +42,12 @@ namespace shaga {
 		constexpr HWIDMASK (const HWID _hwid) : HWIDMASK (_hwid, HWID_MAX) {}
 		constexpr HWIDMASK () {}
 
-		constexpr bool operator== (const HWIDMASK &other) const
+		constexpr bool operator== (const HWIDMASK &other) const noexcept
 		{
 			return ((mask == other.mask) && ((hwid & mask) == (other.hwid & other.mask)));
 		}
 
-		constexpr bool operator< (const HWIDMASK &other) const
+		constexpr bool operator< (const HWIDMASK &other) const noexcept
 		{
 			return (mask < other.mask) ?
 				true
@@ -60,7 +59,7 @@ namespace shaga {
 				);
 		}
 
-		constexpr bool operator> (const HWIDMASK &other) const
+		constexpr bool operator> (const HWIDMASK &other) const noexcept
 		{
 			return (mask > other.mask) ?
 				true
@@ -72,37 +71,37 @@ namespace shaga {
 				);
 		}
 
-		constexpr bool check (const HWID other_hwid) const
+		constexpr bool check (const HWID other_hwid) const noexcept
 		{
 			return ((other_hwid & mask) == (hwid & mask));
 		}
 
-		constexpr bool check_exact (const HWID other_hwid) const
+		constexpr bool check_exact (const HWID other_hwid) const noexcept
 		{
 			return (true == is_unicast () && (other_hwid == hwid));
 		}
 
-		constexpr bool empty (void) const
+		constexpr bool empty (void) const noexcept
 		{
 			return ((0 == hwid) && (0 == mask));
 		}
 
-		constexpr bool is_broadcast (void) const
+		constexpr bool is_broadcast (void) const noexcept
 		{
 			return (0 == mask);
 		}
 
-		constexpr bool is_unicast (void) const
+		constexpr bool is_unicast (void) const noexcept
 		{
 			return (HWID_MAX == mask);
 		}
 
-		static constexpr bool is_placeholder (const HWID _hwid)
+		static constexpr bool is_placeholder (const HWID _hwid) noexcept
 		{
 			return (_hwid == HWID_PLACEHOLDER);
 		}
 
-		static constexpr bool is_unknown (const HWID _hwid)
+		static constexpr bool is_unknown (const HWID _hwid) noexcept
 		{
 			return (_hwid == HWID_UNKNOWN);
 		}
@@ -139,5 +138,3 @@ namespace shaga {
 		}
 	}
 }
-
-#endif // HEAD_shaga_HWID

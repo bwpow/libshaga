@@ -9,6 +9,13 @@ All rights reserved.
 
 using namespace shaga;
 
+static_assert (noexcept (STR::has_prefix ("text"sv, "te"sv)));
+static_assert (noexcept (STR::has_suffix ("text"sv, "xt"sv)));
+static_assert (noexcept (STR::has_iprefix ("text"sv, "TE"sv)));
+static_assert (noexcept (STR::has_isuffix ("text"sv, "XT"sv)));
+static_assert (noexcept (STR::icompare ("text"sv, "TEXT"sv)));
+static_assert (noexcept (STR::trim (std::declval<std::string_view &> ())));
+
 TEST (STR, concat)
 {
 	EXPECT_TRUE (STR::concat ("ahoj"s, "ahoj"sv, "ahoj") == "ahojahojahoj"s);
@@ -244,6 +251,45 @@ TEST (STR, float)
 	EXPECT_THROW (STR::to_float (""sv), CommonException);
 	EXPECT_THROW (STR::to_double (""sv), CommonException);
 	EXPECT_THROW (STR::to_long_double (""sv), CommonException);
+}
+
+TEST (STR, scalar_optional)
+{
+	std::setlocale (LC_NUMERIC, "C");
+
+	EXPECT_EQ (STR::to_bool_optional ("yeS"), true);
+	EXPECT_FALSE (STR::to_bool_optional ("maybe").has_value ());
+
+	EXPECT_EQ (STR::to_uint8_optional ("ff", 16), 255);
+	EXPECT_EQ (STR::to_uint16_optional ("65535"), 65535);
+	EXPECT_EQ (STR::to_uint32_optional ("ffffffff", 16), 4294967295ULL);
+	EXPECT_EQ (STR::to_uint64_optional ("18446744073709551615"), 18446744073709551615ULL);
+	EXPECT_FALSE (STR::to_uint8_optional ("256").has_value ());
+	EXPECT_FALSE (STR::to_uint16_optional ("not-a-number").has_value ());
+	EXPECT_FALSE (STR::to_uint32_optional ("100000000", 16).has_value ());
+	EXPECT_FALSE (STR::to_uint64_optional ("0", 1).has_value ());
+
+	EXPECT_EQ (STR::to_int8_optional ("-128"), -128);
+	EXPECT_EQ (STR::to_int16_optional ("7fff", 16), 32767);
+	EXPECT_EQ (STR::to_int32_optional ("-2147483648"), -2147483648LL);
+	EXPECT_EQ (STR::to_int64_optional ("7fffffffffffffff", 16), 9223372036854775807LL);
+	EXPECT_FALSE (STR::to_int8_optional ("128").has_value ());
+	EXPECT_FALSE (STR::to_int16_optional ("-32769").has_value ());
+	EXPECT_FALSE (STR::to_int32_optional ("broken").has_value ());
+	EXPECT_FALSE (STR::to_int64_optional ("9223372036854775808").has_value ());
+
+	EXPECT_EQ (STR::to_float_optional ("0.22"sv), 0.22f);
+	EXPECT_EQ (STR::to_double_optional ("-75809"sv), -75809.0);
+	EXPECT_EQ (STR::to_long_double_optional ("1.25"sv), 1.25L);
+	EXPECT_FALSE (STR::to_float_optional ("1.0text"sv).has_value ());
+	EXPECT_FALSE (STR::to_double_optional (""sv).has_value ());
+	EXPECT_FALSE (STR::to_long_double_optional ("not-a-number"sv).has_value ());
+
+	EXPECT_EQ (STR::to_int_optional<uint16_t> ("ffff", 16), 65535);
+	EXPECT_EQ (STR::to_int_optional<int32_t> ("-42"), -42);
+	EXPECT_EQ (STR::to_int_optional<bool> ("on"), true);
+	EXPECT_FALSE (STR::to_int_optional<uint8_t> ("256").has_value ());
+	EXPECT_FALSE (STR::to_int_optional<int64_t> ("invalid").has_value ());
 }
 
 TEST (STR, trim)

@@ -47,18 +47,14 @@ namespace shaga {
 
 	COMMON_LIST & INI::get_list_ref (INI_MAP &ini_map, const INI_KEY &key, const bool create) const
 	{
+		if (true == create) {
+			const auto res = ini_map.try_emplace (key);
+			return res.first->second;
+		}
+
 		INI_MAP::iterator iter = ini_map.find (key);
 		if (iter != ini_map.end ()) {
 			return iter->second;
-		}
-
-		if (true == create) {
-			std::pair <INI_MAP::iterator, bool> res = ini_map.insert (std::make_pair (key, COMMON_LIST ()));
-			if (false == res.second) {
-				cThrow ("Unable to add key {}/{}"sv, key.section, key.line);
-			}
-
-			return res.first->second;
 		}
 
 		cThrow ("Nonexistent entry {}/{} requested"sv, key.section, key.line);
@@ -348,7 +344,7 @@ namespace shaga {
 	{
 	}
 
-	INI::INI (INI &&other) : _map (std::move (other._map)), _ignore_broken_lines (other._ignore_broken_lines)
+	INI::INI (INI &&other) noexcept : _map (std::move (other._map)), _ignore_broken_lines (other._ignore_broken_lines)
 	{
 	}
 
@@ -361,7 +357,7 @@ namespace shaga {
 		return *this;
 	}
 
-	INI& INI::operator= (INI &&other)
+	INI& INI::operator= (INI &&other) noexcept
 	{
 		if (this != &other) {
 			_map = std::move (other._map);
@@ -500,9 +496,18 @@ namespace shaga {
 		return out;
 	}
 
-	void INI::save_to_json (nlohmann::json &out) const
+	void INI::save_to_json (nlohmann::json &out, const bool infer_json_types) const
 	{
 		out = nlohmann::json::object ();
+		const auto make_json_value = [infer_json_types] (const std::string &entry) -> nlohmann::json {
+			if (true == infer_json_types) {
+				nlohmann::json parsed = nlohmann::json::parse (entry, nullptr, false);
+				if (false == parsed.is_discarded ()) {
+					return parsed;
+				}
+			}
+			return entry;
+		};
 
 		for (INI_MAP::const_iterator iter = _map.cbegin (); iter != _map.cend (); ++iter) {
 			const INI_KEY &key = iter->first;
@@ -518,23 +523,23 @@ namespace shaga {
 					section[key.line] = nlohmann::json::array ();
 				}
 				else {
-					section[key.line] = v.front ();
+					section[key.line] = make_json_value (v.front ());
 				}
 			}
 			else {
 				nlohmann::json arr = nlohmann::json::array ();
 				for (const auto &entry : v) {
-					arr.push_back (entry);
+					arr.push_back (make_json_value (entry));
 				}
 				section[key.line] = std::move (arr);
 			}
 		}
 	}
 
-	nlohmann::json INI::save_to_json (void) const
+	nlohmann::json INI::save_to_json (const bool infer_json_types) const
 	{
 		nlohmann::json out;
-		save_to_json (out);
+		save_to_json (out, infer_json_types);
 		return out;
 	}
 

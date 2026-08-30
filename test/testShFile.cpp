@@ -12,6 +12,9 @@ All rights reserved.
 
 using namespace shaga;
 
+static_assert (noexcept (std::declval<const ShFile &> ().has_file_name ()));
+static_assert (noexcept (std::declval<const ShFile &> ().get_file_descriptor ()));
+
 namespace {
 	std::string make_temp_path (void)
 	{

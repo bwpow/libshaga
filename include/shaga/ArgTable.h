@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_ArgTable
-#define HEAD_shaga_ArgTable
+#pragma once
 
 #include "common.h"
 
@@ -64,5 +63,3 @@ namespace shaga {
 			INI export_ini (void) const;
 	};
 }
-
-#endif // HEAD_shaga_ArgTable

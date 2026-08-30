@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_SPSC
-#define HEAD_shaga_SPSC
+#pragma once
 
 #include "common.h"
 
@@ -267,5 +266,3 @@ namespace shaga
 			SPSC& operator= (const SPSC &) = delete;
 	};
 }
-
-#endif // HEAD_shaga_SPSC

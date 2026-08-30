@@ -5,8 +5,7 @@ Copyright (c) 2012-2026, SAGE team s.r.o., Samuel Kupka
 
 All rights reserved.
 *******************************************************************************/
-#ifndef HEAD_shaga_STR
-#define HEAD_shaga_STR
+#pragma once
 
 #include "common.h"
 
@@ -20,18 +19,11 @@ namespace shaga::STR {
 	template <typename... Args, typename = std::enable_if_t<all_convertible_to_string_view<Args...>::value>>
 	std::string concat (const Args & ... args)
 	{
-		const std::array<std::string_view,sizeof...(Args)> vin {args...};
-
-		size_t len {0};
-		for (const auto &entry : vin) {
-			len += entry.size ();
-		}
+		const size_t len = (std::string_view (args).size () + ... + 0);
 
 		std::string out;
 		out.reserve (len);
-		for (const auto &entry : vin) {
-			out.append (entry);
-		}
+		(out.append (std::string_view (args)), ...);
 
 		return out;
 	}
@@ -96,6 +88,20 @@ namespace shaga::STR {
 	double to_double (const std::string_view s);
 	long double to_long_double (const std::string_view s);
 
+	std::optional<bool> to_bool_optional (const std::string_view s, const int base = 10) noexcept;
+	std::optional<uint8_t> to_uint8_optional (const std::string_view s, const int base = 10) noexcept;
+	std::optional<uint16_t> to_uint16_optional (const std::string_view s, const int base = 10) noexcept;
+	std::optional<uint32_t> to_uint32_optional (const std::string_view s, const int base = 10) noexcept;
+	std::optional<uint64_t> to_uint64_optional (const std::string_view s, const int base = 10) noexcept;
+	std::optional<int8_t> to_int8_optional (const std::string_view s, const int base = 10) noexcept;
+	std::optional<int16_t> to_int16_optional (const std::string_view s, const int base = 10) noexcept;
+	std::optional<int32_t> to_int32_optional (const std::string_view s, const int base = 10) noexcept;
+	std::optional<int64_t> to_int64_optional (const std::string_view s, const int base = 10) noexcept;
+
+	std::optional<float> to_float_optional (const std::string_view s) noexcept;
+	std::optional<double> to_double_optional (const std::string_view s) noexcept;
+	std::optional<long double> to_long_double_optional (const std::string_view s) noexcept;
+
 	template <typename T, SHAGA_TYPE_IS_INTEGRAL(T)>
 	auto to_int (const std::string_view s, const int base = 10) -> T
 	{
@@ -129,25 +135,41 @@ namespace shaga::STR {
 	}
 
 	template <typename T, SHAGA_TYPE_IS_INTEGRAL(T)>
+	auto to_int_optional (const std::string_view s, const int base = 10) noexcept -> std::optional<T>
+	{
+		try {
+			return to_int<T> (s, base);
+		}
+		catch (...) {
+			return std::nullopt;
+		}
+	}
+
+	template <typename T, SHAGA_TYPE_IS_INTEGRAL(T)>
 	std::string from_int (const T t, [[maybe_unused]]const int base = 10)
 	{
-		std::ostringstream ss;
-
-		if constexpr (std::is_same <T, bool>::value) {
-			if (t == true) {
-				ss << "true"sv;
-			}
-			else {
-				ss << "false"sv;
-			}
-		}
-		else if constexpr (std::is_same <T, int8_t>::value || std::is_same <T, uint8_t>::value || std::is_same <T, int16_t>::value || std::is_same <T, uint16_t>::value) {
-			ss << std::setbase (base) << static_cast<int32_t> (t);
+		if constexpr (std::is_same_v<T, bool>) {
+			return t ? "true"s : "false"s;
 		}
 		else {
-			ss << std::setbase (base) << t;
+			char buf[std::numeric_limits<T>::digits + 3];
+			const int supported_base = (base == 8 || base == 16) ? base : 10;
+
+			if constexpr (sizeof (T) < sizeof (int)) {
+				const auto res = std::to_chars (buf, buf + sizeof (buf), static_cast<int> (t), supported_base);
+				if (res.ec != std::errc ()) {
+					throw std::runtime_error ("Could not convert integer to string");
+				}
+				return std::string (buf, res.ptr);
+			}
+			else {
+				const auto res = std::to_chars (buf, buf + sizeof (buf), t, supported_base);
+				if (res.ec != std::errc ()) {
+					throw std::runtime_error ("Could not convert integer to string");
+				}
+				return std::string (buf, res.ptr);
+			}
 		}
-		return ss.str ();
 	}
 
 	void split (const std::string_view what, const std::string_view delimiter, std::function<void (std::string_view)> callback);
@@ -220,17 +242,17 @@ namespace shaga::STR {
 
 	void replace (std::string &str, const std::string_view what, const std::string_view with);
 
-	bool has_suffix (const std::string_view str, const std::string_view suffix);
-	bool has_isuffix (const std::string_view str, const std::string_view suffix);
+	bool has_suffix (const std::string_view str, const std::string_view suffix) noexcept;
+	bool has_isuffix (const std::string_view str, const std::string_view suffix) noexcept;
 
-	bool has_prefix (const std::string_view str, const std::string_view prefix);
-	bool has_iprefix (const std::string_view str, const std::string_view prefix);
+	bool has_prefix (const std::string_view str, const std::string_view prefix) noexcept;
+	bool has_iprefix (const std::string_view str, const std::string_view prefix) noexcept;
 
 	void make_printable (std::string &text, const unsigned char replace_with = '.');
 	std::string get_printable (const std::string_view text, const unsigned char replace_with = '.');
 
 	void rtrim (std::string &str, const std::string_view chars = SPACESZERO);
-	void rtrim (std::string_view &str, const std::string_view chars = SPACESZERO);
+	void rtrim (std::string_view &str, const std::string_view chars = SPACESZERO) noexcept;
 
 	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void rtrim (T &input, const std::string_view chars = SPACESZERO)
@@ -241,7 +263,7 @@ namespace shaga::STR {
 	}
 
 	void ltrim (std::string &str, const std::string_view chars = SPACESZERO);
-	void ltrim (std::string_view &str, const std::string_view chars = SPACESZERO);
+	void ltrim (std::string_view &str, const std::string_view chars = SPACESZERO) noexcept;
 
 	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void ltrim (T &input, const std::string_view chars = SPACESZERO)
@@ -252,7 +274,7 @@ namespace shaga::STR {
 	}
 
 	void trim (std::string &str, const std::string_view chars = SPACESZERO);
-	void trim (std::string_view &str, const std::string_view chars = SPACESZERO);
+	void trim (std::string_view &str, const std::string_view chars = SPACESZERO) noexcept;
 
 	template <typename T, SHAGA_TYPE_IS_ITERABLE(T)>
 	void trim (T &input, const std::string_view chars = SPACESZERO)
@@ -262,7 +284,7 @@ namespace shaga::STR {
 		}
 	}
 
-	bool icompare (const std::string_view a, const std::string_view b);
+	bool icompare (const std::string_view a, const std::string_view b) noexcept;
 
 	std::string multiply (const std::string_view what, const uint_fast32_t cnt);
 	std::string multiply (const std::string_view what, const uint_fast32_t cnt, const std::string_view suffix);
@@ -275,5 +297,3 @@ namespace shaga::STR {
 	COMMON_VECTOR to_argv (const int argc, const char * const * argv);
 	COMMON_VECTOR to_argv (std::string cmd);
 }
-
-#endif // HEAD_shaga_STR

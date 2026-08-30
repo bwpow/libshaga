@@ -241,17 +241,17 @@ namespace shaga {
 			shaga::STR::trim (src);
 			size_t pos {0};
 
-			if (std::is_same<typename std::remove_cv<T>::type, float>::value) {
+			if constexpr (std::is_same_v<std::remove_cv_t<T>, float>) {
 				result = static_cast<T> (std::stof (std::string (src), &pos));
 			}
-			else if (std::is_same<typename std::remove_cv<T>::type, double>::value) {
+			else if constexpr (std::is_same_v<std::remove_cv_t<T>, double>) {
 				result = static_cast<T> (std::stod (std::string (src), &pos));
 			}
-			else if (std::is_same<typename std::remove_cv<T>::type, long double>::value) {
+			else if constexpr (std::is_same_v<std::remove_cv_t<T>, long double>) {
 				result = static_cast<T> (std::stold (std::string (src), &pos));
 			}
 			else {
-				cThrow ("Unrecognized type"sv);
+				static_assert (std::is_same_v<std::remove_cv_t<T>, long double>, "Unrecognized type");
 			}
 
 			if (pos != src.size ()) {
@@ -299,6 +299,46 @@ namespace shaga {
 	{
 		return _to_float_process<long double> (s, "long double"sv);
 	}
+
+	#define STR_TO_OPTIONAL(function, type) \
+		std::optional<type> STR::function##_optional (const std::string_view s, const int base) noexcept \
+		{ \
+			try { \
+				return function (s, base); \
+			} \
+			catch (...) { \
+				return std::nullopt; \
+			} \
+		}
+
+	STR_TO_OPTIONAL (to_bool, bool)
+	STR_TO_OPTIONAL (to_uint8, uint8_t)
+	STR_TO_OPTIONAL (to_uint16, uint16_t)
+	STR_TO_OPTIONAL (to_uint32, uint32_t)
+	STR_TO_OPTIONAL (to_uint64, uint64_t)
+	STR_TO_OPTIONAL (to_int8, int8_t)
+	STR_TO_OPTIONAL (to_int16, int16_t)
+	STR_TO_OPTIONAL (to_int32, int32_t)
+	STR_TO_OPTIONAL (to_int64, int64_t)
+
+	#undef STR_TO_OPTIONAL
+
+	#define STR_TO_FLOAT_OPTIONAL(function, type) \
+		std::optional<type> STR::function##_optional (const std::string_view s) noexcept \
+		{ \
+			try { \
+				return function (s); \
+			} \
+			catch (...) { \
+				return std::nullopt; \
+			} \
+		}
+
+	STR_TO_FLOAT_OPTIONAL (to_float, float)
+	STR_TO_FLOAT_OPTIONAL (to_double, double)
+	STR_TO_FLOAT_OPTIONAL (to_long_double, long double)
+
+	#undef STR_TO_FLOAT_OPTIONAL
 
 	void STR::split (const std::string_view what, const std::string_view delimiter, std::function<void (std::string_view)> callback)
 	{
@@ -534,12 +574,12 @@ namespace shaga {
 		}
 	}
 
-	bool STR::has_suffix (const std::string_view str, const std::string_view suffix)
+	bool STR::has_suffix (const std::string_view str, const std::string_view suffix) noexcept
 	{
 		return (str.size () >= suffix.size ()) && std::equal (suffix.rbegin (), suffix.rend (), str.rbegin ());
 	}
 
-	bool STR::has_isuffix (const std::string_view str, const std::string_view suffix)
+	bool STR::has_isuffix (const std::string_view str, const std::string_view suffix) noexcept
 	{
 		return (str.size () >= suffix.size ()) && std::equal (suffix.rbegin (), suffix.rend (), str.rbegin (),
 			[](const auto a, const auto b) -> bool {
@@ -547,12 +587,12 @@ namespace shaga {
 			});
 	}
 
-	bool STR::has_prefix (const std::string_view str, const std::string_view prefix)
+	bool STR::has_prefix (const std::string_view str, const std::string_view prefix) noexcept
 	{
 		return (str.size () >= prefix.size ()) && std::equal (prefix.begin (), prefix.end (), str.begin ());
 	}
 
-	bool STR::has_iprefix (const std::string_view str, const std::string_view prefix)
+	bool STR::has_iprefix (const std::string_view str, const std::string_view prefix) noexcept
 	{
 		return (str.size () >= prefix.size ()) && std::equal (prefix.begin (), prefix.end (), str.begin (),
 			[](const auto a, const auto b) -> bool {
@@ -590,7 +630,7 @@ namespace shaga {
 		}
 	}
 
-	void STR::rtrim (std::string_view &str, const std::string_view chars)
+	void STR::rtrim (std::string_view &str, const std::string_view chars) noexcept
 	{
 		const auto found = str.find_last_not_of (chars);
 		if (std::string::npos != found) {
@@ -612,7 +652,7 @@ namespace shaga {
 		}
 	}
 
-	void STR::ltrim (std::string_view &str, const std::string_view chars)
+	void STR::ltrim (std::string_view &str, const std::string_view chars) noexcept
 	{
 		const auto found = std::min (str.find_first_not_of (chars), str.size ());
 		str.remove_prefix (found);
@@ -624,13 +664,13 @@ namespace shaga {
 		ltrim (str, chars);
 	}
 
-	void STR::trim (std::string_view &str, const std::string_view chars)
+	void STR::trim (std::string_view &str, const std::string_view chars) noexcept
 	{
 		rtrim (str, chars);
 		ltrim (str, chars);
 	}
 
-	bool STR::icompare (const std::string_view a, const std::string_view b)
+	bool STR::icompare (const std::string_view a, const std::string_view b) noexcept
 	{
 		return std::equal (a.cbegin (), a.cend (), b.cbegin (), b.cend (), [](const auto _a, const auto _b) -> bool {
 			return std::tolower(static_cast<unsigned char> (_a)) == std::tolower(static_cast<unsigned char> (_b));

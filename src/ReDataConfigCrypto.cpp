@@ -221,7 +221,7 @@ namespace shaga {
 #endif // SHAGA_FULL
 	}
 
-	typedef std::function<void(
+	using CRYPTO_FUNC = void (*)(
 		uint8_t *const out_data,
 		const uint8_t *const msg_data,
 		const size_t msg_size,
@@ -230,7 +230,7 @@ namespace shaga {
 		const uint8_t *const key_data,
 		const size_t key_size,
 		const bool enc,
-		ReDataConfig::CryptoCache &cache)> CRYPTO_FUNC;
+		ReDataConfig::CryptoCache &cache);
 
 	HEDLEY_WARN_UNUSED_RESULT static inline CRYPTO_FUNC _get_crypto_calc_function (const ReDataConfig::CRYPTO crypto)
 	{
