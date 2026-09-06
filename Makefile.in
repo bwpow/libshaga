@@ -93,7 +93,7 @@ $(MT_DEBUGLIB): $(MT_DEBUGOBJS)
 	$(RM) $@
 	$(AR) rcsD $@ $^
 
-$(MT_DEBUGDIR)/%.o:%.cpp
+$(MT_DEBUGDIR)/%.o:%.cpp | prep
 	$(GPP) $(MT_CPPFLAGS) $(MT_DEBUGFLAGS) -c $< -o $@
 
 # Single thread
@@ -103,7 +103,7 @@ $(ST_DEBUGLIB): $(ST_DEBUGOBJS)
 	$(RM) $@
 	$(AR) rcsD $@ $^
 
-$(ST_DEBUGDIR)/%.o:%.cpp
+$(ST_DEBUGDIR)/%.o:%.cpp | prep
 	$(GPP) $(ST_CPPFLAGS) $(ST_DEBUGFLAGS) -c $< -o $@
 
 #############################################################################
@@ -117,7 +117,7 @@ $(MT_FULLLIB): $(MT_FULLOBJS)
 	$(STRIP) $^
 	$(AR) rcsD $@ $^
 
-$(MT_FULLDIR)/%.o:%.cpp
+$(MT_FULLDIR)/%.o:%.cpp | prep
 	$(GPP) $(MT_CPPFLAGS) $(MT_FULLFLAGS) -c $< -o $@
 
 # Single thread
@@ -128,7 +128,7 @@ $(ST_FULLLIB): $(ST_FULLOBJS)
 	$(STRIP) $^
 	$(AR) rcsD $@ $^
 
-$(ST_FULLDIR)/%.o:%.cpp
+$(ST_FULLDIR)/%.o:%.cpp | prep
 	$(GPP) $(ST_CPPFLAGS) $(ST_FULLFLAGS) -c $< -o $@
 
 #############################################################################
@@ -142,7 +142,7 @@ $(MT_LITELIB): $(MT_LITEOBJS)
 	$(STRIP) $^
 	$(AR) rcsD $@ $^
 
-$(MT_LITEDIR)/%.o:%.cpp
+$(MT_LITEDIR)/%.o:%.cpp | prep
 	$(GPP) $(MT_CPPFLAGS) $(MT_LITEFLAGS) -c $< -o $@
 
 # Single thread
@@ -153,7 +153,7 @@ $(ST_LITELIB): $(ST_LITEOBJS)
 	$(STRIP) $^
 	$(AR) rcsD $@ $^
 
-$(ST_LITEDIR)/%.o:%.cpp
+$(ST_LITEDIR)/%.o:%.cpp | prep
 	$(GPP) $(ST_CPPFLAGS) $(ST_LITEFLAGS) -c $< -o $@
 
 #############################################################################
@@ -165,7 +165,7 @@ test_mt: | debug_mt $(MT_TESTBIN)
 $(MT_TESTBIN): $(MT_TESTOBJS) $(MT_DEBUGLIB)
 	$(GPP) $(MT_LDFLAGS) $(MT_TESTFLAGS) $^ $(MT_LIBS) $(MT_TESTLIBS) -o $@
 
-$(MT_TESTDIR)/%.o:%.cpp
+$(MT_TESTDIR)/%.o:%.cpp | prep
 	$(GPP) $(MT_CPPFLAGS) $(MT_TESTFLAGS) -c $< -o $@
 
 # Single thread
@@ -174,7 +174,7 @@ test_st: | debug_st $(ST_TESTBIN)
 $(ST_TESTBIN): $(ST_TESTOBJS) $(ST_DEBUGLIB)
 	$(GPP) $(ST_LDFLAGS) $(ST_TESTFLAGS) $^ $(ST_LIBS) $(ST_TESTLIBS) -o $@
 
-$(ST_TESTDIR)/%.o:%.cpp
+$(ST_TESTDIR)/%.o:%.cpp | prep
 	$(GPP) $(ST_CPPFLAGS) $(ST_TESTFLAGS) -c $< -o $@
 
 #############################################################################

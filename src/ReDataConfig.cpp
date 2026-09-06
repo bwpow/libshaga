@@ -91,7 +91,7 @@ namespace shaga {
 		_counter_iv_enabled = conf._counter_iv_enabled;
 	}
 
-	ReDataConfig::ReDataConfig (ReDataConfig &&conf) noexcept
+	ReDataConfig::ReDataConfig (ReDataConfig &&conf)
 	{
 		_used_crypto = conf._used_crypto;
 		_used_digest = conf._used_digest;

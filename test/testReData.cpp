@@ -9,10 +9,21 @@ All rights reserved.
 
 using namespace shaga;
 
-static_assert (std::is_nothrow_move_constructible<ReDataConfig>::value);
+static_assert (std::is_move_constructible<ReDataConfig>::value);
+static_assert (false == std::is_nothrow_move_constructible<ReDataConfig>::value);
 static_assert (std::is_nothrow_move_assignable<ReDataConfig>::value);
 static_assert (noexcept (std::declval<const ReDataConfig &> ().is_compatible (std::declval<const ReDataConfig &> ())));
 static_assert (noexcept (std::declval<const ReData &> ().get_key_id ()));
+
+TEST (ReData, oversized_decode_offset_is_rejected)
+{
+	ReData data;
+	data.set_config ().set_digest (ReDataConfig::DIGEST::CRC8);
+	std::string output;
+	size_t offset = std::numeric_limits<size_t>::max ();
+	EXPECT_THROW (data.decode ("x"sv, offset, output), CommonException);
+	EXPECT_EQ (std::numeric_limits<size_t>::max (), offset);
+}
 
 static const std::map <std::string, ReDataConfig::DIGEST> DIGEST_MAP {
 	{"none"s, ReDataConfig::DIGEST::NONE},

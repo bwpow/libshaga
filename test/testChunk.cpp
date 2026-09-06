@@ -28,6 +28,43 @@ TEST (Chunk, constructors)
 	EXPECT_TRUE (c3.compare (c1) == 0);
 }
 
+TEST (Chunk, malformed_variable_lengths_and_extreme_offsets_are_rejected)
+{
+	Chunk original (0, "ABCD", "payload"sv, nlohmann::json {{"ok", true}});
+	const std::string valid = original.to_bin ();
+
+	auto replace_length_with_huge = [&valid](const std::string_view field) {
+		const size_t field_pos = valid.find (field);
+		EXPECT_NE (std::string::npos, field_pos);
+		EXPECT_GT (field_pos, 0U);
+		std::string malformed = valid.substr (0, field_pos - 1);
+		malformed.push_back (static_cast<char> (0xEF));
+		malformed.append (3, static_cast<char> (0xFF));
+		malformed.append (valid.substr (field_pos));
+		return malformed;
+	};
+
+	const std::string bad_payload = replace_length_with_huge ("payload"sv);
+	size_t offset {0};
+	EXPECT_THROW ((void) Chunk (bad_payload, offset), CommonException);
+
+	const std::vector<uint8_t> cbor = original.get_cbor ();
+	const std::string_view cbor_view (reinterpret_cast<const char *> (cbor.data ()), cbor.size ());
+	const std::string bad_cbor = replace_length_with_huge (cbor_view);
+	offset = 0;
+	EXPECT_THROW ((void) Chunk (bad_cbor, offset), CommonException);
+
+	std::string truncated = valid;
+	const size_t cbor_pos = truncated.find (cbor_view);
+	ASSERT_NE (std::string::npos, cbor_pos);
+	truncated.resize (cbor_pos + cbor.size () - 1);
+	offset = 0;
+	EXPECT_THROW ((void) Chunk (truncated, offset), CommonException);
+
+	offset = std::numeric_limits<size_t>::max ();
+	EXPECT_THROW ((void) Chunk (valid, offset), CommonException);
+}
+
 TEST (Chunk, keys)
 {
 	const char chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";

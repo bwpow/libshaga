@@ -197,16 +197,21 @@ namespace shaga {
 		/* Disarm destruct */
 		_unlink_on_destruct = false;
 		_lock_owned = false;
-		try {
-			if (_fd >= 0) {
+		if (_fd >= 0) {
+			const int fd = _fd;
+			try {
 				P::debug_print ("ShFile {}: CLOSE"sv, _filename);
 				if (nullptr != _callback) {
 					_callback (*this, CallbackAction::CLOSE);
 				}
-				::close (_fd);
-				_fd = -1;
+			}
+			catch (...) { /* A notification must not prevent descriptor cleanup. */ }
 
-				if (false == ignore_rename_on_close && has_rename_on_close () == true) {
+			::close (fd);
+			_fd = -1;
+
+			if (false == ignore_rename_on_close && has_rename_on_close () == true) {
+				try {
 					const int ret = ::rename (_filename.c_str (), _rename_on_close_filename.c_str ());
 					if (ret < 0) {
 						if (nullptr != _callback) {
@@ -220,9 +225,9 @@ namespace shaga {
 						}
 					}
 				}
+				catch (...) { /* close() is non-throwing by contract. */ }
 			}
 		}
-		catch (...) { /* Ignore */ }
 	}
 
 	void ShFile::sync ([[maybe_unused]] const bool also_metadata)
@@ -484,58 +489,60 @@ namespace shaga {
 
 	void ShFile::read_json (nlohmann::json &data, const bool from_file_start)
 	{
-		FILE* file = ::fdopen (dup(_fd), "rb");
-		if (nullptr == file) {
-			cThrow ("Error opening file for reading"sv);
+		const off64_t original_pos = tell ();
+		const int duplicate_fd = ::dup (_fd);
+		if (duplicate_fd < 0) {
+			cThrow ("Error duplicating file for reading: {}"sv, strerror (errno));
 		}
 
-		auto close_file = [&file]() noexcept {
-			if (nullptr != file) {
-				::fclose (file);
-				file = nullptr;
-			}
-		};
+		using FilePtr = std::unique_ptr<FILE, int (*)(FILE *)>;
+		FILE *const naked_file = ::fdopen (duplicate_fd, "rb");
+		if (nullptr == naked_file) {
+			const int saved_errno = errno;
+			::close (duplicate_fd);
+			cThrow ("Error opening file for reading: {}"sv, strerror (saved_errno));
+		}
+		FilePtr file (naked_file, ::fclose);
 
-		if (false == from_file_start) {
-			const off64_t cur_pos = tell ();
+		const off64_t parse_pos = (true == from_file_start) ? 0 : original_pos;
+		try {
 			#ifdef OS_WIN
-				if (::_fseeki64 (file, static_cast<__int64>(cur_pos), SEEK_SET) != 0) {
-					close_file ();
+				if (::_fseeki64 (file.get (), static_cast<__int64>(parse_pos), SEEK_SET) != 0) {
 					cThrow ("Error seeking in file"sv);
 				}
 			#else
-				if (::fseeko (file, static_cast<off_t>(cur_pos), SEEK_SET) != 0) {
-					close_file ();
+				if (::fseeko (file.get (), static_cast<off_t>(parse_pos), SEEK_SET) != 0) {
 					cThrow ("Error seeking in file"sv);
 				}
 			#endif // OS_WIN
-		}
 
-		try {
-			data = nlohmann::json::parse (file, nullptr, true, true);
+			data = nlohmann::json::parse (file.get (), nullptr, true, true);
 		}
 		catch (const std::exception &e) {
-			close_file ();
+			try { seek (original_pos, SEEK::SET); } catch (...) { }
 			cThrow ("Error parsing JSON: {}"sv, e.what ());
+		}
+		catch (...) {
+			try { seek (original_pos, SEEK::SET); } catch (...) { }
+			throw;
 		}
 
 		#ifdef OS_WIN
-			const __int64 new_pos = ::_ftelli64 (file);
+			const __int64 new_pos = ::_ftelli64 (file.get ());
 			if (new_pos < 0) {
-				close_file ();
+				try { seek (original_pos, SEEK::SET); } catch (...) { }
 				cThrow ("Error telling position in file"sv);
 			}
-			seek (static_cast<off64_t>(new_pos), SEEK::SET);
 		#else
-			const off_t new_pos = ::ftello (file);
+			const off_t new_pos = ::ftello (file.get ());
 			if (new_pos < 0) {
-				close_file ();
+				try { seek (original_pos, SEEK::SET); } catch (...) { }
 				cThrow ("Error telling position in file"sv);
 			}
-			seek (static_cast<off64_t>(new_pos), SEEK::SET);
 		#endif // OS_WIN
 
-		close_file ();
+		file.reset ();
+		seek (static_cast<off64_t>(new_pos), SEEK::SET);
 	}
 
 	nlohmann::json ShFile::read_json (const bool from_file_start)

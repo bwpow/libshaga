@@ -37,6 +37,10 @@ namespace shaga {
 		public:
 			explicit DiSigPrivate ();
 			~DiSigPrivate ();
+			DiSigPrivate (const DiSigPrivate &) = delete;
+			DiSigPrivate& operator= (const DiSigPrivate &) = delete;
+			DiSigPrivate (DiSigPrivate &&) = delete;
+			DiSigPrivate& operator= (DiSigPrivate &&) = delete;
 
 			virtual void generate_new_keypair (const std::string_view curve_type);
 			virtual std::string_view get_curve_type (void) const;
@@ -86,6 +90,10 @@ namespace shaga {
 					DEC_CTX_ENTRY (const std::string_view key, const std::string_view name, const DiSigVerify::_TYPE type, const std::string_view curve_type);
 					DEC_CTX_ENTRY (const std::string_view key, const std::string_view name, const DiSigVerify::_TYPE type);
 					~DEC_CTX_ENTRY ();
+					DEC_CTX_ENTRY (const DEC_CTX_ENTRY &) = delete;
+					DEC_CTX_ENTRY& operator= (const DEC_CTX_ENTRY &) = delete;
+					DEC_CTX_ENTRY (DEC_CTX_ENTRY &&) = delete;
+					DEC_CTX_ENTRY& operator= (DEC_CTX_ENTRY &&) = delete;
 			};
 
 			class RAW_SIGNATURE_ENTRY {
@@ -95,6 +103,10 @@ namespace shaga {
 
 					RAW_SIGNATURE_ENTRY (const std::string_view curve_type, const std::string_view sgn_raw);
 					~RAW_SIGNATURE_ENTRY ();
+					RAW_SIGNATURE_ENTRY (const RAW_SIGNATURE_ENTRY &) = delete;
+					RAW_SIGNATURE_ENTRY& operator= (const RAW_SIGNATURE_ENTRY &) = delete;
+					RAW_SIGNATURE_ENTRY (RAW_SIGNATURE_ENTRY &&) = delete;
+					RAW_SIGNATURE_ENTRY& operator= (RAW_SIGNATURE_ENTRY &&) = delete;
 			};
 
 			std::deque<DEC_CTX_ENTRY> _dec_ctx_list;
@@ -102,6 +114,10 @@ namespace shaga {
 		public:
 			explicit DiSigVerify ();
 			~DiSigVerify ();
+			DiSigVerify (const DiSigVerify &) = delete;
+			DiSigVerify& operator= (const DiSigVerify &) = delete;
+			DiSigVerify (DiSigVerify &&) = delete;
+			DiSigVerify& operator= (DiSigVerify &&) = delete;
 
 			virtual std::string_view get_curve_type (const size_t key_id) const;
 

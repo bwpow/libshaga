@@ -69,9 +69,10 @@ namespace shaga
 						cThrow ("{}: Ring full"sv, _name);
 					}
 
-					/* Release is required so the consumer sees fully written buffer contents */
+					const uint_fast32_t stored_size = _curdata->size ();
+					_stored_bytes.fetch_add (stored_size, std::memory_order_relaxed);
+					/* Publish last: the consumer may free this slot immediately after acquire. */
 					_pos_write.store (next, std::memory_order::memory_order_release);
-					_stored_bytes.fetch_add (_curdata->size (), std::memory_order::memory_order_seq_cst);
 				#else
 					_SHAGA_SPSC_D_RING (next, _pos_write);
 
@@ -120,7 +121,7 @@ namespace shaga
 					if (this->_eventfd < 0) {
 						cThrow ("{}: Unable to init eventfd: {}"sv, _name, strerror (errno));
 					}
-					this->_event_sock = std::make_shared<ShSocket> (this->_eventfd);
+					this->_event_sock = make_shared_socket (this->_eventfd);
 				#endif // OS_LINUX
 			}
 

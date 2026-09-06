@@ -18,12 +18,11 @@ namespace shaga {
 	std::string FS::realpath ([[maybe_unused]] const std::string_view path, [[maybe_unused]] const bool strip_fname)
 	{
 #ifndef OS_WIN
-		char *pth = ::realpath (s_c_str (path), nullptr);
+		std::unique_ptr<char, decltype (&::free)> pth (::realpath (s_c_str (path), nullptr), &::free);
 		if (nullptr == pth) {
 			return std::string ();
 		}
-		std::string out (pth);
-		::free (pth);
+		std::string out (pth.get ());
 
 		if (true == strip_fname) {
 			const size_t pos = out.find_last_of ('/');

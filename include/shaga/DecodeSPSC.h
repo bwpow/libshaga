@@ -155,7 +155,7 @@ namespace shaga
 				if (this->_eventfd < 0) {
 					cThrow ("{}: Unable to init eventfd: {}"sv, _name, strerror (errno));
 				}
-				this->_event_sock = std::make_shared<ShSocket> (this->_eventfd);
+				this->_event_sock = make_shared_socket (this->_eventfd);
 				#endif // OS_LINUX
 			}
 

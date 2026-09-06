@@ -94,7 +94,6 @@ namespace shaga {
 				std::string key;
 				std::string ipad;
 				std::string opad;
-				std::string temp;
 
 				uint64_t siphash_k0;
 				uint64_t siphash_k1;
@@ -129,7 +128,7 @@ namespace shaga {
 			ReDataConfig ();
 
 			ReDataConfig (const ReDataConfig &conf);
-			ReDataConfig (ReDataConfig &&conf) noexcept;
+			ReDataConfig (ReDataConfig &&conf);
 			ReDataConfig& operator= (const ReDataConfig &conf);
 			ReDataConfig& operator= (ReDataConfig &&conf) noexcept;
 

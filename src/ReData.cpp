@@ -35,6 +35,9 @@ namespace shaga {
 
 	void ReData::decode_message (std::string_view msg, const size_t offset, std::string &plain, const size_t key_id, const bool key_mixed) const
 	{
+		if (offset > msg.size ()) {
+			cThrow ("Offset exceeds message size"sv);
+		}
 		msg.remove_prefix (offset);
 
 		if (_conf.get_crypto () != ReDataConfig::CRYPTO::NONE) {

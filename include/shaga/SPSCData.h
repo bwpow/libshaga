@@ -215,6 +215,7 @@ namespace shaga {
 				}
 
 				_real_bufsize = 0;
+				_size = 0;
 			}
 	};
 }

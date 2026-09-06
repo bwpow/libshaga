@@ -254,7 +254,6 @@ namespace shaga {
 		key.clear ();
 		ipad.clear ();
 		opad.clear ();
-		temp.clear ();
 		siphash_k0 = 0;
 		siphash_k1 = 0;
 		halfsiphash_k0 = 0;
@@ -285,37 +284,91 @@ namespace shaga {
 		if (DIGEST_HMAC_TYPE::TYPICAL == hmac_type) {
 #ifdef SHAGA_FULL
 			if (_cache_digest.digest != _used_digest || _cache_digest.key != key) {
-				/* Key is not cached, so prepare IPAD and OPAD for HMAC calculation for the new key */
-				_cache_digest.digest = _used_digest;
-				_cache_digest.key.assign (key);
-
-				_cache_digest.opad.assign (keysize, 0x5c);
-				_cache_digest.ipad.assign (keysize, 0x36);
+				/* Prepare a complete replacement before changing the live cache. */
+				std::string new_key (key);
+				std::string new_opad (keysize, 0x5c);
+				std::string new_ipad (keysize, 0x36);
+				std::string normalized_key;
 
 				if (key.size () > keysize) {
-					hfunc (key, _cache_digest, _cache_digest.temp);
+					hfunc (key, _cache_digest, normalized_key);
 				}
 				else {
-					_cache_digest.temp.assign (key);
+					normalized_key.assign (key);
 				}
-				_cache_digest.temp.resize (keysize, 0x00);
+				normalized_key.resize (keysize, 0x00);
 
-				BIN::XOR (_cache_digest.ipad, _cache_digest.temp);
-				BIN::XOR (_cache_digest.opad, _cache_digest.temp);
+				BIN::XOR (new_ipad, normalized_key);
+				BIN::XOR (new_opad, normalized_key);
+
+				_cache_digest.key.swap (new_key);
+				_cache_digest.ipad.swap (new_ipad);
+				_cache_digest.opad.swap (new_opad);
+				_cache_digest.digest = _used_digest;
 			}
 
-			/* Calculate HFUNC (OPAD + HFUNC (IPAD + TEXT)) */
-			_cache_digest.temp.resize (0);
-			_cache_digest.temp.append (_cache_digest.ipad);
-			_cache_digest.temp.append (plain);
-			hfunc (_cache_digest.temp, _cache_digest, out);
-
-			_cache_digest.temp.resize (0);
-			_cache_digest.temp.append (_cache_digest.opad);
-			_cache_digest.temp.append (out);
-			hfunc (_cache_digest.temp, _cache_digest, out);
-
-			_cache_digest.temp.resize (0);
+			/* Calculate H(OPAD || H(IPAD || TEXT)) without a plaintext-sized heap copy. */
+			std::array<unsigned char, 64> inner {};
+			std::array<unsigned char, 64> result {};
+			int ret {0};
+			if (DIGEST::HMAC_SHA256 == _used_digest) {
+				mbedtls_sha256_context ctx;
+				::mbedtls_sha256_init (&ctx);
+				ret = ::mbedtls_sha256_starts_ret (&ctx, 0);
+				if (0 == ret) {
+					ret = ::mbedtls_sha256_update_ret (&ctx, reinterpret_cast<const unsigned char *> (_cache_digest.ipad.data ()), _cache_digest.ipad.size ());
+				}
+				if (0 == ret) {
+					ret = ::mbedtls_sha256_update_ret (&ctx, reinterpret_cast<const unsigned char *> (plain.data ()), plain.size ());
+				}
+				if (0 == ret) {
+					ret = ::mbedtls_sha256_finish_ret (&ctx, inner.data ());
+				}
+				if (0 == ret) {
+					ret = ::mbedtls_sha256_starts_ret (&ctx, 0);
+				}
+				if (0 == ret) {
+					ret = ::mbedtls_sha256_update_ret (&ctx, reinterpret_cast<const unsigned char *> (_cache_digest.opad.data ()), _cache_digest.opad.size ());
+				}
+				if (0 == ret) {
+					ret = ::mbedtls_sha256_update_ret (&ctx, inner.data (), 32);
+				}
+				if (0 == ret) {
+					ret = ::mbedtls_sha256_finish_ret (&ctx, result.data ());
+				}
+				::mbedtls_sha256_free (&ctx);
+			}
+			else {
+				mbedtls_sha512_context ctx;
+				::mbedtls_sha512_init (&ctx);
+				ret = ::mbedtls_sha512_starts_ret (&ctx, 0);
+				if (0 == ret) {
+					ret = ::mbedtls_sha512_update_ret (&ctx, reinterpret_cast<const unsigned char *> (_cache_digest.ipad.data ()), _cache_digest.ipad.size ());
+				}
+				if (0 == ret) {
+					ret = ::mbedtls_sha512_update_ret (&ctx, reinterpret_cast<const unsigned char *> (plain.data ()), plain.size ());
+				}
+				if (0 == ret) {
+					ret = ::mbedtls_sha512_finish_ret (&ctx, inner.data ());
+				}
+				if (0 == ret) {
+					ret = ::mbedtls_sha512_starts_ret (&ctx, 0);
+				}
+				if (0 == ret) {
+					ret = ::mbedtls_sha512_update_ret (&ctx, reinterpret_cast<const unsigned char *> (_cache_digest.opad.data ()), _cache_digest.opad.size ());
+				}
+				if (0 == ret) {
+					ret = ::mbedtls_sha512_update_ret (&ctx, inner.data (), 64);
+				}
+				if (0 == ret) {
+					ret = ::mbedtls_sha512_finish_ret (&ctx, result.data ());
+				}
+				::mbedtls_sha512_free (&ctx);
+			}
+			if (0 != ret) {
+				cThrow ("HMAC calculation failed"sv);
+			}
+			out.assign (reinterpret_cast<const char *> (result.data ()), _get_digest_result_size (_used_digest));
 			return;
 #else
 		cThrow ("Digest is not supported in lite version"sv);
@@ -327,12 +380,15 @@ namespace shaga {
 			}
 
 			if (_cache_digest.digest != _used_digest || _cache_digest.key != key) {
-				/* Key is not cached, so fill k0 and k1 */
+				std::string new_key (key);
+				uint64_t new_k0;
+				uint64_t new_k1;
+				BIN::_to_uint64 (new_k0, key.data ());
+				BIN::_to_uint64 (new_k1, key.data () + sizeof (uint64_t));
+				_cache_digest.key.swap (new_key);
+				_cache_digest.siphash_k0 = new_k0;
+				_cache_digest.siphash_k1 = new_k1;
 				_cache_digest.digest = _used_digest;
-				_cache_digest.key.assign (key);
-
-				BIN::_to_uint64 (_cache_digest.siphash_k0, key.data ());
-				BIN::_to_uint64 (_cache_digest.siphash_k1, key.data () + sizeof (uint64_t));
 			}
 
 			hfunc (plain, _cache_digest, out);
@@ -344,12 +400,15 @@ namespace shaga {
 			}
 
 			if (_cache_digest.digest != _used_digest || _cache_digest.key != key) {
-				/* Key is not cached, so fill k0 and k1 */
+				std::string new_key (key);
+				uint32_t new_k0;
+				uint32_t new_k1;
+				BIN::_to_uint32 (new_k0, key.data ());
+				BIN::_to_uint32 (new_k1, key.data () + sizeof (uint32_t));
+				_cache_digest.key.swap (new_key);
+				_cache_digest.halfsiphash_k0 = new_k0;
+				_cache_digest.halfsiphash_k1 = new_k1;
 				_cache_digest.digest = _used_digest;
-				_cache_digest.key.assign (key);
-
-				BIN::_to_uint32 (_cache_digest.halfsiphash_k0, key.data ());
-				BIN::_to_uint32 (_cache_digest.halfsiphash_k1, key.data () + sizeof (uint32_t));
 			}
 
 			hfunc (plain, _cache_digest, out);
@@ -361,9 +420,9 @@ namespace shaga {
 			}
 
 			if (_cache_digest.digest != _used_digest || _cache_digest.key != key) {
-				/* Key is not cached */
+				std::string new_key (key);
+				_cache_digest.key.swap (new_key);
 				_cache_digest.digest = _used_digest;
-				_cache_digest.key.assign (key);
 			}
 
 			hfunc (plain, _cache_digest, out);

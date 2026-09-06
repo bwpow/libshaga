@@ -900,3 +900,57 @@ TEST (EncDecSPSC, simple16_decode_stx_resync)
 {
 	_simple16_decode_stx_resync<SPSCDataDynAlloc> ();
 }
+
+#ifdef SHAGA_THREADING
+TEST (EncDecSPSC, mt_encoder_publication_keeps_size_and_byte_count_alive)
+{
+	Simple8EncodeSPSC<SPSCDataPreAlloc> encoder (64, 3, ControlBytes_8);
+	constexpr size_t iterations {100'000};
+	std::atomic<bool> producer_done {false};
+	std::atomic<bool> failed {false};
+
+	std::thread producer ([&]() {
+		for (size_t i = 0; i < iterations && false == failed.load (); ++i) {
+			while (true) {
+				try {
+					encoder.push_buffer ("payload"sv);
+					break;
+				}
+				catch (const CommonException &) {
+					std::this_thread::yield ();
+				}
+				catch (...) {
+					failed = true;
+					break;
+				}
+			}
+		}
+		producer_done = true;
+	});
+
+	std::array<char, 1> buffer {};
+	size_t consumed_bytes {0};
+	while (false == failed.load ()) {
+		try {
+			const uint_fast32_t size = encoder.fill_front_buffer (buffer.data (), buffer.size ());
+			if (size > 0) {
+				encoder.move_front_buffer (size);
+				consumed_bytes += size;
+			}
+			else if (producer_done.load () && encoder.empty ()) {
+				break;
+			}
+			else {
+				std::this_thread::yield ();
+			}
+		}
+		catch (...) {
+			failed = true;
+		}
+	}
+	producer.join ();
+	EXPECT_FALSE (failed.load ());
+	EXPECT_GT (consumed_bytes, iterations);
+	EXPECT_EQ (0U, encoder.get_stored_bytes ());
+}
+#endif // SHAGA_THREADING

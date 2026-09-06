@@ -15,6 +15,39 @@ namespace shaga
 	class SPSC
 	{
 		private:
+			static T* _allocate (const uint_fast32_t sze)
+			{
+				if (sze < 2) {
+					cThrow ("Ring size must be at least 2"sv);
+				}
+				if (sze > (std::numeric_limits<size_t>::max () / sizeof (T))) {
+					cThrow ("Ring data allocation size overflow"sv);
+				}
+
+				const size_t bytes = sizeof (T) * static_cast<size_t> (sze);
+				T *data;
+				if constexpr (alignof (T) > __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+					data = static_cast<T*> (::operator new (bytes, std::align_val_t (alignof (T)), std::nothrow));
+				}
+				else {
+					data = static_cast<T*> (::operator new (bytes, std::nothrow));
+				}
+				if (nullptr == data) {
+					cThrow ("Ring data allocation failed"sv);
+				}
+				return data;
+			}
+
+			static void _deallocate (T * const data) noexcept
+			{
+				if constexpr (alignof (T) > __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+					::operator delete (data, std::align_val_t (alignof (T)));
+				}
+				else {
+					::operator delete (data);
+				}
+			}
+
 			const uint_fast32_t _size;
 
 			#ifdef SHAGA_THREADING
@@ -30,24 +63,8 @@ namespace shaga
 		public:
 			explicit SPSC (const uint_fast32_t sze) :
 				_size (sze),
-				_data (static_cast<T*> (::malloc (sizeof (T) * sze)))
-			{
-				try {
-					if (sze < 2) {
-						cThrow ("Ring size must be at least 2"sv);
-					}
-
-					if (nullptr == _data) {
-						cThrow ("Ring data allocation failed"sv);
-					}
-				}
-				catch (...) {
-					if (nullptr != _data) {
-						::free(_data);
-					}
-					throw;
-				}
-			}
+				_data (_allocate (sze))
+			{ }
 
 			~SPSC ()
 			{
@@ -64,7 +81,7 @@ namespace shaga
 					now %= _size;
 				}
 
-				::free(_data);
+				_deallocate (_data);
 			}
 
 			bool is_lock_free (void) const

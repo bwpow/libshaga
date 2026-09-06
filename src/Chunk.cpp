@@ -242,7 +242,7 @@ namespace shaga {
 
 		if (val & key_has_payload_mask) {
 			const size_t len = BIN::to_size (bin, offset);
-			if ((offset + len) > bin.size ()) {
+			if (offset > bin.size () || len > (bin.size () - offset)) {
 				cThrow ("Not enough data in buffer"sv);
 			}
 			_payload.assign (bin.substr (offset, len));
@@ -251,7 +251,7 @@ namespace shaga {
 
 		if (val & key_has_cbor_mask) {
 			const size_t len = BIN::to_size (bin, offset);
-			if ((offset + len) > bin.size ()) {
+			if (offset > bin.size () || len > (bin.size () - offset)) {
 				cThrow ("Not enough data in buffer"sv);
 			}
 			_cbor.resize (len);

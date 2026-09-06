@@ -11,6 +11,36 @@ All rights reserved.
 
 using namespace shaga;
 
+namespace
+{
+	struct alignas (128) AlignedValue
+	{
+		int value {0};
+	};
+
+	struct ThrowingValue
+	{
+		static int alive;
+		static int attempts;
+
+		ThrowingValue ()
+		{
+			if (++attempts == 4) {
+				throw std::runtime_error ("constructor failure");
+			}
+			++alive;
+		}
+
+		~ThrowingValue ()
+		{
+			--alive;
+		}
+	};
+
+	int ThrowingValue::alive {0};
+	int ThrowingValue::attempts {0};
+}
+
 TEST (SPSC, empty)
 {
 	const int sze = 16;
@@ -111,6 +141,24 @@ TEST (SPSC, push_back_move)
 		ASSERT_EQ (out, expected);
 
 		ASSERT_FALSE (ring.pop_front (out));
+	}
+}
+
+TEST (SPSC, checked_aligned_storage_and_wraparound)
+{
+	EXPECT_THROW (SPSC<AlignedValue> (std::numeric_limits<uint_fast32_t>::max ()), CommonException);
+
+	SPSC<AlignedValue> ring (4);
+	for (int i = 0; i < 64; ++i) {
+		AlignedValue value;
+		value.value = i;
+		ASSERT_TRUE (ring.push_back (value));
+		AlignedValue *front = ring.front ();
+		ASSERT_NE (nullptr, front);
+		EXPECT_EQ (0U, reinterpret_cast<uintptr_t> (front) % alignof (AlignedValue));
+		AlignedValue out;
+		ASSERT_TRUE (ring.pop_front (out));
+		EXPECT_EQ (i, out.value);
 	}
 }
 
@@ -238,6 +286,35 @@ TEST (PreAllocSPSC, constructor_args_not_moved_from)
 		ASSERT_EQ (ring.back (), expected);
 		ASSERT_NO_THROW (ring.push_back ());
 	}
+}
+
+TEST (PreAllocSPSC, checked_aligned_storage_and_exception_cleanup)
+{
+	EXPECT_THROW (PreAllocSPSC<AlignedValue> (std::numeric_limits<uint_fast32_t>::max ()), CommonException);
+
+	PreAllocSPSC<AlignedValue> ring (4);
+	EXPECT_EQ (0U, reinterpret_cast<uintptr_t> (&ring.back ()) % alignof (AlignedValue));
+	ring.back ().value = 17;
+	ring.push_back ();
+	EXPECT_EQ (17, ring.front ().value);
+	ring.pop_front ();
+
+	ThrowingValue::alive = 0;
+	ThrowingValue::attempts = 0;
+	EXPECT_THROW (PreAllocSPSC<ThrowingValue> (8), std::runtime_error);
+	EXPECT_EQ (0, ThrowingValue::alive);
+}
+
+TEST (SPSCDataDynAlloc, free_resets_logical_size)
+{
+	SPSCDataDynAlloc data (32);
+	data.alloc (16);
+	data.set_size (8);
+	ASSERT_FALSE (data.empty ());
+	data.free ();
+	EXPECT_TRUE (data.empty ());
+	EXPECT_EQ (0U, data.size ());
+	EXPECT_EQ (nullptr, data.buffer);
 }
 
 #ifdef SHAGA_THREADING

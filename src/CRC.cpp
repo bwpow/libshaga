@@ -22,6 +22,13 @@ All rights reserved.
 	#endif
 
 	namespace shaga::CRC::_INT {
+		template <typename T>
+		HEDLEY_ALWAYS_INLINE T _load_unaligned (const uint8_t* const data)
+		{
+			T value;
+			std::memcpy (&value, data, sizeof (value));
+			return value;
+		}
 
 		inline bool _has_sse42 (void)
 		{
@@ -68,18 +75,17 @@ All rights reserved.
 
 			#if defined(__x86_64__) || defined(_M_X64)
 				const size_t blocks = len / 8;
-				const uint64_t* data64 = reinterpret_cast<const uint64_t*> (data);
 				size_t j = 0;
 				const size_t unroll_count = blocks / 4;
 				for (size_t i = 0; i < unroll_count; i++) {
-					crc = _mm_crc32_u64 (crc, data64[j]);
-					crc = _mm_crc32_u64 (crc, data64[j + 1]);
-					crc = _mm_crc32_u64 (crc, data64[j + 2]);
-					crc = _mm_crc32_u64 (crc, data64[j + 3]);
+					crc = _mm_crc32_u64 (crc, _load_unaligned<uint64_t> (data + j * 8));
+					crc = _mm_crc32_u64 (crc, _load_unaligned<uint64_t> (data + (j + 1) * 8));
+					crc = _mm_crc32_u64 (crc, _load_unaligned<uint64_t> (data + (j + 2) * 8));
+					crc = _mm_crc32_u64 (crc, _load_unaligned<uint64_t> (data + (j + 3) * 8));
 					j += 4;
 				}
 				for (; j < blocks; j++) {
-					crc = _mm_crc32_u64 (crc, data64[j]);
+					crc = _mm_crc32_u64 (crc, _load_unaligned<uint64_t> (data + j * 8));
 				}
 				size_t i = blocks * 8;
 				for (; i < len; i++) {
@@ -87,18 +93,17 @@ All rights reserved.
 				}
 			#else
 				const size_t blocks = len / 4;
-				const uint32_t* data32 = reinterpret_cast<const uint32_t*> (data);
 				size_t j = 0;
 				const size_t unroll_count = blocks / 4;
 				for (size_t i = 0; i < unroll_count; i++) {
-					crc = _mm_crc32_u32 (crc, data32[j]);
-					crc = _mm_crc32_u32 (crc, data32[j + 1]);
-					crc = _mm_crc32_u32 (crc, data32[j + 2]);
-					crc = _mm_crc32_u32 (crc, data32[j + 3]);
+					crc = _mm_crc32_u32 (crc, _load_unaligned<uint32_t> (data + j * 4));
+					crc = _mm_crc32_u32 (crc, _load_unaligned<uint32_t> (data + (j + 1) * 4));
+					crc = _mm_crc32_u32 (crc, _load_unaligned<uint32_t> (data + (j + 2) * 4));
+					crc = _mm_crc32_u32 (crc, _load_unaligned<uint32_t> (data + (j + 3) * 4));
 					j += 4;
 				}
 				for (; j < blocks; j++) {
-					crc = _mm_crc32_u32 (crc, data32[j]);
+					crc = _mm_crc32_u32 (crc, _load_unaligned<uint32_t> (data + j * 4));
 				}
 				size_t i = blocks * 4;
 				for (; i < len; i++) {

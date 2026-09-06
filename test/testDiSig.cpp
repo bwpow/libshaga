@@ -9,6 +9,13 @@ All rights reserved.
 
 using namespace shaga;
 
+static_assert (false == std::is_copy_constructible_v<DiSigPrivate>);
+static_assert (false == std::is_copy_assignable_v<DiSigPrivate>);
+static_assert (false == std::is_move_constructible_v<DiSigPrivate>);
+static_assert (false == std::is_copy_constructible_v<DiSigVerify>);
+static_assert (false == std::is_copy_assignable_v<DiSigVerify>);
+static_assert (false == std::is_move_constructible_v<DiSigVerify>);
+
 /* Private key using NIST P-256 in der format */
 static const unsigned char _secp256r1_priv[] = {
   0x30, 0x78, 0x02, 0x01, 0x01, 0x04, 0x21, 0x00, 0x83, 0xad, 0xea, 0x67,

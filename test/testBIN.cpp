@@ -9,6 +9,63 @@ All rights reserved.
 
 using namespace shaga;
 
+namespace {
+	struct BinElement {
+		explicit BinElement (const std::string_view buf, size_t &offset)
+		{
+			(void) BIN::to_uint8 (buf, offset);
+		}
+	};
+
+	struct EmptyBinElement {
+		EmptyBinElement () = default;
+
+		explicit EmptyBinElement (const std::string_view, size_t &)
+		{ }
+
+		void to_bin (std::string &) const
+		{ }
+	};
+}
+
+TEST (BIN, container_malformed_count_does_not_blindly_reserve)
+{
+	std::string malicious;
+	BIN::from_size (0x0FFFFFFF, malicious);
+	std::vector<BinElement> output;
+	EXPECT_THROW (container_from_bin (output, malicious), CommonException);
+	EXPECT_TRUE (output.empty ());
+	EXPECT_EQ (0U, output.capacity ());
+}
+
+TEST (BIN, container_roundtrip_preserves_empty_element_encoding)
+{
+	const std::vector<EmptyBinElement> input (3);
+	std::string encoded;
+	container_to_bin (input, encoded);
+
+	std::vector<EmptyBinElement> output;
+	container_from_bin (output, encoded);
+	EXPECT_EQ (input.size (), output.size ());
+}
+
+TEST (BIN, offset_overflow_is_rejected)
+{
+	const std::string data (8, '\0');
+	for (const size_t offset_start : {data.size () + 1, std::numeric_limits<size_t>::max ()}) {
+		size_t offset = offset_start;
+		EXPECT_THROW (BIN::to_uint8 (data, offset), CommonException);
+		offset = offset_start;
+		EXPECT_THROW (BIN::to_uint16 (data, offset), CommonException);
+		offset = offset_start;
+		EXPECT_THROW (BIN::to_uint24 (data, offset), CommonException);
+		offset = offset_start;
+		EXPECT_THROW (BIN::to_uint64 (data, offset), CommonException);
+		offset = offset_start;
+		EXPECT_THROW (BIN::be_to_uint64 (data, offset), CommonException);
+	}
+}
+
 TEST (BIN, count_trailing_zeros)
 {
 	EXPECT_EQ (BIN::count_trailing_zeros (static_cast<uint8_t> (UINT8_MAX)), 0);

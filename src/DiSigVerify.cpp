@@ -125,7 +125,7 @@ namespace shaga {
 			const size_t len = ::mbedtls_mpi_size (&ec->grp.P);
 
 			auto func = [&](mbedtls_mpi *P) -> void {
-				if ((pos + len) > sgn_raw.size ()) {
+				if (pos > sgn_raw.size () || len > (sgn_raw.size () - pos)) {
 					cThrow ("DiSig error: Raw data too short"sv);
 				}
 

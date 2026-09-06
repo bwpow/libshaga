@@ -406,7 +406,7 @@ namespace shaga {
 		template <typename T, typename S>
 		static inline auto _be_to_int (const S &s, size_t &offset) -> T
 		{
-			if ((offset + sizeof (T)) > s.size ()) {
+			if (offset > s.size () || sizeof (T) > (s.size () - offset)) {
 				cThrow ("Not enough bytes"sv);
 			}
 			else if constexpr (std::is_same_v<std::remove_cv_t<T>, uint8_t> || std::is_same_v<std::remove_cv_t<T>, int8_t>) {
@@ -429,7 +429,7 @@ namespace shaga {
 		template <typename T, typename S>
 		static inline auto _to_int (const S &s, size_t &offset) -> T
 		{
-			if ((offset + sizeof (T)) > s.size ()) {
+			if (offset > s.size () || sizeof (T) > (s.size () - offset)) {
 				cThrow ("Not enough bytes"sv);
 			}
 			else if constexpr (std::is_same_v<std::remove_cv_t<T>, uint8_t> || std::is_same_v<std::remove_cv_t<T>, int8_t>) {
@@ -452,7 +452,7 @@ namespace shaga {
 		template <typename S>
 		static inline uint32_t _be_to_uint24 (const S &s, size_t &offset)
 		{
-			if ((offset + 3) > s.size ()) {
+			if (offset > s.size () || 3 > (s.size () - offset)) {
 				cThrow ("Not enough bytes"sv);
 			}
 			_be_le_data = s.data () + offset;
@@ -468,7 +468,7 @@ namespace shaga {
 		template <typename S>
 		static inline uint32_t _to_uint24 (const S &s, size_t &offset)
 		{
-			if ((offset + 3) > s.size ()) {
+			if (offset > s.size () || 3 > (s.size () - offset)) {
 				cThrow ("Not enough bytes"sv);
 			}
 			_be_le_data = s.data () + offset;

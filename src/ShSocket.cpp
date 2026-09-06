@@ -8,6 +8,20 @@ All rights reserved.
 #include "shaga/common.h"
 
 namespace shaga {
+	SHARED_SOCKET make_shared_socket (const int sock)
+	{
+		UNIQUE_SOCKET owner;
+		try {
+			owner = std::make_unique<ShSocket> (sock);
+		}
+		catch (...) {
+			if (sock >= 0) {
+				::close (sock);
+			}
+			throw;
+		}
+		return SHARED_SOCKET (std::move (owner));
+	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//  Static functions  ///////////////////////////////////////////////////////////////////////////////////////////

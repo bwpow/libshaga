@@ -111,6 +111,16 @@ TEST (CRC, CRC32C)
 	std::iota (data.begin (), data.end (), 0x00);
 	EXPECT_TRUE (CRC::crc32c (data) == 0x46'dd'79'4e);
 
+	/* Hardware CRC loads must accept buffers at every byte alignment. */
+	const std::string payload ("unaligned CRC32C payload");
+	const uint32_t payload_crc = CRC::crc32c (payload);
+	std::array <uint8_t, 64> storage;
+	for (size_t offset = 0; offset < 8; ++offset) {
+		std::fill (storage.begin (), storage.end (), 0);
+		std::copy (payload.begin (), payload.end (), storage.begin () + offset);
+		EXPECT_EQ (CRC::crc32c (storage.data () + offset, payload.size ()), payload_crc);
+	}
+
 	/* Append and check */
 	std::string str ("1234567890xyz");
 	const size_t sze = str.size ();

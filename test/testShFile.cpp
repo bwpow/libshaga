@@ -8,6 +8,8 @@ All rights reserved.
 #include <gtest/gtest.h>
 #ifndef OS_WIN
 	#include <sys/stat.h>
+	#include <fcntl.h>
+	#include <dirent.h>
 #endif // OS_WIN
 
 using namespace shaga;
@@ -47,6 +49,22 @@ namespace {
 				return _path;
 			}
 	};
+
+#ifndef OS_WIN
+	size_t count_open_descriptors (void)
+	{
+		DIR *const dir = ::opendir ("/proc/self/fd");
+		if (nullptr == dir) {
+			throw std::runtime_error ("Unable to inspect open descriptors");
+		}
+		size_t count {0};
+		while (nullptr != ::readdir (dir)) {
+			++count;
+		}
+		::closedir (dir);
+		return count;
+	}
+#endif
 }
 
 TEST (ShFile, WriteReadRoundtrip)
@@ -156,5 +174,92 @@ TEST (ShFile, NewFileRespectsMaskEvenWithUmask)
 		throw;
 	}
 	::umask (old_umask);
+}
+#endif // OS_WIN
+
+#ifndef OS_WIN
+TEST (ShFile, CloseAlwaysReleasesDescriptorWhenCallbackThrows)
+{
+	TempFileGuard tmp (make_temp_path ());
+	ShFile file (tmp.path (), ShFile::mW);
+	const int fd = file.get_file_descriptor ();
+	int close_callbacks {0};
+	file.set_callback ([&close_callbacks](ShFile &, const ShFile::CallbackAction action) -> bool {
+		if (ShFile::CallbackAction::CLOSE == action) {
+			++close_callbacks;
+			throw std::runtime_error ("injected close callback failure");
+		}
+		return true;
+	});
+
+	file.close ();
+	EXPECT_EQ (1, close_callbacks);
+	errno = 0;
+	EXPECT_EQ (-1, ::fcntl (fd, F_GETFD));
+	EXPECT_EQ (EBADF, errno);
+	file.close ();
+	EXPECT_EQ (1, close_callbacks);
+}
+
+TEST (ShFile, DestructorReleasesDescriptorWhenCallbackThrows)
+{
+	TempFileGuard tmp (make_temp_path ());
+	int fd {-1};
+	{
+		auto file = std::make_unique<ShFile> (tmp.path (), ShFile::mW);
+		fd = file->get_file_descriptor ();
+		file->set_callback ([](ShFile &, const ShFile::CallbackAction action) -> bool {
+			if (ShFile::CallbackAction::CLOSE == action) {
+				throw std::runtime_error ("injected destructor callback failure");
+			}
+			return true;
+		});
+	}
+	errno = 0;
+	EXPECT_EQ (-1, ::fcntl (fd, F_GETFD));
+	EXPECT_EQ (EBADF, errno);
+}
+
+TEST (ShFile, ReadJsonRewindsAndPreservesLogicalPosition)
+{
+	TempFileGuard tmp (make_temp_path ());
+	const std::string json_text {R"({"answer":42})"};
+	{
+		ShFile out (tmp.path (), ShFile::mW);
+		out.write (json_text);
+	}
+
+	ShFile file (tmp.path (), ShFile::mREAD);
+	EXPECT_EQ ("{\""sv, file.read (2));
+	const nlohmann::json parsed = file.read_json (true);
+	EXPECT_EQ (42, parsed.at ("answer"));
+	EXPECT_EQ (static_cast<off64_t> (json_text.size ()), file.tell ());
+
+	file.seek (2);
+	const off64_t before_error = file.tell ();
+	EXPECT_THROW ((void) file.read_json (false), CommonException);
+	EXPECT_EQ (before_error, file.tell ());
+}
+
+TEST (ShFile, ReadJsonFdopenAndParseFailuresDoNotLeakDescriptors)
+{
+	TempFileGuard write_only_path (make_temp_path ());
+	ShFile write_only (write_only_path.path (), ShFile::mW);
+	const size_t before_fdopen = count_open_descriptors ();
+	EXPECT_THROW ((void) write_only.read_json (false), CommonException);
+	EXPECT_EQ (before_fdopen, count_open_descriptors ());
+
+	TempFileGuard invalid_path (make_temp_path ());
+	{
+		ShFile out (invalid_path.path (), ShFile::mW);
+		out.write ("not-json"sv);
+	}
+	ShFile invalid (invalid_path.path (), ShFile::mREAD);
+	const size_t before_parse = count_open_descriptors ();
+	for (size_t i = 0; i < 32; ++i) {
+		EXPECT_THROW ((void) invalid.read_json (true), CommonException);
+		EXPECT_EQ (0, invalid.tell ());
+	}
+	EXPECT_EQ (before_parse, count_open_descriptors ());
 }
 #endif // OS_WIN

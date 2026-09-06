@@ -587,8 +587,8 @@ namespace shaga
 		}
 
 		const size_t num = shaga::BIN::to_size (buf, offset);
-
-		out.reserve (num + 128);
+		/* Element encodings may be empty, so remaining bytes are only a safe reserve hint. */
+		out.reserve (std::min (num, buf.size () - offset));
 
 		for (size_t i = 0; i < num; ++i) {
 			out.emplace_back (buf, offset);
